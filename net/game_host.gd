@@ -44,6 +44,8 @@ func apply(pid: int, a: Dictionary) -> void:
 		"speed": sim.speed_mult = 2.0 if sim.speed_mult < 1.5 else 1.0
 		"auto": sim.auto_wave = not sim.auto_wave
 		"target": sim.set_target_mode(pid, String(a.get("mode", "first")))
+		"emote": sim.emote(pid, String(a.get("id", "")))
+		"ping": sim.ping(pid, float(a.get("x", 0)), float(a.get("y", 0)))
 		# Garden Clash
 		"buy":
 			if sim is ClashWorld:

@@ -6,6 +6,7 @@ extends SceneTree
 
 var main: Node
 var fails := 0
+var Prof  # ui/profile.gd, loaded at run time (after the autoloads exist)
 
 
 func check(ok: bool, what: String) -> void:
@@ -50,6 +51,10 @@ func _initialize() -> void:
 
 
 func run() -> void:
+	Prof = load("res://ui/profile.gd")
+	Prof.path = "user://test_profile.cfg"  # never touch the real profile
+	var cf := ConfigFile.new()
+	cf.save(Prof.path)  # start from a fresh test profile
 	main = load("res://main.tscn").instantiate()
 	root.add_child(main)
 	await ticks()
@@ -136,6 +141,21 @@ func run() -> void:
 	await tap(KEY_ESCAPE)
 	await ticks()
 	check(not main.hud.menu_open and not main.snap.paused, "Esc again keeps playing")
+	# V: emote bar, then 1 says "Hi!"; middle-click pings the map
+	await tap(KEY_V)
+	check(main.hud.emote_open, "V opens the emote bar")
+	await tap(KEY_1)
+	await ticks()
+	check(not main.hud.emote_open and main.world._emotes.has(1), "1 sends an emote bubble over my hero")
+	main.send({"t": "ping", "x": 600.0, "y": 500.0})
+	await ticks()
+	check(main.world.pings.size() == 1, "a ping shows on the map")
+	# settings
+	var shake0: float = main.world.shake_mult
+	main.do_hud_action({"t": "set_shake"})
+	check(main.world.shake_mult != shake0, "screen shake setting changes (%.1f -> %.1f)" % [shake0, main.world.shake_mult])
+	main.do_hud_action({"t": "set_shake"})
+	main.do_hud_action({"t": "set_shake"})
 	# T: targeting
 	await tap(KEY_T)
 	await ticks()
@@ -155,6 +175,8 @@ func run() -> void:
 	sim.lives = 0
 	await ticks()
 	check(main.snap.phase == "gameover", "losing all lives ends the game")
+	var nc: Dictionary = main._next_cfg()
+	check(nc.get("map", "") == "river" and nc.get("diff", "") == "normal", "after Sunny Meadow the next challenge is Lilypad Crossing")
 	await tap(KEY_ESCAPE)
 	await ticks()
 	check(main.menu.visible, "Esc returns to the title menu")
@@ -232,6 +254,12 @@ func clash_part() -> void:
 			sim.apply_damage(e, 1e12, 1, hero.id, {"armorPierce": true})
 	await ticks()
 	check(main.snap.phase == "victory", "smashing the Thorn Heart wins")
+	await ticks()
+	var prof: Dictionary = Prof.load_profile()
+	check(Prof.is_unlocked(prof, "hats", "helmet") and Prof.is_unlocked(prof, "pets", "bunny"), "winning a Clash unlocks the Knight Helmet and the Bunny")
+	check(main.hud.new_unlocks.size() >= 2, "the end screen lists new unlocks (%s)" % ", ".join(main.hud.new_unlocks))
+	check(not Prof.is_unlocked(prof, "hats", "firecrown") and Prof.is_unlocked(prof, "hats", "flower"), "other hats stay locked, free ones are open")
+	check(main.hud.next_challenge != "", "a win offers the next challenge (%s)" % main.hud.next_challenge)
 
 
 func D_buff(h: Dictionary, k: String) -> float:

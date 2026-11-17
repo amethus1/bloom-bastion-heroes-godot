@@ -30,6 +30,13 @@ var shake := 0.0
 var zoom := 1.0
 var overview := false
 var follow_ids: Array = []  # couch co-op: other local heroes the camera keeps on screen
+var shake_mult := 1.0  # settings: screen shake 100% / 50% / off
+var pings: Array = []  # {p, kind, slot, name, t}
+var _emotes := {}  # owner -> {icon, text, t}
+const PING_LOOK := {"look": ["👀", "Look here!"], "chest": ["🎁", "Chest!"], "powerup": ["✨", "Power-up!"], "wake": ["💤", "Wake this tower!"],
+	"pests": ["🐛", "Pests here!"], "rival": ["👑", "Rival!"], "tower": ["🌵", "Attack this!"]}
+var dmg_mode := "all"  # settings: damage numbers all / big / off
+var snap_dt := 1.0 / 30.0  # time between snapshots: 1/30 s here, about 1/20 s on a LAN friend's computer
 var _marker := {"p": Vector2.ZERO, "t": 0.0}
 
 
@@ -129,7 +136,7 @@ func _process(delta: float) -> void:
 	time += delta
 	if shake > 0:
 		shake = maxf(0.0, shake - delta * 30.0)
-		camera.offset = Vector2(randf() - 0.5, randf() - 0.5) * shake * 1.5
+		camera.offset = Vector2(randf() - 0.5, randf() - 0.5) * shake * 1.5 * shake_mult
 	else:
 		camera.offset = Vector2.ZERO
 	var want_zoom := zoom
@@ -255,6 +262,7 @@ func _draw() -> void:
 		var e: Dictionary = Sprites.atlas.get("sun", {})
 		Sprites.draw_frame(self, Sprites.tex(e.get("file", "")), e, 0, Vector2(s.x, s.y + sin(time * 3 + s.x) * 3), false, 1.0, Color.WHITE, Sprites.scale)
 	draw_fx()
+	_draw_pings()
 	if ghost != "" and my_pos != null:
 		# where the selected tower would go, with its real (round) range
 		var spot: Dictionary = GameData.gadget_spot(_map_id, ghost, my_pos.x, my_pos.y)
@@ -473,6 +481,15 @@ func draw_hero(h: Dictionary) -> void:
 	text(Vector2(p.x + 10, ty + 4.5), name, 13)
 	if h.pending > 0:
 		draw_circle(Vector2(p.x + tw / 2 + 9, ty + sin(time * 6) * 3), 7, Color("fde047"))
+	if _emotes.has(int(h.owner)):
+		var em: Dictionary = _emotes[int(h.owner)]
+		var ea: float = clampf(em.t / 0.4, 0, 1)
+		var label: String = em.icon + ("  " + em.text if em.text != "" else "")
+		var bw := _font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, 16).x + 22
+		var by := ty - 52
+		draw_style_box(UiKit.box(Color(1, 1, 1, 0.95 * ea), Color(col.r, col.g, col.b, ea), 12, 2, 0), Rect2(p.x - bw / 2, by - 16, bw, 30))
+		draw_colored_polygon(PackedVector2Array([Vector2(p.x - 7, by + 13), Vector2(p.x + 7, by + 13), Vector2(p.x, by + 22)]), Color(1, 1, 1, 0.95 * ea))
+		text(Vector2(p.x, by + 5), label, 16, Color(0.1, 0.12, 0.1, ea), 0)
 	if h.has("maxHp") and float(h.maxHp) > 0:
 		var hk: float = float(h.hp) / float(h.maxHp)
 		bar(Vector2(p.x, ty - 20), 60, 6, hk, Color("4ade80") if hk > 0.5 else (Color("facc15") if hk > 0.25 else Color("ef4444")))
@@ -530,7 +547,7 @@ const PROJ_COLORS := {"pea": "4ade80", "megapea": "fde047", "thorn": "7dd3fc", "
 
 func draw_projectiles() -> void:
 	for p in snap.get("projectiles", []):
-		var k := clampf(tick_alpha, 0, 1.2) / 30.0
+		var k := clampf(tick_alpha, 0, 1.2) * snap_dt
 		var at := Vector2(p.x + p.vx * k, p.y + p.vy * k)
 		var col := Color(PROJ_COLORS.get(p.kind, "ffffff"))
 		var r := 6.0
@@ -615,6 +632,8 @@ func on_event(e: Dictionary) -> void:
 			float_text(pos - Vector2(0, 10), "+%d XP" % int(e.amount), Color("fde047"), 17)
 			ring(pos, 34, Color("fde047"), 3, 0.3)
 		"dmg":
+			if dmg_mode == "off" or (dmg_mode == "big" and not e.get("crit", false) and float(e.amount) < 200):
+				return
 			float_text(pos + Vector2((randf() - 0.5) * 14, 0), ("%d!" % int(e.amount)) if e.crit else str(int(e.amount)), Color("fde047") if e.crit else Color.WHITE, 18 if e.crit else 12, 0.7)
 		"level_up":
 			_fx.append({"kind": "pillar", "p": pos, "col": Color("fde047"), "life": 1.0, "max": 1.0})
@@ -679,6 +698,19 @@ func on_event(e: Dictionary) -> void:
 			ring(pos, 60, Color("a78bfa"), 4, 0.4)
 		"mole_up":
 			burst(pos, ["8a5a1e", "a16207", "facc15"], 10, 120)
+		"emote":
+			var em := {}
+			for x in GameData.cosmetics.emotes:
+				if x.id == e.id:
+					em = x
+			if not em.is_empty():
+				_emotes[int(e.owner)] = {"icon": em.icon, "text": em.text, "t": 2.6}
+			Audio.play_sfx("ui_click", -2.0, 0.1, 60)
+		"ping":
+			pings.append({"p": pos, "kind": String(e.kind), "slot": int(e.slot), "name": String(e.get("name", "")), "t": 4.0})
+			if pings.size() > 8:
+				pings.pop_front()
+			Audio.play_sfx("card_pick", -2.0, 0.05, 150)
 		# --- Garden Clash
 		"struct_down":
 			var foe: bool = e.get("team", "") == "foe"
@@ -812,6 +844,13 @@ func _play_event_audio(e: Dictionary) -> void:
 
 
 func _update_fx(dt: float) -> void:
+	for pg in pings:
+		pg.t -= dt
+	pings = pings.filter(func(pg): return pg.t > 0)
+	for k in _emotes.keys():
+		_emotes[k].t -= dt
+		if _emotes[k].t <= 0:
+			_emotes.erase(k)
 	if _anim.has("tree_hurt"):
 		_anim.tree_hurt = maxf(0.0, _anim.tree_hurt - dt)
 	for k in _bubbles.keys():
@@ -1001,7 +1040,7 @@ func draw_camps(clash: Dictionary) -> void:
 
 
 func draw_clash_shots(clash: Dictionary) -> void:
-	var k := clampf(tick_alpha, 0, 1.2) / 30.0
+	var k := clampf(tick_alpha, 0, 1.2) * snap_dt
 	for s in clash.get("shots", []):
 		var at := Vector2(s.x + s.vx * k, s.y + s.vy * k)
 		var st: Array = SHOT_STYLE.get(s.kind, ["ffffff", 5])
@@ -1073,3 +1112,25 @@ func _draw_tower_help() -> void:
 			up += " (need more)"
 	var line := "%s %s · %s%sX sell +%d🌰" % [def.icon, lv, up, " · " if up != "" else "", int(floor(float(near.spent) * 0.6))]
 	text(gp + Vector2(0, -92), line, 13, Color("fef9c3"), 4)
+
+
+func _draw_pings() -> void:
+	for pg in pings:
+		var col: Color = GameData.player_color(pg.slot)
+		var ph := fmod(time * 1.6, 1.0)
+		var a: float = clampf(pg.t / 0.6, 0, 1)
+		draw_arc(pg.p, 14 + ph * 46, 0, TAU, 40, Color(col.r, col.g, col.b, (1 - ph) * a), 4, true)
+		draw_circle(pg.p, 10, Color(col.r, col.g, col.b, 0.8 * a))
+		var look: Array = PING_LOOK.get(pg.kind, PING_LOOK.look)
+		draw_line(pg.p, pg.p - Vector2(0, 46), Color(col.r, col.g, col.b, 0.8 * a), 3, true)
+		text(pg.p - Vector2(0, 52), "%s %s" % [look[0], look[1]], 15, Color(1, 1, 1, a), 4)
+		text(pg.p - Vector2(0, 70), pg.name, 11, Color(col.r, col.g, col.b, a), 3)
+
+
+## Tier 3 / 4 evolution: a golden burst
+func evolve_fx(p: Vector2, tier: int) -> void:
+	_fx.append({"kind": "pillar", "p": p, "col": Color("fde047"), "life": 1.4, "max": 1.4})
+	ring(p, 120 if tier >= 4 else 90, Color("fde047"), 8, 0.7)
+	ring(p, 60, Color.WHITE, 5, 0.5)
+	burst(p - Vector2(0, 30), ["fde047", "facc15", "ffffff", "fef08a"], 40 if tier >= 4 else 26, 240)
+	shake = maxf(shake, 4)

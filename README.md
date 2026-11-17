@@ -31,9 +31,37 @@ If the scripts show "unknown class" errors after you pull new files, run `godot 
 | Esc | Menu: keep playing, restart, sound, or leave to the title screen |
 | Tab (hold) | Team stats, your hero's numbers, and which reactions your team can make |
 | M | Sound on/off |
+| V, then 1–5 | Emotes: Hi!, ❤️, Help!, Nice!, Follow me! |
+| Middle-click (or Alt+click) | Ping the map ("Look here!", "Chest!", "Pests here!"…) for everyone |
+| N | Hide/show the minimap (click the minimap to walk there) |
+| F11 | Fullscreen |
 | Z, mouse wheel, + and − | Overview and zoom |
 
-Hover over any tower to see its range.
+Hover over any tower to see its range. Arrows at the screen edge point to chests, power-ups, pings, bosses and pests near the tree.
+
+### Controllers and couch co-op
+
+Up to 4 players on one computer: press **Start** (or A) on a controller during a game, pick a hero with the D-pad, and press **A**. If the team is full, a Bot Buddy steps aside. The camera zooms out to keep everyone on screen. Couch players work in solo games and on a LAN host.
+
+| Button (Xbox / PlayStation) | What it does |
+|---|---|
+| Left stick | Walk |
+| A / Cross | Leaf Leap |
+| X / Square | Special |
+| Y / Triangle | Build the picked tower (Garden Clash: Berry Juice) |
+| B / Circle | Upgrade the tower you stand next to (Garden Clash: go home) |
+| LB / RB | Pick a tower (Garden Clash: LB juice, RB buy the next item at the tree) |
+| D-pad ◀ ▲ ▶ | Pick level-up card 1 / 2 / 3 |
+| D-pad ▼ | Home |
+| Back / Share | Sell the tower you stand next to |
+| R3 | Targeting |
+| Start | Menu |
+
+On the title screen, **Controllers: Controller 1 = me** lets one kid play solo on a controller.
+
+### Settings and unlocks
+
+The ⚙ button on the title screen (or Esc in a game) has screen shake, damage numbers, fullscreen and sound. Hats and pets unlock by playing (the title screen shows how to earn each 🔒 one). Everyone in a game earns them on their own computer. **Hats & pets: Unlock everything** is there for little kids.
 
 In Garden Clash:
 
@@ -48,7 +76,7 @@ Stand right next to a knocked-out friend to revive them.
 
 ## Playing together on the LAN
 
-1. One computer presses **Host LAN Game**. The lobby shows its address, for example `192.168.1.20`.
+1. One computer presses **Host LAN Game**. The lobby shows its address (with a Copy button), for example `192.168.1.20`. The host can still change the map, difficulty, mode and bots there, and everyone can switch hero, hat and pet before the game starts.
 2. The other computers press **Join LAN Game**. Games on the same Wi-Fi appear in the list automatically (UDP beacon on port 24681). You can also type the address.
 3. The host presses **Start Game**. Friends can still join a game that has already started.
 

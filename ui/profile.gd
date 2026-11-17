@@ -3,24 +3,55 @@ extends RefCounted
 ## The local save profile: your name, favourite hero, hat, pet, last game
 ## settings and a few records. Stored in user://profile.cfg.
 
-const PATH := "user://profile.cfg"
+## Tests and screenshot runs use their own file so they never touch your real profile
+static var path := "user://profile.cfg"
 
 
 static func defaults() -> Dictionary:
 	return {"name": "Player", "hero": "peashooter", "hat": "none", "pet": "none", "map": "meadow", "diff": "normal",
 		"gameMode": "adventure", "bots": 1, "address": "", "games": 0, "wins": 0, "bestEndless": 0,
-		"muted": false, "sfxVol": 0.85, "voiceVol": 0.95, "padP1": false}
+		"muted": false, "sfxVol": 0.85, "voiceVol": 0.95, "padP1": false,
+		"shake": 1.0, "dmgNums": "all", "fullscreen": false,
+		"hats": [], "pets": [], "unlockAll": false, "unlocksStarted": false}
 
 
 static func load_profile() -> Dictionary:
 	var d := defaults()
 	var cf := ConfigFile.new()
-	if cf.load(PATH) == OK:
+	if cf.load(path) == OK:
 		for k in d:
 			d[k] = cf.get_value("profile", k, d[k])
 	if not GameData.HERO_ORDER.has(d.hero):
 		d.hero = "peashooter"
+	if not d.unlocksStarted:
+		# hats & pets became unlockable: keep whatever you were already wearing
+		d.unlocksStarted = true
+		d.hats = [d.hat]
+		d.pets = [d.pet]
+		save_profile(d)
 	return d
+
+
+## Free items, things you've earned, or everything with "Unlock everything" on
+static func is_unlocked(d: Dictionary, kind: String, id: String) -> bool:
+	if d.get("unlockAll", false):
+		return true
+	for x in GameData.cosmetics[kind]:
+		if x.id == id and x.get("free", false):
+			return true
+	return Array(d.get(kind, [])).has(id)
+
+
+## Returns true if it was new
+static func unlock(kind: String, id: String) -> bool:
+	var d := load_profile()
+	var have: Array = Array(d.get(kind, []))
+	if have.has(id):
+		return false
+	have.append(id)
+	d[kind] = have
+	save_profile(d)
+	return true
 
 
 static func save_profile(d: Dictionary) -> void:
@@ -28,7 +59,31 @@ static func save_profile(d: Dictionary) -> void:
 	for k in defaults():
 		if d.has(k):
 			cf.set_value("profile", k, d[k])
-	cf.save(PATH)
+	cf.save(path)
+
+
+## Settings live in the profile too: screen shake, damage numbers, fullscreen
+static func set_value(key: String, value) -> Dictionary:
+	var d := load_profile()
+	d[key] = value
+	save_profile(d)
+	return d
+
+
+static func next_shake(v: float) -> float:
+	return 0.5 if v > 0.75 else (0.0 if v > 0.25 else 1.0)
+
+
+static func next_dmg(v: String) -> String:
+	return {"all": "big", "big": "off", "off": "all"}.get(v, "all")
+
+
+static func shake_label(v: float) -> String:
+	return "Screen shake: %s" % ("100%" if v > 0.75 else ("50%" if v > 0.25 else "off"))
+
+
+static func dmg_label(v: String) -> String:
+	return "Damage numbers: %s" % {"all": "all", "big": "big hits only", "off": "off"}.get(v, "all")
 
 
 ## Called when a game ends to keep simple records

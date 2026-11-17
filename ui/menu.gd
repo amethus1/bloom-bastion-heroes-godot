@@ -5,6 +5,7 @@ extends Control
 
 signal play(cfg: Dictionary)
 signal leave
+signal settings_changed
 
 var profile: Dictionary
 var finder: LanFinder
@@ -98,6 +99,8 @@ func _option(parent: Control, label: String, items: Array, current: String, on_p
 	ob.add_theme_font_size_override("font_size", 16)
 	for i in items.size():
 		ob.add_item(String(items[i][1]), i)
+		if items[i].size() > 2 and items[i][2]:
+			ob.set_item_disabled(i, true)  # locked: earn it in a game
 		if String(items[i][0]) == current:
 			ob.select(i)
 	ob.item_selected.connect(func(i): on_pick.call(String(items[i][0])))
@@ -123,6 +126,10 @@ func show_title() -> void:
 	_net = null
 	_clear()
 	profile = Profile.load_profile()
+	if not Profile.is_unlocked(profile, "hats", profile.hat):
+		profile.hat = "none"
+	if not Profile.is_unlocked(profile, "pets", profile.pet):
+		profile.pet = "none"
 	var v := _frame()
 	_title(v, "🌸 Bloom Bastion Heroes 🌸", "Team up with up to 4 friends on the same Wi-Fi to protect the Bloom Tree from garden pests!")
 	var cols := HBoxContainer.new()
@@ -197,11 +204,13 @@ func show_title() -> void:
 	_option(right, "Bot Buddies", [["0", "None"], ["1", "🤖 1 bot"], ["2", "🤖 2 bots"], ["3", "🤖 3 bots"]], str(profile.bots), func(id): profile.bots = int(id); Profile.save_profile(profile))
 	var hats: Array = []
 	for hat in GameData.cosmetics.hats:
-		hats.append([hat.id, "%s %s" % [hat.icon, hat.name]])
+		var ok := Profile.is_unlocked(profile, "hats", hat.id)
+		hats.append([hat.id, ("%s %s" % [hat.icon, hat.name]) if ok else ("🔒 %s: %s" % [hat.name, hat.how]), not ok])
 	_option(right, "Hat", hats, profile.hat, func(id): profile.hat = id; Profile.save_profile(profile))
 	var pets: Array = []
 	for pet in GameData.cosmetics.pets:
-		pets.append([pet.id, "%s %s" % [pet.icon, pet.name]])
+		var ok := Profile.is_unlocked(profile, "pets", pet.id)
+		pets.append([pet.id, ("%s %s" % [pet.icon, pet.name]) if ok else ("🔒 %s: %s" % [pet.name, pet.how]), not ok])
 	_option(right, "Pet", pets, profile.pet, func(id): profile.pet = id; Profile.save_profile(profile))
 	right.add_child(_label("Games %d · Wins %d · Best Endless wave %d" % [int(profile.games), int(profile.wins), int(profile.bestEndless)], 13, Color("86efac")))
 
@@ -219,6 +228,10 @@ func show_title() -> void:
 	var joinb := _button("🔍  Join LAN Game", 20, 230)
 	joinb.pressed.connect(show_join)
 	row.add_child(joinb)
+	var settings := _button("⚙", 20, 60)
+	settings.tooltip_text = "Settings"
+	settings.pressed.connect(show_settings)
+	row.add_child(settings)
 	var quit := _button("Quit", 18, 100)
 	quit.pressed.connect(func(): get_tree().quit())
 	row.add_child(quit)
@@ -273,6 +286,27 @@ func _go(kind: String) -> void:
 
 
 # ---------------------------------------------------------------------------
+# Settings
+# ---------------------------------------------------------------------------
+func show_settings() -> void:
+	_clear()
+	var v := _frame(560)
+	_title(v, "⚙ Settings", "Saved on this computer. You can also change these in a game (Esc).")
+	var prof := Profile.load_profile()
+	var rows := VBoxContainer.new()
+	rows.add_theme_constant_override("separation", 10)
+	v.add_child(rows)
+	_option(rows, "Screen shake", [["1.0", "100%"], ["0.5", "50%"], ["0.0", "Off"]], "%.1f" % float(prof.shake), func(id): Profile.set_value("shake", float(id)); settings_changed.emit())
+	_option(rows, "Damage numbers", [["all", "All"], ["big", "Big hits only"], ["off", "Off"]], String(prof.dmgNums), func(id): Profile.set_value("dmgNums", id); settings_changed.emit())
+	_option(rows, "Fullscreen", [["false", "Off"], ["true", "On (F11)"]], "true" if prof.fullscreen else "false", func(id): Profile.set_value("fullscreen", id == "true"); settings_changed.emit())
+	_option(rows, "Hats & pets", [["false", "Earn them by playing"], ["true", "Unlock everything (for little kids)"]], "true" if prof.unlockAll else "false", func(id): Profile.set_value("unlockAll", id == "true"))
+	_option(rows, "Sound", [["false", "🔊 On"], ["true", "🔇 Off (M in a game)"]], "true" if Audio.muted else "false", func(id): if (id == "true") != Audio.muted: Audio.toggle_mute())
+	var back := _button("◀ Back", 18, 140)
+	back.pressed.connect(show_title)
+	v.add_child(back)
+
+
+# ---------------------------------------------------------------------------
 # Join: browse LAN games
 # ---------------------------------------------------------------------------
 func show_join() -> void:
@@ -300,10 +334,20 @@ func show_join() -> void:
 	addr.text_submitted.connect(func(t): _join_ip(t.strip_edges()))
 	row.add_child(go)
 	v.add_child(row)
+	var brow := HBoxContainer.new()
+	brow.add_theme_constant_override("separation", 12)
 	var back := _button("◀ Back", 18, 140)
 	back.pressed.connect(show_title)
-	v.add_child(back)
+	brow.add_child(back)
+	var refresh := _button("↻ Refresh", 18, 140)
+	refresh.pressed.connect(func(): finder.start(); _join_shown_ms = Time.get_ticks_msec(); _refresh_games())
+	brow.add_child(refresh)
+	v.add_child(brow)
+	_join_shown_ms = Time.get_ticks_msec()
 	_refresh_games()
+
+
+var _join_shown_ms := 0
 
 
 func _refresh_games() -> void:
@@ -314,10 +358,20 @@ func _refresh_games() -> void:
 	for ip in finder.games:
 		var g: Dictionary = finder.games[ip]
 		var map_name := String(GameData.maps.maps.get(g.get("map", ""), {}).get("name", ""))
-		_games_list.add_item("🌸 %s   ·   %d/4 players   ·   %s%s" % [g.get("name", "Game"), int(g.get("players", 1)), map_name, "   ·   playing now (you can still join!)" if g.get("inGame", false) else ""])
+		var mode: String = {"endless": "♾️ Endless", "clash": "⚔️ Clash"}.get(String(g.get("mode", "")), "🗺️ Adventure")
+		if g.get("mode", "") == "clash":
+			map_name = "Three-Lane Valley"
+		var dname := String(GameData.DIFFICULTIES.get(String(g.get("diff", "")), {}).get("name", ""))
+		var now := ("   ·   playing, wave %d (you can still join!)" % int(g.get("wave", 0))) if g.get("inGame", false) else ""
+		_games_list.add_item("🌸 %s  ·  %d/4  ·  %s  ·  %s  ·  %s%s" % [g.get("name", "Game"), int(g.get("players", 1)), map_name, dname, mode, now])
 		_game_ips.append(ip)
 	if _status and finder.listening:
-		_status.text = "Double-click a game to join it." if _game_ips.size() > 0 else "Looking for games… (ask a friend to press Host LAN Game)"
+		if _game_ips.size() > 0:
+			_status.text = "Double-click a game to join it."
+		elif Time.get_ticks_msec() - _join_shown_ms > 5000:
+			_status.text = "No games yet. Is your friend's game hosted on the same Wi-Fi? A firewall can hide it: then type the address their lobby shows."
+		else:
+			_status.text = "Looking for games… (ask a friend to press Host LAN Game)"
 
 
 func _join_ip(ip: String) -> void:
@@ -346,9 +400,74 @@ func show_lobby(net: Node, is_host: bool) -> void:
 	_status = _label("", 15, Color("bbf7d0"), HORIZONTAL_ALIGNMENT_CENTER)
 	_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	v.add_child(_status)
+	if is_host:
+		# the address friends can type, with a Copy button
+		var addrs: Array = NetHost.local_addresses()
+		var arow := HBoxContainer.new()
+		arow.alignment = BoxContainer.ALIGNMENT_CENTER
+		arow.add_theme_constant_override("separation", 10)
+		arow.add_child(_label("Your address: %s" % (", ".join(addrs) if not addrs.is_empty() else "(no Wi-Fi?)"), 17, Color("fde047")))
+		if not addrs.is_empty():
+			var copy := _button("Copy", 14, 80)
+			copy.custom_minimum_size.y = 34
+			copy.pressed.connect(func(): DisplayServer.clipboard_set(String(addrs[0])); copy.text = "Copied!")
+			arow.add_child(copy)
+		v.add_child(arow)
+	# my hero / hat / pet, changeable right here
+	var pick := HBoxContainer.new()
+	pick.alignment = BoxContainer.ALIGNMENT_CENTER
+	pick.add_theme_constant_override("separation", 6)
+	var group := ButtonGroup.new()
+	for type in GameData.HERO_ORDER:
+		var b := Button.new()
+		b.toggle_mode = true
+		b.button_group = group
+		b.icon = UiKit.hero_icon(type)
+		b.expand_icon = true
+		b.custom_minimum_size = Vector2(56, 56)
+		b.tooltip_text = String(GameData.TOWERS[type].name)
+		b.button_pressed = type == profile.hero
+		b.pressed.connect(func(): profile.hero = type; Profile.save_profile(profile); net.set_my_pick("hero", type))
+		pick.add_child(b)
+	v.add_child(pick)
+	var cos := HBoxContainer.new()
+	cos.alignment = BoxContainer.ALIGNMENT_CENTER
+	cos.add_theme_constant_override("separation", 16)
+	v.add_child(cos)
+	var hats: Array = []
+	for hat in GameData.cosmetics.hats:
+		if Profile.is_unlocked(profile, "hats", hat.id):
+			hats.append([hat.id, "%s %s" % [hat.icon, hat.name]])
+	_option(cos, "Hat", hats, profile.hat, func(id): profile.hat = id; Profile.save_profile(profile); net.set_my_pick("hat", id))
+	var pets: Array = []
+	for pet in GameData.cosmetics.pets:
+		if Profile.is_unlocked(profile, "pets", pet.id):
+			pets.append([pet.id, "%s %s" % [pet.icon, pet.name]])
+	_option(cos, "Pet", pets, profile.pet, func(id): profile.pet = id; Profile.save_profile(profile); net.set_my_pick("pet", id))
+	if is_host:
+		# the host can still change the game here
+		var g1 := HBoxContainer.new()
+		g1.alignment = BoxContainer.ALIGNMENT_CENTER
+		g1.add_theme_constant_override("separation", 16)
+		v.add_child(g1)
+		var maps: Array = []
+		for id in GameData.maps.maps:
+			if not GameData.maps.maps[id].get("clash", false):
+				maps.append([id, GameData.maps.maps[id].name])
+		_option(g1, "Map", maps, String(net.cfg.map), func(id): profile.map = id; Profile.save_profile(profile); net.set_option("map", id))
+		var diffs: Array = []
+		for id in GameData.DIFFICULTIES:
+			diffs.append([id, GameData.DIFFICULTIES[id].name])
+		_option(g1, "Difficulty", diffs, String(net.cfg.diff), func(id): profile.diff = id; Profile.save_profile(profile); net.set_option("diff", id))
+		var g2 := HBoxContainer.new()
+		g2.alignment = BoxContainer.ALIGNMENT_CENTER
+		g2.add_theme_constant_override("separation", 16)
+		v.add_child(g2)
+		_option(g2, "Mode", [["adventure", "🗺️ Adventure"], ["endless", "♾️ Endless"], ["clash", "⚔️ Garden Clash"]], String(net.cfg.gameMode), func(id): profile.gameMode = id; Profile.save_profile(profile); net.set_option("gameMode", id))
+		_option(g2, "Bot Buddies", [["0", "None"], ["1", "🤖 1"], ["2", "🤖 2"], ["3", "🤖 3"]], str(net.cfg.bots), func(id): profile.bots = int(id); Profile.save_profile(profile); net.set_option("bots", int(id)))
 	_players_box = VBoxContainer.new()
-	_players_box.add_theme_constant_override("separation", 6)
-	_players_box.custom_minimum_size = Vector2(0, 260)
+	_players_box.add_theme_constant_override("separation", 4)
+	_players_box.custom_minimum_size = Vector2(0, 150)
 	v.add_child(_players_box)
 	var row := HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -378,10 +497,18 @@ func _refresh_lobby() -> void:
 		icon.texture = UiKit.hero_icon(String(p.get("hero", "peashooter")))
 		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		icon.custom_minimum_size = Vector2(56, 56)
+		icon.custom_minimum_size = Vector2(40, 40)
 		row.add_child(icon)
 		var hero_name := String(GameData.TOWERS.get(p.get("hero", ""), {}).get("name", ""))
-		row.add_child(_label("%s%s  ·  %s" % [p.name, "  (host)" if p.get("host", false) else "", hero_name], 20))
+		var hat_icon := ""
+		var pet_icon := ""
+		for x in GameData.cosmetics.hats:
+			if x.id == p.get("hat", "none") and x.id != "none":
+				hat_icon = " " + String(x.icon)
+		for x in GameData.cosmetics.pets:
+			if x.id == p.get("pet", "none") and x.id != "none":
+				pet_icon = " " + String(x.icon)
+		row.add_child(_label("%s%s  ·  %s%s%s" % [p.name, "  (host)" if p.get("host", false) else "", hero_name, hat_icon, pet_icon], 18))
 		_players_box.add_child(row)
 	var c: Dictionary = _net.cfg if _is_host else _net.host_cfg
 	if not c.is_empty():

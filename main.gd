@@ -41,6 +41,8 @@ func _ready() -> void:
 			var kv: PackedStringArray = a.substr(2).split("=", true, 1)
 			args[kv[0]] = kv[1] if kv.size() > 1 else "1"
 	get_window().title = "Bloom Bastion Heroes"
+	if args.has("netcheck") or args.has("shot") or args.has("demo") or args.has("warp"):
+		Profile.path = "user://test_profile.cfg"  # test runs never change your real profile
 	world = WorldView.new()
 	add_child(world)
 	var hud_layer := CanvasLayer.new()
@@ -59,7 +61,10 @@ func _ready() -> void:
 	couch.p1_pad = bool(Profile.load_profile().get("padP1", false))
 	add_child(couch)
 	hud.couch = couch
+	hud.world = world
 	menu.play.connect(_on_menu_play)
+	menu.settings_changed.connect(apply_settings)
+	apply_settings()
 	menu.leave.connect(show_menu)
 	var cfg := Profile.load_profile()
 	cfg.merge({"hero": args.get("hero", cfg.hero), "map": args.get("map", cfg.map), "diff": args.get("diff", cfg.diff), "name": args.get("name", cfg.name),
@@ -237,6 +242,8 @@ func start_remote(id: int) -> void:
 
 func _begin_play() -> void:
 	hud.menu_open = false
+	hud.new_unlocks = []
+	hud.next_challenge = ""
 	menu.hide_all()
 	hud.visible = true
 	playing = true
@@ -262,6 +269,7 @@ func _on_snapshot(s: Dictionary) -> void:
 	world.push_snapshot(s)
 	hud.snap = s
 	_sync_my_hero()
+	_unlock_from_snapshot(s)
 	for e in s.get("events", []):
 		_my_event(e)
 
@@ -288,6 +296,115 @@ func _pest_intro(w: int) -> void:
 		if g.boss:
 			hud.pest_card(String(g.type))
 			return
+
+
+# ---------------------------------------------------------------------------
+# Hats & pets you earn (saved on this computer; everyone in the game earns them)
+# ---------------------------------------------------------------------------
+func _earn(kind: String, id: String) -> void:
+	if attract or not playing or not Profile.unlock(kind, id):
+		return
+	for x in GameData.cosmetics[kind]:
+		if x.id == id:
+			hud.new_unlocks.append("%s %s" % [x.icon, x.name])
+			hud.banner("🎉 New %s: %s %s!" % ["hat" if kind == "hats" else "pet", x.icon, x.name], "Pick it on the title screen", Color("f0abfc"), 3.5)
+			Audio.play_sfx("chest_open", 0.0, 0.0, 300)
+
+
+func _unlock_from_event(e: Dictionary) -> void:
+	if attract or not playing:
+		return
+	var hard: bool = String(snap.get("difficulty", "")) in ["hard", "nightmare"]
+	match String(e.type):
+		"victory":
+			_earn("pets", "bunny")
+			if snap.has("clash"):
+				_earn("hats", "helmet")
+				if hard:
+					_earn("hats", "thorncrown")
+			else:
+				_earn("hats", "crown")
+				if hard:
+					_earn("hats", "goldcrown")
+			if hard:
+				_earn("pets", "dragon")
+			if String(snap.get("difficulty", "")) == "nightmare":
+				_earn("hats", "firecrown")
+		"enemy_pop":
+			if e.get("boss", false) and not snap.has("clash"):
+				_earn("hats", "pirate")
+		"level_up":
+			if int(e.get("level", 0)) >= 20:
+				_earn("hats", "wizard")
+		"wave_clear":
+			if snap.get("endless", false):
+				if int(e.wave) >= 15:
+					_earn("pets", "snail")
+				if int(e.wave) >= 30:
+					_earn("hats", "propeller")
+		"camp_down":
+			if String(e.get("kind", "")) == "rumbletoad":
+				_earn("pets", "froggy")
+		"hero_upgraded":
+			if int(e.get("tier", 0)) >= 3:
+				var tw: Dictionary = GameData.TOWERS.get(String(e.get("hero", "")), {})
+				world.evolve_fx(Vector2(e.x, e.y), int(e.tier))
+				if int(e.get("owner", -1)) == my_id:
+					hud.banner("✨ Evolved: %s!" % e.label, "%s, path %s tier %d" % [tw.get("name", ""), e.path, int(e.tier)], Color("fde047"), 3.0)
+				Audio.play_sfx("level_up", 0.0, 0.0, 200)
+
+
+func _unlock_from_snapshot(s: Dictionary) -> void:
+	if attract or not playing:
+		return
+	for p in s.get("players", []):
+		if int(p.get("pops", 0)) >= 250:
+			_earn("hats", "party")
+		if int(p.get("reactions", 0)) >= 30:
+			_earn("pets", "butterfly")
+		if int(p.get("towersDown", 0)) >= 5:
+			_earn("pets", "hedgehog")
+
+
+## After a win: the next map, or the next difficulty after the last map
+const MAP_ORDER := ["meadow", "river", "courtyard", "hollow", "frosty"]
+const DIFF_ORDER := ["easy", "normal", "hard", "nightmare"]
+
+
+func _next_cfg() -> Dictionary:
+	var c := last_cfg.duplicate()
+	if String(c.get("gameMode", "")) == "clash":
+		var di := DIFF_ORDER.find(String(c.diff))
+		if di < 0 or di >= DIFF_ORDER.size() - 1:
+			return {}
+		c.diff = DIFF_ORDER[di + 1]
+		return c
+	var mi := MAP_ORDER.find(String(c.map))
+	if mi >= 0 and mi < MAP_ORDER.size() - 1:
+		c.map = MAP_ORDER[mi + 1]
+	else:
+		var di := DIFF_ORDER.find(String(c.diff))
+		if di < 0 or di >= DIFF_ORDER.size() - 1:
+			return {}
+		c.map = MAP_ORDER[0]
+		c.diff = DIFF_ORDER[di + 1]
+	return c
+
+
+func _next_challenge() -> void:
+	var c := _next_cfg()
+	if c.is_empty():
+		return
+	var prof := Profile.load_profile()
+	prof.map = c.map
+	prof.diff = c.diff
+	Profile.save_profile(prof)
+	if net and net is NetHost:
+		net.cfg.map = c.map
+		net.cfg.diff = c.diff
+		net.restart()
+	else:
+		start_local(c)
 
 
 func _my_hero() -> Dictionary:
@@ -325,6 +442,7 @@ func _is_bot_me() -> bool:
 
 func _my_event(e: Dictionary) -> void:
 	couch.on_event(e)
+	_unlock_from_event(e)
 	var mine: bool = int(e.get("owner", -999)) == my_id
 	match String(e.type):
 		"dash", "teleport":
@@ -395,6 +513,11 @@ func _my_event(e: Dictionary) -> void:
 		"boss_enrage":
 			hud.banner("👑 %s is ENRAGED!" % e.get("name", "The boss"), "Faster, and it calls helpers more often. Focus fire!", Color("f87171"), 3.0)
 		"victory", "game_over":
+			if e.type == "victory" and host and not attract:
+				var nc := _next_cfg()
+				if not nc.is_empty():
+					var label := "Next: %s →" % String(GameData.maps.maps.get(nc.map, {}).get("name", nc.map)) if nc.get("map", "") != last_cfg.get("map", "") else "Next: %s →" % String(GameData.DIFFICULTIES.get(nc.diff, {}).get("short", nc.diff))
+					hud.next_challenge = label
 			if playing and not attract:
 				Profile.record_game(e.type == "victory", bool(snap.endless), int(snap.wave))
 				Audio.play_sfx("victory" if e.type == "victory" else "game_over", 0.0, 0.0, 500)
@@ -472,6 +595,12 @@ func _process(delta: float) -> void:
 	else:
 		world.tick_alpha = clampf((clock - snap_at) / maxf(snap_gap, 0.016), 0, 1.5)
 	_update_movement(delta)
+	if net and net is NetClient and playing:
+		world.snap_dt = snap_gap
+		hud.net_note = "📶 LAN: %d updates a second" % roundi(1.0 / maxf(snap_gap, 0.01))
+	else:
+		world.snap_dt = SimWorld.TICK
+		hud.net_note = ""
 	var preview := playing and not snap.is_empty() and not snap.has("clash") and (clock < ghost_until or hud.over_build_bar())
 	world.ghost = selected_gadget if preview else ""
 	hud.selected_gadget = selected_gadget
@@ -628,6 +757,19 @@ func do_hud_action(a: Dictionary) -> void:
 		"resume":
 			Audio.play_sfx("ui_click")
 			close_pause_menu()
+		"emote":
+			hud.emote_open = false
+			send(a)
+		"set_shake":
+			Audio.play_sfx("ui_click", -3.0)
+			Profile.set_value("shake", Profile.next_shake(float(Profile.load_profile().shake)))
+			apply_settings()
+		"set_dmg":
+			Audio.play_sfx("ui_click", -3.0)
+			Profile.set_value("dmgNums", Profile.next_dmg(String(Profile.load_profile().dmgNums)))
+			apply_settings()
+		"fullscreen":
+			toggle_fullscreen()
 		"dash_ui":
 			dash()
 		"again":
@@ -636,6 +778,9 @@ func do_hud_action(a: Dictionary) -> void:
 				start_local(last_cfg)
 			elif net and net.has_method("restart"):
 				net.restart()
+		"next":
+			Audio.play_sfx("ui_click")
+			_next_challenge()
 		"menu":
 			Audio.play_sfx("ui_click")
 			hud.menu_open = false
@@ -657,8 +802,20 @@ func _unhandled_input(event: InputEvent) -> void:
 			world.zoom_by(1.1)
 		elif mb.button_index == MOUSE_BUTTON_WHEEL_DOWN:
 			world.zoom_by(1.0 / 1.1)
+		elif mb.button_index == MOUSE_BUTTON_MIDDLE or (mb.button_index == MOUSE_BUTTON_LEFT and mb.alt_pressed):
+			# ping: "look here!" on everyone's screen
+			if not snap.is_empty() and snap.phase == "playing" and not hud.over_ui(hud.get_local_mouse_position()):
+				var wp: Vector2 = world.get_global_mouse_position()
+				send({"t": "ping", "x": wp.x, "y": wp.y})
 		elif mb.button_index == MOUSE_BUTTON_LEFT or mb.button_index == MOUSE_BUTTON_RIGHT:
 			var a := hud.click(hud.get_local_mouse_position())
+			var mp := hud.get_local_mouse_position()
+			if a.is_empty() and hud.minimap_rect.has_point(mp) and not snap.is_empty() and snap.phase == "playing" and not snap.paused:
+				# click the minimap: walk there
+				var k := (mp - hud.minimap_rect.position) / hud.minimap_rect.size
+				walk_to(Vector2(k.x * GameData.W, k.y * GameData.H))
+				get_viewport().set_input_as_handled()
+				return
 			if not a.is_empty():
 				do_hud_action(a)
 			elif not hud.over_ui(hud.get_local_mouse_position()) and not snap.is_empty() and snap.phase == "playing" and not snap.paused:
@@ -698,7 +855,16 @@ func _unhandled_input(event: InputEvent) -> void:
 			world.zoom_by(0.87)
 	if snap.paused:
 		return
+	if hud.emote_open and k >= KEY_1 and k <= KEY_5:
+		var em: Array = GameData.cosmetics.emotes
+		if k - KEY_1 < em.size():
+			do_hud_action({"t": "emote", "id": em[k - KEY_1].id})
+		return
 	match k:
+		KEY_V:
+			hud.emote_open = not hud.emote_open
+		KEY_N:
+			hud.minimap_on = not hud.minimap_on
 		KEY_SPACE:
 			if not snap.waveActive:
 				send({"t": "wave"})
@@ -737,6 +903,30 @@ func _unhandled_input(event: InputEvent) -> void:
 			send({"t": "sell"})
 		KEY_TAB:
 			pass
+
+
+## Screen shake, damage numbers and fullscreen from the profile
+func apply_settings() -> void:
+	var prof := Profile.load_profile()
+	world.shake_mult = float(prof.shake)
+	world.dmg_mode = String(prof.dmgNums)
+	if DisplayServer.get_name() != "headless":
+		var fs: bool = prof.fullscreen
+		var now := DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN
+		if fs != now:
+			DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN if fs else DisplayServer.WINDOW_MODE_WINDOWED)
+
+
+func toggle_fullscreen() -> void:
+	Profile.set_value("fullscreen", not bool(Profile.load_profile().fullscreen))
+	apply_settings()
+
+
+## F11 works everywhere, even on the title screen
+func _input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo and (event as InputEventKey).physical_keycode == KEY_F11:
+		toggle_fullscreen()
+		get_viewport().set_input_as_handled()
 
 
 func pick_gadget(kind: String) -> void:
@@ -792,11 +982,19 @@ func _notification(what: int) -> void:
 func _netcheck(secs: float) -> void:
 	var t0 := clock
 	var walked := false
+	var full_at := -1.0
+	var picked := false
 	var start_x := 0.0
 	while clock - t0 < secs:
 		await get_tree().process_frame
 		if net is NetHost and not net.in_game and net.lobby.size() >= int(args.get("autostart", "1")):
-			net.start_game()
+			if full_at < 0:
+				full_at = clock
+			if clock - full_at > (1.5 if int(args.get("autostart", "1")) > 0 else 0.0):
+				net.start_game()
+		if net is NetClient and not playing and not picked and args.has("pick") and net.my_id > 0:
+			picked = true
+			net.set_my_pick("hero", String(args.pick))
 		if net is NetClient and playing and my_pos != null and not walked:
 			walked = true
 			start_x = my_pos.x
@@ -838,6 +1036,30 @@ func _screenshot_later(path: String, after: float) -> void:
 		send({"t": "plant", "kind": String(args.plant)})
 		send({"t": "move", "x": my_pos.x + 40, "y": my_pos.y + 10})
 		my_pos = Vector2(my_pos.x + 40, my_pos.y + 10)
+	if args.has("couch") and playing:  # pretend N controllers join
+		for dev in int(args.couch):
+			for b in [JOY_BUTTON_START, JOY_BUTTON_DPAD_RIGHT, JOY_BUTTON_A]:
+				for down in [true, false]:
+					var ev := InputEventJoypadButton.new()
+					ev.device = dev
+					ev.button_index = b
+					ev.pressed = down
+					Input.parse_input_event(ev)
+					await get_tree().process_frame
+		for i in 40:
+			for dev in int(args.couch):
+				var m := InputEventJoypadMotion.new()
+				m.device = dev
+				m.axis = JOY_AXIS_LEFT_X
+				m.axis_value = 1.0 if dev == 0 else -1.0
+				Input.parse_input_event(m)
+			await get_tree().process_frame
+		for dev in int(args.couch):
+			var m := InputEventJoypadMotion.new()
+			m.device = dev
+			m.axis = JOY_AXIS_LEFT_X
+			m.axis_value = 0.0
+			Input.parse_input_event(m)
 	if args.has("ghost") and playing:
 		selected_gadget = String(args.ghost)
 		ghost_until = clock + 999.0

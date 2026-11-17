@@ -78,8 +78,12 @@ func send_action(a: Dictionary) -> void:
 
 
 func pick_hero(hero: String) -> void:
-	cfg.hero = hero
-	_send({"m": "pick", "hero": hero})
+	set_my_pick("hero", hero)
+
+
+func set_my_pick(key: String, value: String) -> void:
+	cfg[key] = value
+	_send({"m": "pick", key: value})
 
 
 func _on_connected() -> void:

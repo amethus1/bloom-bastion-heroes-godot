@@ -333,7 +333,8 @@ func pick_card(pid: int, index: int) -> void:
 	h.offer = []
 	sync_wisps(h)
 	ensure_offer(h)
-	ev({"type": "hero_upgraded", "x": h.x, "y": h.y, "slot": h.slot, "label": label, "path": card.get("path", ""), "owner": pid})
+	var tier: int = (h.tierA if card.get("path", "") == "A" else h.tierB) if card.kind == "path" else 0
+	ev({"type": "hero_upgraded", "x": h.x, "y": h.y, "slot": h.slot, "label": label, "path": card.get("path", ""), "owner": pid, "tier": tier, "hero": h.type})
 
 
 # ---------------------------------------------------------------------------
@@ -1625,6 +1626,43 @@ func push_back(e: Dictionary, px: float, _from := Vector2.ZERO) -> void:
 	e.x = a.x + (b.x - a.x) * e.t
 	e.y = a.y + (b.y - a.y) * e.t
 	e.progress = e.seg + e.t
+
+
+## Emotes and map pings (talking without typing)
+func emote(pid: int, id: String) -> void:
+	var h = hero_of(pid)
+	var p = players.get(pid)
+	if h == null or p == null or game_time - float(p.get("emote_at", -9.0)) < 0.8:
+		return
+	if not D.cosmetics.emotes.any(func(x): return x.id == id):
+		return
+	p.emote_at = game_time
+	ev({"type": "emote", "owner": pid, "slot": p.slot, "id": id, "x": h.x, "y": h.y, "name": p.name})
+
+
+func ping(pid: int, x: float, y: float) -> void:
+	var p = players.get(pid)
+	if p == null or game_time - float(p.get("ping_at", -9.0)) < 0.6:
+		return
+	p.ping_at = game_time
+	x = clampf(x, 0, D.W)
+	y = clampf(y, 0, D.H)
+	var kind := "look"
+	for c in chests:
+		if dist(c.x, c.y, x, y) < 80:
+			kind = "chest"
+	for pu in powerups:
+		if dist(pu.x, pu.y, x, y) < 70:
+			kind = "powerup"
+	for g in gadgets:
+		if g.sleep_t > 0 and dist(g.x, g.y, x, y) < 70:
+			kind = "wake"
+	if kind == "look":
+		for e in enemies:
+			if e.hp > 0 and dist(e.x, e.y, x, y) < 80:
+				kind = "rival" if e.get("rival", false) else ("tower" if e.get("structure", false) else "pests")
+				break
+	ev({"type": "ping", "owner": pid, "slot": p.slot, "x": x, "y": y, "kind": kind, "name": p.name})
 
 
 func set_target_mode(pid: int, target_mode: String) -> void:

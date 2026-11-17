@@ -18,6 +18,12 @@ var _subtitle := {"speaker": "", "text": "", "t": 0.0, "max": 1.0}
 var _time := 0.0
 var couch: Couch  # couch co-op players on this computer (set by main.gd)
 var show_stats := false  # Tab held: scoreboard, hero stats, reaction guide
+var emote_open := false  # V: the emote bar
+var minimap_on := true  # N hides the Adventure minimap
+var minimap_rect := Rect2()  # clicking the minimap walks there (main.gd)
+var world: WorldView  # for edge arrows (set by main.gd)
+var new_unlocks: Array = []  # things earned this game, shown on the end screen
+var next_challenge := ""  # label for the "Next challenge" button ("" = none)
 var menu_open := false  # Esc: pause menu
 var _pest_card := {"type": "", "t": 0.0}
 var _build_rect := Rect2()
@@ -203,6 +209,11 @@ func _draw() -> void:
 	if lives_k >= 0:
 		_draw_tree_panel(lives_k, me)
 	_draw_team(W, h)
+	minimap_rect = Rect2()
+	if clash.is_empty() and minimap_on and phase == "playing":
+		_draw_adv_minimap(W)
+	if phase == "playing" and world:
+		_draw_edge_arrows(W, H)
 
 	# --- banner
 	if _banner.t > 0:
@@ -232,6 +243,8 @@ func _draw() -> void:
 			_draw_buffs(h, W, H)
 	if couch and phase == "playing":
 		_draw_couch(W, H)
+	if emote_open and phase == "playing":
+		_draw_emote_bar(W, H)
 	if clash.is_empty():
 		_draw_build_bar(me, W, H)
 	else:
@@ -416,7 +429,9 @@ func _draw_cards(h: Dictionary, W: float, H: float) -> void:
 
 func _draw_end(win: bool, W: float, H: float) -> void:
 	draw_rect(Rect2(0, 0, W, H), Color(0, 0, 0, 0.55))
-	var r := Rect2(W / 2 - 300, H / 2 - 210, 600, 420)
+	var awards := _awards()
+	var extra := (34.0 if not awards.is_empty() else 0.0) + (30.0 if not new_unlocks.is_empty() else 0.0)
+	var r := Rect2(W / 2 - 300, H / 2 - 210 - extra / 2, 600, 420 + extra)
 	panel(r, Color(0.05, 0.12, 0.08, 0.97), Color("fde047") if win else Color("fb7185"), 22)
 	_block_rects.append(r)
 	txt(Vector2(W / 2, r.position.y + 62), "🏆 Victory!" if win else "🍂 The Bloom Tree fell", 38, Color("fde047") if win else Color("fda4af"), HORIZONTAL_ALIGNMENT_CENTER, -1, 6)
@@ -440,10 +455,48 @@ func _draw_end(win: bool, W: float, H: float) -> void:
 		txt(Vector2(r.position.x + 540, y), str(p.get("towersDown", 0) if clash else p.built), 16, Color.WHITE, HORIZONTAL_ALIGNMENT_RIGHT)
 		y += 28
 	var mins := int(snap.time) / 60
-	txt(Vector2(W / 2, r.end.y - 92), "Time: %d:%02d" % [mins, int(snap.time) % 60], 15, Color("bbf7d0"), HORIZONTAL_ALIGNMENT_CENTER)
-	if is_host:
-		button(Rect2(W / 2 - 200, r.end.y - 70, 190, 48), "Play again (Enter)", {"t": "again"}, Color("15803d"), 16)
-	button(Rect2(W / 2 + 10, r.end.y - 70, 190, 48), "Menu (Esc)", {"t": "menu"}, Color("334155"), 16)
+	var ay := r.end.y - 92 - extra
+	txt(Vector2(W / 2, ay), "Time: %d:%02d" % [mins, int(snap.time) % 60], 15, Color("bbf7d0"), HORIZONTAL_ALIGNMENT_CENTER)
+	if not awards.is_empty():
+		ay += 32
+		txt(Vector2(W / 2, ay), fit("   ".join(awards), r.size.x - 40, 14), 14, Color("fde68a"), HORIZONTAL_ALIGNMENT_CENTER)
+	if not new_unlocks.is_empty():
+		ay += 30
+		txt(Vector2(W / 2, ay), fit("🎉 NEW: " + ", ".join(new_unlocks), r.size.x - 40, 15), 15, Color("f0abfc"), HORIZONTAL_ALIGNMENT_CENTER, -1, 3)
+	var by := r.end.y - 70
+	if is_host and win and next_challenge != "":
+		button(Rect2(W / 2 - 285, by, 190, 48), "Play again", {"t": "again"}, Color("1e3a5f"), 15)
+		button(Rect2(W / 2 - 85, by, 220, 48), next_challenge, {"t": "next"}, Color("15803d"), 15, true)
+		button(Rect2(W / 2 + 145, by, 140, 48), "Menu (Esc)", {"t": "menu"}, Color("334155"), 15)
+	elif is_host:
+		button(Rect2(W / 2 - 200, by, 190, 48), "Play again (Enter)", {"t": "again"}, Color("15803d"), 16)
+		button(Rect2(W / 2 + 10, by, 190, 48), "Menu (Esc)", {"t": "menu"}, Color("334155"), 16)
+	else:
+		button(Rect2(W / 2 - 95, by, 190, 48), "Menu (Esc)", {"t": "menu"}, Color("334155"), 16)
+
+
+## Team awards: everyone's good at something (support heroes too)
+func _awards() -> Array:
+	var players: Array = snap.get("players", [])
+	if players.size() < 2:
+		return []
+	var out: Array = []
+	var picks := [["🎯 Pest Popper", "pops"], ["💥 Big Hitter", "damage"], ["⚡ Reaction Master", "reactions"], ["🌞 Sun Gatherer", "sun"]]
+	if snap.has("clash"):
+		picks += [["👑 Rival Hunter", "rivalKOs"], ["🌵 Tower Smasher", "towersDown"], ["💚 Lifesaver", "revives"]]
+	else:
+		picks += [["🏗️ Master Builder", "built"], ["🤝 Combo Buddy", "combos"]]
+	for pk in picks:
+		var best = null
+		var bv := 0.0
+		for p in players:
+			var v := float(p.get(pk[1], 0))
+			if v > bv:
+				bv = v
+				best = p
+		if best:
+			out.append("%s: %s" % [pk[0], String(best.name).substr(0, 10)])
+	return out.slice(0, 4)
 
 
 func _diff_name() -> String:
@@ -687,6 +740,7 @@ func _draw_minimap(cl: Dictionary, W: float, H: float) -> void:
 	var mw := 216.0
 	var mh := 132.0
 	var r := Rect2(W - mw - 12, H - mh - 64, mw, mh)
+	minimap_rect = r
 	draw_style_box(UiKit.box(Color(0, 0, 0, 0.6), Color(1, 1, 1, 0.3), 8, 2, 0), r.grow(3))
 	var tex: Texture2D = Sprites.tex(Sprites.atlas.maps.get(snap.map, ""))
 	if tex:
@@ -871,7 +925,7 @@ func _draw_buffs(h: Dictionary, W: float, H: float) -> void:
 
 func _draw_pause_menu(W: float, H: float) -> void:
 	draw_rect(Rect2(0, 0, W, H), Color(0, 0, 0, 0.5))
-	var r := Rect2(W / 2 - 190, H / 2 - 190, 380, 380)
+	var r := Rect2(W / 2 - 190, H / 2 - 270, 380, 540)
 	panel(r, Color(0.05, 0.12, 0.08, 0.97), Color("fde047"), 20)
 	_block_rects.append(r)
 	txt(Vector2(W / 2, r.position.y + 48), "⏸ Paused" if is_host else "Menu", 32, Color("fde047"), HORIZONTAL_ALIGNMENT_CENTER, -1, 5)
@@ -884,6 +938,13 @@ func _draw_pause_menu(W: float, H: float) -> void:
 		button(Rect2(W / 2 - 140, y, 280, 46), "↻ Restart this game", {"t": "again"}, Color("1e3a5f"), 16)
 		y += 56
 	button(Rect2(W / 2 - 140, y, 280, 46), ("🔇 Sound off (M)" if Audio.muted else "🔊 Sound on (M)"), {"t": "mute"}, Color("334155"), 16)
+	y += 56
+	var prof := Profile.load_profile()
+	button(Rect2(W / 2 - 140, y, 280, 40), Profile.shake_label(float(prof.shake)), {"t": "set_shake"}, Color("334155"), 14)
+	y += 48
+	button(Rect2(W / 2 - 140, y, 280, 40), Profile.dmg_label(String(prof.dmgNums)), {"t": "set_dmg"}, Color("334155"), 14)
+	y += 48
+	button(Rect2(W / 2 - 140, y, 280, 40), "Fullscreen: %s (F11)" % ("on" if prof.fullscreen else "off"), {"t": "fullscreen"}, Color("334155"), 14)
 	y += 56
 	button(Rect2(W / 2 - 140, y, 280, 46), "🏠 Leave to the menu", {"t": "menu"}, Color("7f1d1d"), 16)
 	txt(Vector2(W / 2, r.end.y - 14), "Hold Tab in a game for stats and the reaction guide", 11, Color(0.73, 0.97, 0.82, 0.7), HORIZONTAL_ALIGNMENT_CENTER)
@@ -1039,3 +1100,106 @@ func _draw_couch(W: float, H: float) -> void:
 	if pads.size() > couch.pads.size() and is_host and not snap.is_empty():
 		var label := "🎮 Press Start on a controller to join!" if not couch.p1_pad or couch.p1_device() >= 0 else "🎮 Press Start: the first controller plays as you"
 		txt(Vector2(W - 122, 34 + snap.get("heroes", []).size() * (34 if snap.has("clash") else 26) + 18), label, 12, Color(0.99, 0.88, 0.28, 0.6 + 0.4 * sin(_time * 3)), HORIZONTAL_ALIGNMENT_CENTER, -1, 3)
+
+
+func _draw_emote_bar(W: float, H: float) -> void:
+	var emotes: Array = GameData.cosmetics.emotes
+	var bw := 92.0
+	var r := Rect2(W / 2 - (emotes.size() * (bw + 6)) / 2 - 8, H - 92 - 112, emotes.size() * (bw + 6) + 10, 54)
+	panel(r, Color(0.05, 0.1, 0.07, 0.95), Color("fde047"), 12)
+	_block_rects.append(r)
+	for i in emotes.size():
+		var em: Dictionary = emotes[i]
+		var label := "%d %s %s" % [i + 1, em.icon, em.text if em.text != "" else "Love"]
+		button(Rect2(r.position.x + 8 + i * (bw + 6), r.position.y + 8, bw, 38), label, {"t": "emote", "id": em.id}, Color("1e3a5f"), 12)
+
+
+# ---------------------------------------------------------------------------
+# Adventure minimap and edge arrows
+# ---------------------------------------------------------------------------
+func _draw_adv_minimap(W: float) -> void:
+	var mw := 216.0
+	var mh := 132.0
+	var top: float = 12.0 + 18 + snap.get("heroes", []).size() * 26 + 10
+	var r := Rect2(W - mw - 14, top, mw, mh)
+	minimap_rect = r
+	_block_rects.append(r)
+	draw_style_box(UiKit.box(Color(0, 0, 0, 0.6), Color(1, 1, 1, 0.3), 8, 2, 0), r.grow(3))
+	var tex: Texture2D = Sprites.tex(Sprites.atlas.maps.get(snap.map, ""))
+	if tex:
+		draw_texture_rect(tex, r, false, Color(1, 1, 1, 0.85))
+	var k := Vector2(mw / GameData.W, mh / GameData.H)
+	var at := func(x, y) -> Vector2: return r.position + Vector2(float(x), float(y)) * k
+	var sc: Vector2 = GameData.sanctuary(snap.map)
+	draw_circle(at.call(sc.x, sc.y), 6, Color("166534"))
+	draw_circle(at.call(sc.x, sc.y), 4, Color("4ade80"))
+	for g in snap.get("gadgets", []):
+		var c: Vector2 = at.call(g.x, g.y)
+		draw_rect(Rect2(c - Vector2(2.5, 2.5), Vector2(5, 5)), GameData.player_color(g.slot))
+	for e in snap.get("enemies", []):
+		var c: Vector2 = at.call(e.x, e.y)
+		if GameData.ENEMIES.get(e.type, {}).get("boss", false):
+			draw_circle(c, 5, Color("fde047"))
+			draw_circle(c, 3.5, Color("ef4444"))
+		elif not e.get("burrowed", false):
+			draw_circle(c, 1.8, Color("f87171"))
+	for ch in snap.get("chests", []):
+		draw_circle(at.call(ch.x, ch.y), 4, Color("facc15"))
+	for pu in snap.get("powerups", []):
+		draw_circle(at.call(pu.x, pu.y), 3.5, Color("f0abfc"))
+	for hh in snap.get("heroes", []):
+		var c: Vector2 = at.call(hh.x, hh.y)
+		draw_circle(c, 5.0 if hh.owner == my_owner else 4.0, Color.WHITE)
+		draw_circle(c, 3.6 if hh.owner == my_owner else 2.8, GameData.player_color(hh.slot))
+	if world:
+		for pg in world.pings:
+			var ph := fmod(_time * 1.6, 1.0)
+			var col: Color = GameData.player_color(pg.slot)
+			draw_arc(at.call(pg.p.x, pg.p.y), 3 + ph * 9, 0, TAU, 20, Color(col.r, col.g, col.b, 1 - ph), 2, true)
+	txt(Vector2(r.end.x - 4, r.end.y - 4), "N", 10, Color(1, 1, 1, 0.5), HORIZONTAL_ALIGNMENT_RIGHT)
+
+
+## Little arrows at the screen edge pointing at chests, power-ups, pings,
+## bosses, and pests close to the Bloom Tree when they're off-screen
+func _draw_edge_arrows(W: float, H: float) -> void:
+	var xf := world.get_canvas_transform()
+	var marks: Array = []  # [world pos, icon, color]
+	for ch in snap.get("chests", []):
+		marks.append([Vector2(ch.x, ch.y), "🎁", Color("facc15")])
+	for pu in snap.get("powerups", []):
+		marks.append([Vector2(pu.x, pu.y), "✨", Color("f0abfc")])
+	for pg in world.pings:
+		marks.append([pg.p, "📍", GameData.player_color(pg.slot)])
+	if not snap.has("clash"):
+		var sc: Vector2 = GameData.sanctuary(snap.map)
+		var danger := false
+		for e in snap.get("enemies", []):
+			if GameData.ENEMIES.get(e.type, {}).get("boss", false):
+				marks.append([Vector2(e.x, e.y), "👑", Color("ef4444")])
+			elif Vector2(e.x, e.y).distance_to(sc) < 380:
+				danger = true
+		if danger:
+			marks.append([sc, "🌳", Color("ef4444")])
+	var inset := Rect2(46, 46, W - 92, H - 92)
+	var center := Vector2(W, H) / 2
+	for m in marks:
+		var s: Vector2 = xf * m[0]
+		if Rect2(0, 0, W, H).grow(-10).has_point(s):
+			continue
+		var d: Vector2 = (s - center)
+		# where the line from the middle of the screen leaves the inset box
+		var t := INF
+		if absf(d.x) > 0.01:
+			t = minf(t, (inset.size.x / 2) / absf(d.x))
+		if absf(d.y) > 0.01:
+			t = minf(t, (inset.size.y / 2) / absf(d.y))
+		var p := center + d * t
+		var dir := d.normalized()
+		var col: Color = m[2]
+		var pulse := 0.75 + 0.25 * sin(_time * 6)
+		draw_circle(p, 17, Color(0.05, 0.1, 0.07, 0.85))
+		draw_arc(p, 17, 0, TAU, 24, Color(col.r, col.g, col.b, pulse), 2.5, true)
+		var tip := p + dir * 27
+		var side := dir.orthogonal() * 7
+		draw_colored_polygon(PackedVector2Array([tip, p + dir * 17 + side, p + dir * 17 - side]), Color(col.r, col.g, col.b, pulse))
+		txt(p + Vector2(0, 6), m[1], 15, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)

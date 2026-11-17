@@ -18,7 +18,8 @@ const RELIABLE_EVENTS := ["game_started", "wave_start", "wave_clear", "milestone
 	"hero_upgraded", "chest_drop", "chest_open", "gadget_placed", "gadget_upgraded", "gadget_sold", "gadget_choose",
 	"gadget_fail", "powerup_get", "combo", "special", "teleport", "dash", "hero_spawn", "boss_enrage", "spring_life",
 	"clash_start", "struct_down", "hero_down", "revive", "hero_respawn", "rival_spawn", "rival_down", "camp_up",
-	"camp_down", "gate_regrow", "tower_alert", "item_bought", "item_sold", "potion", "recall_start", "recall_cancel"]
+	"camp_down", "gate_regrow", "tower_alert", "item_bought", "item_sold", "potion", "recall_start", "recall_cancel",
+	"emote", "ping"]
 
 var main: Node
 var peer: ENetMultiplayerPeer
@@ -50,7 +51,7 @@ func open(c: Dictionary) -> bool:
 	mp.peer_disconnected.connect(_on_disconnected)
 	mp.peer_packet.connect(_on_packet)
 	_beacon.set_broadcast_enabled(true)
-	status = "Waiting for friends on this Wi-Fi… (your address: %s)" % ", ".join(local_addresses())
+	status = "Waiting for friends on this Wi-Fi… They press Join LAN Game, or type your address."
 	return true
 
 
@@ -72,7 +73,7 @@ static func local_addresses() -> Array:
 
 
 func players_for_menu() -> Array:
-	var out: Array = [{"id": 1, "name": cfg.get("name", "Host"), "hero": cfg.get("hero", "peashooter"), "host": true}]
+	var out: Array = [{"id": 1, "name": cfg.get("name", "Host"), "hero": cfg.get("hero", "peashooter"), "hat": cfg.get("hat", "none"), "pet": cfg.get("pet", "none"), "host": true}]
 	out.append_array(lobby)
 	return out
 
@@ -86,7 +87,8 @@ func _process(delta: float) -> void:
 	if _beacon_t <= 0:
 		_beacon_t = 1.0
 		var info := JSON.stringify({"game": GAME_ID, "ver": VERSION, "name": "%s's garden" % cfg.get("name", "Host"),
-			"players": 1 + lobby.size(), "max": 4, "port": PORT, "inGame": in_game, "map": cfg.get("map", "meadow")}).to_utf8_buffer()
+			"players": 1 + lobby.size(), "max": 4, "port": PORT, "inGame": in_game, "map": cfg.get("map", "meadow"),
+			"diff": cfg.get("diff", "normal"), "mode": cfg.get("gameMode", "adventure"), "wave": host.sim.wave if host and in_game else 0}).to_utf8_buffer()
 		for dest in ["255.255.255.255", "127.0.0.1"]:
 			_beacon.set_dest_address(dest, BEACON_PORT)
 			_beacon.put_packet(info)
@@ -123,6 +125,17 @@ func _on_host_snapshot(s: Dictionary) -> void:
 func start_game() -> void:
 	main.start_local(cfg, false, lobby)
 	_send_all({"m": "start"})
+	_send_lobby()
+
+
+## The host changing its own hero/hat/pet, or the game settings, in the lobby
+func set_my_pick(key: String, value: String) -> void:
+	cfg[key] = value
+	_send_lobby()
+
+
+func set_option(key: String, value) -> void:
+	cfg[key] = value
 	_send_lobby()
 
 
@@ -203,6 +216,11 @@ func _on_packet(id: int, bytes: PackedByteArray) -> void:
 				host.apply(id, a)
 		"pick":
 			for p in lobby:
-				if p.id == id and GameData.HERO_ORDER.has(String(d.get("hero", ""))):
+				if p.id != id:
+					continue
+				if GameData.HERO_ORDER.has(String(d.get("hero", ""))):
 					p.hero = String(d.hero)
+				for k in ["hat", "pet"]:
+					if d.has(k):
+						p[k] = String(d[k])
 			_send_lobby()

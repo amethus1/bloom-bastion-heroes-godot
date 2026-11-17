@@ -24,6 +24,13 @@ This document compiles a deep technical, UX, balance, and feature audit of **Blo
 * 3.8 Difficulty and mode descriptions on the title screen.
 * 3.9 Build bar tooltip follows the hovered tower; `Build n/5`; pests-left counter; auto-wave countdown; no cut-off hero text; twist box fits its text; tier-3 cards warn they lock the other path.
 * 4.1 Sound effects and voice lines (done in another session).
+* 2.3 / 2.5 Controllers and couch co-op: drop-in local players (Start, pick a hero, A), full controller mapping, camera framing, mini HUD panels, "Controller 1 = me" option. (No rebinding screen yet.)
+* 2.4 / 3.8 Settings: screen shake, damage numbers, fullscreen (F11), "unlock everything"; ⚙ on the title screen and in the Esc menu.
+* 3.5 / 4.3 Adventure minimap (click to walk, N hides it) and edge arrows for chests, power-ups, pings, bosses, pests near the tree.
+* 3.7 Evolution fanfare at tier 3/4, team awards on the end screen, "Next challenge →" after a win.
+* 3.10 / 9.1 LAN: switch hero/hat/pet in the lobby, host changes map/difficulty/mode/bots live, Copy-address button, richer game list (difficulty, mode, wave), Refresh + firewall tip. 9.2 shots extrapolate by the real snapshot gap; a small "LAN: N updates a second" note on clients.
+* 7.1 Emotes (V, 1–5) and map pings (middle-click / Alt+click), sent reliably.
+* 8.1 Hats & pets unlock by playing (per computer, everyone in the game earns them), 🔒 items show how to earn them, new unlocks are listed on the end screen.
 * 10 Garden Clash is ported.
 
 **Left alone on purpose:** the 1.6 Sun Blossom share/Solar Beam and Mega-Pea knockback items are the browser original's own behavior and tuning, so changing them is a design choice. The same goes for the §6 balance items (Courtyard, chests).
