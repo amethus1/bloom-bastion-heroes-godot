@@ -38,6 +38,9 @@ const PING_LOOK := {"look": ["👀", "Look here!"], "chest": ["🎁", "Chest!"],
 var dmg_mode := "all"  # settings: damage numbers all / big / off
 var snap_dt := 1.0 / 30.0  # time between snapshots: 1/30 s here, about 1/20 s on a LAN friend's computer
 var _marker := {"p": Vector2.ZERO, "t": 0.0}
+const SLIDE_TIME := 0.14
+var _slide := Vector2.ZERO  # my hero's dash: how far behind its new spot it's still drawn
+var _slide_t := 0.0
 
 
 func zoom_by(k: float) -> void:
@@ -51,12 +54,29 @@ func toggle_overview() -> void:
 	zoom = minf(vp.x / GameData.W, vp.y / GameData.H) if overview else 1.0
 
 
+## My hero leapt: its real spot jumps at once (so walking and building stay exact),
+## but draw it zipping there over a moment instead of blinking across
+func slide_from(from: Vector2, to: Vector2) -> void:
+	if from.distance_to(to) < 500:
+		_slide = from - to
+		_slide_t = SLIDE_TIME
+
+
+## Where to draw my own hero (my_pos plus what's left of a dash slide)
+func _me():
+	if my_pos == null or _slide_t <= 0:
+		return my_pos
+	var k := _slide_t / SLIDE_TIME
+	return my_pos + _slide * (k * k)
+
+
 func click_marker(p: Vector2) -> void:
 	_marker = {"p": p, "t": 0.6}
 
 
 func _ready() -> void:
 	_font = UiKit.font()
+	shapes_tex()
 	map_sprite = Sprite2D.new()
 	map_sprite.centered = false
 	map_sprite.z_index = -10
@@ -86,6 +106,12 @@ func reset() -> void:
 	_map_id = ""
 	shake = 0.0
 	overview = false
+	remote_interp = false
+	_slide_t = 0.0
+	_hist = []
+	_play_t = -1.0
+	_ha = {}
+	_hb = {}
 
 
 func _on_dialog_line(_speaker: String, msg: String, owner_id: int, duration: float) -> void:
@@ -94,6 +120,18 @@ func _on_dialog_line(_speaker: String, msg: String, owner_id: int, duration: flo
 
 
 var _prune_t := 0
+
+## LAN friends: snapshots come about 20 times a second, never quite evenly over
+## Wi-Fi. Blending only the last two stutters whenever one is late, so keep a
+## short history stamped with game time and show everyone else ~2 snapshots in
+## the past, sliding between whichever two snapshots surround that moment.
+var remote_interp := false
+var _hist: Array = []  # [game time, {id: Vector2}]
+var _play_t := -1.0
+var _ha := {}
+var _hb := {}
+var _hk := 1.0
+var _hi := 0
 
 
 ## Called once per simulation tick with the new snapshot
@@ -108,8 +146,10 @@ func push_snapshot(s: Dictionary) -> void:
 			live["h%d" % h.id] = true
 		for u in s.get("clash", {}).get("allies", []):
 			live["a%d" % u.id] = true
+		for g in s.get("gadgets", []):
+			live["g%d" % g.id] = true
 		for k in _anim.keys():
-			if String(k).length() > 1 and String(k)[0] in ["e", "h", "a"] and String(k).substr(1).is_valid_int() and not live.has(k):
+			if String(k).length() > 1 and String(k)[0] in ["e", "h", "a", "g"] and String(k).substr(1).is_valid_int() and not live.has(k):
 				_anim.erase(k)
 	_prev = _cur
 	_cur = {}
@@ -118,6 +158,19 @@ func push_snapshot(s: Dictionary) -> void:
 			_cur[e.id] = Vector2(e.x, e.y)
 	for u in s.get("clash", {}).get("allies", []):
 		_cur[u.id] = Vector2(u.x, u.y)
+	if remote_interp:
+		for pr in s.get("projectiles", []):
+			_cur[pr.id] = Vector2(pr.x, pr.y)
+		var t := float(s.get("time", 0.0))
+		if not _hist.is_empty() and (t < float(_hist[-1][0]) - 0.001 or s.get("map", "") != snap.get("map", "")):
+			_hist.clear()  # a new game started
+			_play_t = -1.0
+		if _hist.is_empty() or t > float(_hist[-1][0]) + 0.0001:
+			_hist.append([t, _cur])
+		else:
+			_hist[-1] = [t, _cur]  # same moment (paused): keep the newest
+		while _hist.size() > 16:
+			_hist.pop_front()
 	if not snap.is_empty() and s.get("map", "") == snap.get("map", "") and int(s.get("lives", 0)) > int(snap.get("lives", 0)) and not s.has("clash"):
 		var sc0: Vector2 = GameData.sanctuary(s.map)
 		burst(sc0 - Vector2(0, 80), ["f9a8d4", "fbcfe8", "fde047", "ffffff"], 30, 200)
@@ -131,13 +184,67 @@ func push_snapshot(s: Dictionary) -> void:
 
 
 func pos_of(id: int, fallback: Vector2) -> Vector2:
+	if remote_interp and not _ha.is_empty():
+		var hp = _hist_pos(id)
+		return hp if hp != null else _cur.get(id, fallback)
 	var c: Vector2 = _cur.get(id, fallback)
 	var p: Vector2 = _prev.get(id, c)
 	return p.lerp(c, clampf(tick_alpha, 0.0, 1.0))
 
 
+## Where `id` was at the moment being shown (LAN friends). Something that only
+## appeared after that moment waits where it first showed up (or, with
+## `early` off, isn't shown yet: null).
+func _hist_pos(id: int, early := true):
+	var a = _ha.get(id)
+	var b = _hb.get(id)
+	if a != null and b != null:
+		return (a as Vector2).lerp(b, _hk)
+	if b != null:
+		return b
+	if a != null:
+		return a
+	if early:
+		for j in range(_hi + 2, _hist.size()):
+			if _hist[j][1].has(id):
+				return _hist[j][1][id]
+	return null
+
+
+## Move the shown moment along smoothly, keeping it ~2 snapshots behind the newest
+func _update_interp(delta: float) -> void:
+	if not remote_interp or _hist.size() < 2:
+		_ha = {}
+		return
+	var latest: float = _hist[-1][0]
+	var spd: float = 0.0 if snap.get("paused", false) else float(snap.get("speed", 1.0))
+	var delay := clampf(snap_dt * 2.2, 0.07, 0.25) * maxf(spd, 1.0)
+	var target := latest - delay
+	if _play_t < 0 or absf(_play_t - target) > 0.6 * maxf(spd, 1.0):
+		_play_t = target  # far off (just joined, or a long hiccup): jump straight there
+	elif spd > 0:
+		_play_t += delta * spd
+		_play_t += (target - _play_t) * minf(1.0, delta * 2.0)  # ease toward the target, no jumps
+	_play_t = clampf(_play_t, float(_hist[0][0]), latest)
+	var i := _hist.size() - 2
+	while i > 0 and float(_hist[i][0]) > _play_t:
+		i -= 1
+	_hi = i
+	_ha = _hist[i][1]
+	_hb = _hist[i + 1][1]
+	_hk = clampf((_play_t - float(_hist[i][0])) / maxf(float(_hist[i + 1][0]) - float(_hist[i][0]), 0.0001), 0.0, 1.0)
+
+
 func _process(delta: float) -> void:
+	var _pt0 := Time.get_ticks_usec()
+	_process_inner(delta)
+	PerfStats.add("world update" , Time.get_ticks_usec() - _pt0)
+
+
+func _process_inner(delta: float) -> void:
 	time += delta
+	_update_interp(delta)
+	_slide_t = maxf(0.0, _slide_t - delta)
 	if shake > 0:
 		shake = maxf(0.0, shake - delta * 30.0)
 		camera.offset = Vector2(randf() - 0.5, randf() - 0.5) * shake * 1.5 * shake_mult
@@ -175,35 +282,133 @@ func _process(delta: float) -> void:
 # ---------------------------------------------------------------------------
 # Drawing helpers
 # ---------------------------------------------------------------------------
+## One small texture holds a solid disc, a soft glow, two rings and a white
+## square. Every dot, shadow, ring, glow, bar and trail is drawn as a piece of it,
+## so the GPU can draw hundreds of them in one go (plain circles cost one draw
+## call each, which got slow with hundreds of pests on screen).
+const SH_DISC := Rect2(0, 0, 64, 64)  # disc of radius 30
+const SH_SOFT := Rect2(64, 0, 64, 64)  # glow fading out to radius 31
+const SH_RING := Rect2(128, 0, 64, 64)  # thin ring at radius 28.5
+const SH_RING2 := Rect2(192, 0, 64, 64)  # thicker ring (for small circles)
+const SH_DOT := Rect2(256, 0, 16, 16)  # disc of radius 7 (sharper when tiny)
+const SH_WHITE := Rect2(258, 26, 4, 4)
+static var _shapes: Texture2D
+
+
+static func shapes_tex() -> Texture2D:
+	if _shapes == null:
+		var img := Image.create(288, 64, false, Image.FORMAT_RGBA8)
+		img.fill(Color(1, 1, 1, 0))
+		for y in 64:
+			for x in 64:
+				var d := Vector2(x + 0.5 - 32, y + 0.5 - 32).length()
+				img.set_pixel(x, y, Color(1, 1, 1, clampf(30.5 - d, 0, 1)))
+				var g := clampf(1.0 - d / 31.0, 0, 1)
+				img.set_pixel(64 + x, y, Color(1, 1, 1, g * g))
+				img.set_pixel(128 + x, y, Color(1, 1, 1, clampf(2.6 - absf(d - 28.5), 0, 1)))
+				img.set_pixel(192 + x, y, Color(1, 1, 1, clampf(4.6 - absf(d - 26.5), 0, 1)))
+		for y in 16:
+			for x in 16:
+				var d := Vector2(x + 0.5 - 8, y + 0.5 - 8).length()
+				img.set_pixel(256 + x, y, Color(1, 1, 1, clampf(7.5 - d, 0, 1)))
+		img.fill_rect(Rect2i(256, 24, 8, 8), Color.WHITE)
+		_shapes = ImageTexture.create_from_image(img)
+	return _shapes
+
+
+func disc(c: Vector2, r: float, col: Color) -> void:
+	if r <= 6.0:
+		var h := r * 8.0 / 7.0
+		draw_texture_rect_region(_shapes, Rect2(c.x - h, c.y - h, h * 2, h * 2), SH_DOT, col)
+	else:
+		var h := r * 32.0 / 30.0
+		draw_texture_rect_region(_shapes, Rect2(c.x - h, c.y - h, h * 2, h * 2), SH_DISC, col)
+
+
+func glow(c: Vector2, r: float, col: Color) -> void:
+	var h := r * 32.0 / 31.0
+	draw_texture_rect_region(_shapes, Rect2(c.x - h, c.y - h, h * 2, h * 2), SH_SOFT, col)
+
+
 func ellipse(c: Vector2, rx: float, ry: float, col: Color) -> void:
-	draw_set_transform(c, 0.0, Vector2(1.0, ry / maxf(rx, 0.01)))
-	draw_circle(Vector2.ZERO, rx, col)
-	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	var hx := rx * 32.0 / 30.0
+	var hy := ry * 32.0 / 30.0
+	draw_texture_rect_region(_shapes, Rect2(c.x - hx, c.y - hy, hx * 2, hy * 2), SH_DISC, col)
 
 
 func ellipse_line(c: Vector2, rx: float, ry: float, col: Color, w := 2.0) -> void:
-	draw_set_transform(c, 0.0, Vector2(1.0, ry / maxf(rx, 0.01)))
-	draw_arc(Vector2.ZERO, rx, 0.0, TAU, 40, col, w / maxf(ry / maxf(rx, 0.01), 0.3), true)
+	if maxf(rx, ry) > 64.0:
+		draw_set_transform(c, 0.0, Vector2(1.0, ry / maxf(rx, 0.01)))
+		draw_arc(Vector2.ZERO, rx, 0.0, TAU, 40, col, w / maxf(ry / maxf(rx, 0.01), 0.3), true)
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+		return
+	var thick := minf(rx, ry) < 16.0
+	var k := 32.0 / (26.5 if thick else 28.5)
+	draw_texture_rect_region(_shapes, Rect2(c.x - rx * k, c.y - ry * k, rx * k * 2, ry * k * 2), SH_RING2 if thick else SH_RING, col)
+
+
+## A thick line drawn as a stretched oval (soft rounded ends, batches with the rest)
+func streak(a: Vector2, b: Vector2, w: float, col: Color) -> void:
+	var d := b - a
+	var L := d.length() + w
+	draw_set_transform((a + b) / 2, d.angle(), Vector2.ONE)
+	draw_texture_rect_region(_shapes, Rect2(-L / 2, -w / 2, L, w), SH_DISC, col)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+
+## A straight line as a thin white bar (batches with the rest)
+func seg(a: Vector2, b: Vector2, w: float, col: Color) -> void:
+	var d := b - a
+	draw_set_transform(a, d.angle(), Vector2.ONE)
+	draw_texture_rect_region(_shapes, Rect2(0, -w / 2, d.length(), w), SH_WHITE, col)
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+
+func box(r: Rect2, col: Color) -> void:
+	draw_texture_rect_region(_shapes, r, SH_WHITE, col)
+
+
+var _defer_text := false
+var _text_queue: Array = []
 
 
 func text(pos: Vector2, s: String, size := 14, col := Color.WHITE, outline := 3) -> void:
 	var w := _font.get_string_size(s, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x
 	var p := pos - Vector2(w / 2.0, 0)
+	if _defer_text:
+		_text_queue.append([p, s, size, col, outline])
+		return
 	if outline > 0:
 		draw_string_outline(_font, p, s, HORIZONTAL_ALIGNMENT_LEFT, -1, size, outline, Color(0, 0, 0, 0.7 * col.a))
 	draw_string(_font, p, s, HORIZONTAL_ALIGNMENT_LEFT, -1, size, col)
 
 
+## Draw queued text: every outline first, then every letter (fewer GPU switches)
+func _flush_text() -> void:
+	_defer_text = false
+	for q in _text_queue:
+		if q[4] > 0:
+			draw_string_outline(_font, q[0], q[1], HORIZONTAL_ALIGNMENT_LEFT, -1, q[2], q[4], Color(0, 0, 0, 0.7 * q[3].a))
+	for q in _text_queue:
+		draw_string(_font, q[0], q[1], HORIZONTAL_ALIGNMENT_LEFT, -1, q[2], q[3])
+	_text_queue.clear()
+
+
 func bar(c: Vector2, w: float, h: float, k: float, col: Color) -> void:
-	draw_rect(Rect2(c.x - w / 2 - 1.5, c.y - 1.5, w + 3, h + 3), Color(0.06, 0.09, 0.16, 0.85))
-	draw_rect(Rect2(c.x - w / 2, c.y, maxf(2.0, w * clampf(k, 0, 1)), h), col)
+	box(Rect2(c.x - w / 2 - 1.5, c.y - 1.5, w + 3, h + 3), Color(0.06, 0.09, 0.16, 0.85))
+	box(Rect2(c.x - w / 2, c.y, maxf(2.0, w * clampf(k, 0, 1)), h), col)
 
 
 # ---------------------------------------------------------------------------
 # Main draw
 # ---------------------------------------------------------------------------
 func _draw() -> void:
+	var t0 := Time.get_ticks_usec()
+	_draw_world()
+	PerfStats.add("world draw", Time.get_ticks_usec() - t0)
+
+
+func _draw_world() -> void:
 	if snap.is_empty():
 		return
 	var heroes: Array = snap.get("heroes", [])
@@ -213,7 +418,7 @@ func _draw() -> void:
 	# my range ring
 	for h in heroes:
 		if h.owner == my_owner and not h.get("dead", false):
-			var p: Vector2 = my_pos if my_pos != null else pos_of(h.id, Vector2(h.x, h.y))
+			var p: Vector2 = _me() if my_pos != null else pos_of(h.id, Vector2(h.x, h.y))
 			var col: Color = GameData.player_color(h.slot)
 			col.a = 0.4
 			ellipse_line(p, h.range, h.range, col, 2.0)
@@ -223,43 +428,57 @@ func _draw() -> void:
 	_draw_features()
 	for s in snap.get("spikes", []):
 		draw_colored_polygon(PackedVector2Array([Vector2(s.x - 8, s.y + 5), Vector2(s.x, s.y - 9), Vector2(s.x + 8, s.y + 5)]), GameData.player_color(s.slot))
-	# depth-sorted things
+	# depth-sorted things (anything well off screen is skipped)
+	var vr := _view_rect().grow(160)
 	var list: Array = []
 	var sc: Vector2 = GameData.sanctuary(_map_id)
-	list.append([sc.y + 20, "tree", null])
+	list.append([sc.y + 20, "tree", null, sc])
 	for g in snap.get("gadgets", []):
-		list.append([g.y, "gadget", g])
+		if vr.has_point(Vector2(g.x, g.y)):
+			list.append([g.y, "gadget", g, null])
+	var foes: Array = []
 	for e in snap.get("enemies", []):
 		var p := pos_of(e.id, Vector2(e.x, e.y))
-		list.append([p.y + (30 if e.boss else 0), "enemy", e])
+		if vr.has_point(p) or e.boss:
+			list.append([p.y + (30 if e.boss else 0), "enemy", e, p])
+			foes.append([e, p])
 	for h in heroes:
-		var p: Vector2 = my_pos if h.owner == my_owner and my_pos != null else pos_of(h.id, Vector2(h.x, h.y))
-		list.append([p.y + 4, "hero", h])
+		var p: Vector2 = _me() if h.owner == my_owner and my_pos != null else pos_of(h.id, Vector2(h.x, h.y))
+		list.append([p.y + 4, "hero", h, p])
 	for c in snap.get("chests", []):
-		list.append([c.y, "chest", c])
+		if vr.has_point(Vector2(c.x, c.y)):
+			list.append([c.y, "chest", c, null])
 	for pu in snap.get("powerups", []):
-		list.append([pu.y, "powerup", pu])
+		if vr.has_point(Vector2(pu.x, pu.y)):
+			list.append([pu.y, "powerup", pu, null])
 	for t in clash.get("allyTowers", []):
 		if t.kind != "tree" and t.hp > 0:
-			list.append([t.y, "bloom", t])
+			list.append([t.y, "bloom", t, null])
 	for u in clash.get("allies", []):
 		var p := pos_of(u.id, Vector2(u.x, u.y))
-		list.append([p.y, "ally", u])
+		if vr.has_point(p):
+			list.append([p.y, "ally", u, p])
 	list.sort_custom(func(a, b): return a[0] < b[0])
+	for f in foes:
+		draw_enemy_ground(f[0], f[1])
 	for it in list:
 		match it[1]:
-			"tree": draw_tree(sc)
+			"tree": draw_tree(it[3])
 			"gadget": draw_gadget(it[2])
-			"enemy": draw_enemy(it[2])
+			"enemy": draw_enemy(it[2], it[3])
 			"hero": draw_hero(it[2])
 			"chest": draw_chest(it[2])
 			"powerup": draw_powerup(it[2])
 			"bloom": draw_bloom_tower(it[2])
 			"ally": draw_ally(it[2])
+	_defer_text = true
+	for f in foes:
+		draw_enemy_over(f[0], f[1])
+	_flush_text()
 	for w in snap.get("wisps", []):
 		var p := pos_of(w.id, Vector2(w.x, w.y))
-		draw_circle(p, 9, Color(1, 0.6, 0.2, 0.35))
-		draw_circle(p, 5, Color("fdba74"))
+		glow(p, 12, Color(1, 0.6, 0.2, 0.6))
+		disc(p, 5, Color("fdba74"))
 	draw_projectiles()
 	if not clash.is_empty():
 		draw_camps(clash)
@@ -276,7 +495,7 @@ func _draw() -> void:
 		var def: Dictionary = GameData.GADGETS[ghost]
 		var sp := Vector2(spot.x, spot.y)
 		var col := Color(0.5, 1, 0.6, 0.55) if spot.ok else Color(1, 0.4, 0.4, 0.55)
-		draw_circle(sp, def.range, Color(col.r, col.g, col.b, 0.1))
+		disc(sp, def.range, Color(col.r, col.g, col.b, 0.1))
 		draw_arc(sp, def.range, 0, TAU, 64, col, 2, true)
 		var gt := Sprites.gadget_tex(ghost, 1, -1, 0)
 		Sprites.draw_frame(self, gt, Sprites.atlas.gadgets.get(ghost, {}), 0, sp, false, 1.0, Color(1, 1, 1, 0.55) if spot.ok else Color(1, 0.5, 0.5, 0.45), Sprites.scale)
@@ -307,7 +526,21 @@ func draw_gadget(g: Dictionary) -> void:
 	var t := Sprites.gadget_tex(g.kind, g.level, g.branch, g.slot)
 	var e: Dictionary = Sprites.atlas.gadgets.get(g.kind, {})
 	var mod := Color(1, 1, 1, 0.7) if g.get("asleep", false) else Color.WHITE
-	Sprites.draw_frame(self, t, e, 0, Vector2(g.x, g.y), false, 1.0, mod, Sprites.scale)
+	# pop up when built, bounce when upgraded
+	var key := "g%d" % g.id
+	var look := "%s/%s" % [g.level, g.branch]
+	var an: Dictionary = _anim.get(key, {})
+	if an.is_empty():
+		an = {"t": time, "look": look, "new": true}
+		_anim[key] = an
+	elif an.look != look:
+		an.merge({"t": time, "look": look, "new": false}, true)
+	var k := clampf((time - float(an.t)) / 0.35, 0.0, 1.0)
+	var st := Vector2.ONE
+	if k < 1.0:
+		var sy := _ease_back(k) if an.new else 1.0 + 0.2 * sin(k * PI) * (1.0 - k)
+		st = Vector2(1.0 + (1.0 - sy) * 0.6, sy)
+	Sprites.draw_frame(self, t, e, 0, Vector2(g.x, g.y), false, 1.0, mod, Sprites.scale, st)
 	if g.kind == "fern":
 		var r: float = GameData.GADGETS.fern.range
 		var B: Dictionary = GameData.gadget_branch("fern", g.branch)
@@ -318,7 +551,65 @@ func draw_gadget(g: Dictionary) -> void:
 		text(Vector2(g.x + 10, g.y - 60 - fmod(time * 20, 20)), "z", 16, Color("e0e7ff"))
 
 
-func draw_enemy(e: Dictionary) -> void:
+## 0 -> 1 with a little overshoot at the end (things popping into place)
+static func _ease_back(k: float) -> float:
+	var c1 := 1.70158
+	return 1.0 + (c1 + 1.0) * pow(k - 1.0, 3) + c1 * pow(k - 1.0, 2)
+
+
+## Turn to face where it's walking, using its smoothed sideways speed so tiny
+## wobbles (rounding, walking almost straight up or down) don't flip the picture
+## back and forth every frame. `quick` is how fast it reacts (heroes turn faster).
+static func face_toward(a: Dictionary, x: float, dt: float, quick: float) -> void:
+	a.vx = lerpf(float(a.get("vx", 0.0)), (x - float(a.lx)) / maxf(dt, 0.001), minf(1.0, dt * quick))
+	if a.vx > 6:
+		a.face = 1
+	elif a.vx < -6:
+		a.face = -1
+	a.lx = x
+
+
+const FLYERS := ["wasp", "zeppelin", "dreadblimp", "camopuff", "mothmedic", "snoozemoth"]
+
+
+## Each pest is drawn in three layers, each layer for every pest at once:
+## ground (shadow, rings at its feet, auras), body (the sprite) and overlay
+## (health bar, status pips, badges). Same-looking pieces in a row draw much faster.
+func _enemy_anim(e: Dictionary, p: Vector2) -> Dictionary:
+	var a: Dictionary = _anim.get("e%d" % e.id, {})
+	if a.is_empty():
+		a = {"phase": randf(), "face": 1, "lx": p.x, "vx": 0.0, "hit": 0.0, "born": time}
+		_anim["e%d" % e.id] = a
+	return a
+
+
+func draw_enemy_ground(e: Dictionary, p: Vector2) -> void:
+	var def: Dictionary = GameData.ENEMIES.get(e.type, {})
+	if def.get("structure", false) or e.burrowed:
+		return
+	var S := 1.35 if e.big else 1.0
+	var R: float = def.radius * S
+	var flyer: bool = def.get("art", e.type) in FLYERS
+	var feet := p + Vector2(0, R * 0.75)
+	var a := _enemy_anim(e, p)
+	var grow := clampf((time - float(a.born)) / 0.25, 0.0, 1.0)
+	ellipse(feet, R * (0.7 if flyer else 0.95) * grow, R * (0.25 if flyer else 0.32) * grow, Color(0, 0, 0, 0.18 if flyer else 0.28))
+	if def.get("minion", false) or def.get("rival", false):
+		ellipse_line(feet, R * 1.05, R * 0.38, Color(0.96, 0.25, 0.37, 0.75), 2.5)
+	if e.slowed and not e.frozen:
+		ellipse_line(feet, R * 1.05, R * 0.38, Color(0.49, 0.83, 0.99, 0.5), 2)
+	if e.get("sunlit", false):
+		ellipse_line(feet, R * 1.05, R * 0.4, Color(0.99, 0.88, 0.28, 0.6), 2)
+	if def.has("sleepDust"):
+		ellipse_line(feet, float(def.sleepDust), float(def.sleepDust) * 0.6, Color(0.77, 0.71, 0.99, 0.3 + 0.15 * sin(time * 3)), 2)
+	if e.get("casting", false):
+		glow(p - Vector2(0, R * 0.4), R * 1.9, Color(0.94, 0.27, 0.27, 0.3 + 0.15 * sin(time * 20)))
+	if e.get("enraged", false):
+		var pulse := 0.5 + 0.5 * sin(time * 9)
+		glow(p - Vector2(0, R * 0.3), R * (1.5 + 0.1 * pulse), Color(0.94, 0.27, 0.27, 0.3 + 0.15 * pulse))
+
+
+func draw_enemy(e: Dictionary, p: Vector2) -> void:
 	var def: Dictionary = GameData.ENEMIES.get(e.type, {})
 	if def.get("structure", false):
 		draw_foe_building(e, def)
@@ -326,45 +617,37 @@ func draw_enemy(e: Dictionary) -> void:
 	var entry := Sprites.pest_entry(e.type)
 	if entry.is_empty():
 		return
-	var p := pos_of(e.id, Vector2(e.x, e.y))
-	var a: Dictionary = _anim.get("e%d" % e.id, {})
-	if a.is_empty():
-		a = {"phase": randf(), "face": 1, "lx": p.x, "hit": 0.0}
-		_anim["e%d" % e.id] = a
-	if absf(p.x - a.lx) > 0.3:
-		a.face = 1 if p.x > a.lx else -1
-	a.lx = p.x
-	var dt := get_process_delta_time()
+	var a := _enemy_anim(e, p)
+	var dt := maxf(get_process_delta_time(), 0.001)
+	face_toward(a, p.x, dt, 8.0)
 	if not e.frozen and not e.stunned and not e.get("trapped", false):
 		a.phase += dt * (0.9 if e.slowed else 1.8) * (0.6 if e.boss else 1.0)
 	var S := 1.35 if e.big else 1.0
 	var R: float = def.radius * S
-	var flyer: bool = def.get("art", e.type) in ["wasp", "zeppelin", "dreadblimp", "camopuff", "mothmedic", "snoozemoth"]
+	var flyer: bool = def.get("art", e.type) in FLYERS
 	var feet := p + Vector2(0, R * 0.75)
 	if e.burrowed:
 		ellipse(feet, R * 1.05, R * 0.32, Color(0, 0, 0, 0.22))
 		ellipse(p + Vector2(0, R * 0.2), R * 1.05, R * 0.5, Color("8a5a1e"))
-		draw_circle(p - Vector2(0, R * 0.3), R * 0.4, Color("facc15"))
-		if randf() < get_process_delta_time() * 12:
+		disc(p - Vector2(0, R * 0.3), R * 0.4, Color("facc15"))
+		if randf() < dt * 12:
 			_parts.append({"p": p + Vector2((randf() - 0.5) * R * 1.6, 0), "v": Vector2((randf() - 0.5) * 70, -60 - randf() * 50), "life": 0.5, "max": 0.5, "size": 3.0, "col": Color("a16207") if randf() < 0.5 else Color("78350f"), "g": 300.0})
 		return
-	ellipse(feet, R * (0.7 if flyer else 0.95), R * (0.25 if flyer else 0.32), Color(0, 0, 0, 0.18 if flyer else 0.28))
-	if def.get("minion", false) or def.get("rival", false):
-		ellipse_line(feet, R * 1.05, R * 0.38, Color(0.96, 0.25, 0.37, 0.75), 2.5)
-	if e.get("casting", false):
-		draw_circle(p - Vector2(0, R * 0.4), R * 1.6, Color(0.94, 0.27, 0.27, 0.18 + 0.1 * sin(time * 20)))
 	var alpha := 1.0
 	if e.camo:
 		alpha = 0.45 + sin(time * 4 + p.x) * 0.12
 	if e.sheltered:
 		alpha *= 0.55
+	# new pests pop in: a quick fade and grow instead of appearing out of nowhere
+	var born := clampf((time - float(a.born)) / 0.25, 0.0, 1.0)
+	alpha *= born
 	var mod := Color(1, 1, 1, alpha)
 	if e.flash:
 		mod = Color(1.8, 1.8, 1.8, alpha)
 	var frame := int(fposmod(a.phase, 1.0) * 8) % 8
-	Sprites.draw_frame(self, Sprites.tex(entry.file), entry, frame, feet, a.face < 0, S, mod, Sprites.scale)
-	var top := feet.y - (R * 2.6 if flyer else R * 2.0)
+	Sprites.draw_frame(self, Sprites.tex(entry.file), entry, frame, feet, a.face < 0, S * (0.6 + 0.4 * ease(born, 0.5)), mod, Sprites.scale)
 	if e.frozen:
+		var top := feet.y - (R * 2.6 if flyer else R * 2.0)
 		var cy := (top + feet.y) / 2
 		var hw := R * 1.15
 		var hh := (feet.y - top) / 2 + 4
@@ -372,22 +655,9 @@ func draw_enemy(e: Dictionary) -> void:
 			Vector2(p.x, cy + hh), Vector2(p.x - hw * 0.9, cy + hh * 0.6), Vector2(p.x - hw, cy - hh * 0.45)])
 		draw_colored_polygon(ice, Color(0.75, 0.9, 1.0, 0.5))
 		ice.append(ice[0])
-		draw_polyline(ice, Color(1, 1, 1, 0.85), 2, true)
-		draw_line(Vector2(p.x - hw * 0.4, cy - hh * 0.5), Vector2(p.x - hw * 0.1, cy - hh * 0.1), Color(1, 1, 1, 0.9), 2)
-	if e.get("trapped", false):
-		var br := R * 1.45
-		var by := p.y - R * 0.5 + sin(time * 4 + p.x) * 3
-		draw_circle(Vector2(p.x, by), br, Color(0.58, 0.77, 0.99, 0.25))
-		draw_arc(Vector2(p.x, by), br, 0, TAU, 32, Color(1, 1, 1, 0.85), 2.0, true)
-	if e.stunned:
-		for k in 3:
-			var ang := time * 6 + k * TAU / 3
-			draw_circle(Vector2(p.x + cos(ang) * R * 0.8, top - 4 + sin(ang) * 4), 3.5, Color("fde047"))
-	if e.get("enraged", false):
-		var pulse := 0.5 + 0.5 * sin(time * 9)
-		draw_circle(p - Vector2(0, R * 0.3), R * (1.25 + 0.1 * pulse), Color(0.94, 0.27, 0.27, 0.16 + 0.1 * pulse))
-		if randf() < dt * 10:
-			_parts.append({"p": Vector2(p.x + (randf() - 0.5) * R * 1.6, p.y - R * 0.2), "v": Vector2(0, -60), "life": 0.7, "max": 0.7, "size": 5.0, "col": Color("7f1d1d"), "g": 0.0})
+		draw_polyline(ice, Color(1, 1, 1, 0.85), 2)
+	if e.get("enraged", false) and randf() < dt * 10:
+		_parts.append({"p": Vector2(p.x + (randf() - 0.5) * R * 1.6, p.y - R * 0.2), "v": Vector2(0, -60), "life": 0.7, "max": 0.7, "size": 5.0, "col": Color("7f1d1d"), "g": 0.0})
 	if e.get("frostbit", false) and randf() < dt * 10:
 		_parts.append({"p": Vector2(p.x + (randf() - 0.5) * R * 1.4, p.y - R * 0.5), "v": Vector2(0, 30), "life": 0.5, "max": 0.5, "size": 3.0, "col": Color("bae6fd"), "g": 60.0})
 	if e.burning and randf() < dt * 14:
@@ -396,39 +666,45 @@ func draw_enemy(e: Dictionary) -> void:
 		_parts.append({"p": Vector2(p.x + (randf() - 0.5) * R * 1.4, p.y - R * 0.4), "v": Vector2(0, 40), "life": 0.5, "max": 0.5, "size": 2.4, "col": Color("60a5fa"), "g": 120.0})
 	if e.get("poisoned", false) and randf() < dt * 7:
 		_parts.append({"p": Vector2(p.x + (randf() - 0.5) * R * 1.4, p.y - R * 0.2), "v": Vector2(0, -28), "life": 0.55, "max": 0.55, "size": 3.0, "col": Color("a3e635"), "g": 0.0})
-	if e.slowed and not e.frozen:
-		ellipse_line(feet, R * 1.05, R * 0.38, Color(0.49, 0.83, 0.99, 0.5), 2)
-	if e.get("sunlit", false):
-		ellipse_line(feet, R * 1.05, R * 0.4, Color(0.99, 0.88, 0.28, 0.6), 2)
+
+
+func draw_enemy_over(e: Dictionary, p: Vector2) -> void:
+	var def: Dictionary = GameData.ENEMIES.get(e.type, {})
+	if def.get("structure", false) or e.burrowed:
+		return
+	var S := 1.35 if e.big else 1.0
+	var R: float = def.radius * S
+	var flyer: bool = def.get("art", e.type) in FLYERS
+	var feet := p + Vector2(0, R * 0.75)
+	var top := feet.y - (R * 2.6 if flyer else R * 2.0)
+	if e.get("trapped", false):
+		var br := R * 1.45
+		var by := p.y - R * 0.5 + sin(time * 4 + p.x) * 3
+		disc(Vector2(p.x, by), br, Color(0.58, 0.77, 0.99, 0.25))
+		ellipse_line(Vector2(p.x, by), br, br, Color(1, 1, 1, 0.85), 2.0)
+	if e.stunned:
+		for k in 3:
+			var ang := time * 6 + k * TAU / 3
+			disc(Vector2(p.x + cos(ang) * R * 0.8, top - 4 + sin(ang) * 4), 3.5, Color("fde047"))
 	if e.get("resist", "") != "":
 		var rs: Dictionary = GameData.RESISTS.get(e.resist, {})
 		var bc := Vector2(p.x - R * 0.95, top + 8)
-		draw_circle(bc, 9, Color(0.06, 0.09, 0.16, 0.85))
-		draw_arc(bc, 9, 0, TAU, 20, Color(rs.get("color", "#ffffff")), 2.0, true)
+		disc(bc, 9, Color(0.06, 0.09, 0.16, 0.85))
+		ellipse_line(bc, 9, 9, Color(rs.get("color", "#ffffff")), 2.0)
 		text(bc + Vector2(0, 4), String(rs.get("icon", "")), 10, Color.WHITE, 0)
 	# little coloured pips: soaked, sunlit, frostbite, poisoned, bubble-trapped
-	var pips: Array = []
-	if e.get("soaked", false):
-		pips.append(Color("60a5fa"))
-	if e.get("sunlit", false):
-		pips.append(Color("fde047"))
-	if e.get("frostbit", false):
-		pips.append(Color("e0f2fe"))
-	if e.get("poisoned", false):
-		pips.append(Color("a3e635"))
-	if e.get("trapped", false):
-		pips.append(Color("c4b5fd"))
-	for i in pips.size():
-		var pc := Vector2(p.x + R * 0.95 - i * 9, top + 8)
-		draw_circle(pc, 4.5, Color(0.06, 0.09, 0.16, 0.85))
-		draw_circle(pc, 3.2, pips[i])
-	# Healer Moth: green tethers to the pests it's healing. Snoozy Moth: its sleep-dust range
+	var n := 0
+	for pip in [["soaked", "60a5fa"], ["sunlit", "fde047"], ["frostbit", "e0f2fe"], ["poisoned", "a3e635"], ["trapped", "c4b5fd"]]:
+		if e.get(pip[0], false):
+			var pc := Vector2(p.x + R * 0.95 - n * 9, top + 8)
+			disc(pc, 4.5, Color(0.06, 0.09, 0.16, 0.85))
+			disc(pc, 3.2, Color(pip[1]))
+			n += 1
+	# Healer Moth: green tethers to the pests it's healing
 	if def.has("heals"):
 		for o in snap.get("enemies", []):
 			if o.id != e.id and o.hp < o.maxHp and not GameData.ENEMIES.get(o.type, {}).get("boss", false) and Vector2(o.x, o.y).distance_to(p) <= float(def.healRadius):
-				draw_line(p, pos_of(o.id, Vector2(o.x, o.y)), Color(0.53, 0.94, 0.67, 0.35 + 0.2 * sin(time * 6)), 2, true)
-	if def.has("sleepDust"):
-		ellipse_line(feet, float(def.sleepDust), float(def.sleepDust) * 0.6, Color(0.77, 0.71, 0.99, 0.3 + 0.15 * sin(time * 3)), 2)
+				seg(p, pos_of(o.id, Vector2(o.x, o.y)), 2.0, Color(0.53, 0.94, 0.67, 0.35 + 0.2 * sin(time * 6)))
 	if def.get("rival", false):
 		var k: float = float(e.hp) / float(e.maxHp)
 		bar(Vector2(p.x, top - 10), 64, 7, k, Color("ef4444"))
@@ -449,7 +725,7 @@ func draw_enemy(e: Dictionary) -> void:
 
 func draw_hero(h: Dictionary) -> void:
 	var mine: bool = h.owner == my_owner and my_pos != null
-	var p: Vector2 = my_pos if mine else pos_of(h.id, Vector2(h.x, h.y))
+	var p: Vector2 = _me() if mine else pos_of(h.id, Vector2(h.x, h.y))
 	if h.get("dead", false):
 		draw_knocked_out(h, p)
 		return
@@ -463,9 +739,7 @@ func draw_hero(h: Dictionary) -> void:
 	var moving: bool = a.move > 0.3
 	if moving:
 		a.walk += dt * 13
-	if absf(p.x - a.lx) > 0.3:
-		a.face = 1 if p.x > a.lx else -1
-	a.lx = p.x
+	face_toward(a, p.x, dt, 25.0)
 	a.ly = p.y
 	if h.recoil > 0.3:
 		a.attack = 0.18
@@ -483,9 +757,9 @@ func draw_hero(h: Dictionary) -> void:
 	ellipse(p + Vector2(0, 21), 20, 7, Color(0, 0, 0, 0.3))
 	ellipse_line(p + Vector2(0, 21), 24, 10, col, 3)
 	if h.rally:
-		draw_circle(p, 46, Color(0.99, 0.88, 0.28, 0.18))
+		disc(p, 46, Color(0.99, 0.88, 0.28, 0.18))
 	if GameData.gnum(h.buffs, "frenzy") > 0:
-		draw_circle(p - Vector2(0, 14), 40, Color(0.98, 0.45, 0.09, 0.18))
+		disc(p - Vector2(0, 14), 40, Color(0.98, 0.45, 0.09, 0.18))
 	if h.get("recall", 0.0) > 0:
 		var rk: float = h.recall
 		draw_rect(Rect2(p.x - 26, p.y - 140 * rk, 52, 140 * rk + 20), Color(0.49, 0.83, 0.99, 0.18))
@@ -511,7 +785,7 @@ func draw_hero(h: Dictionary) -> void:
 	if h.dazed:
 		for k in 3:
 			var ang := time * 7 + k * TAU / 3
-			draw_circle(Vector2(p.x + cos(ang) * 16, p.y - 66 + sin(ang) * 5), 4, Color("d9f99d"))
+			disc(Vector2(p.x + cos(ang) * 16, p.y - 66 + sin(ang) * 5), 4, Color("d9f99d"))
 	# name tag
 	var pl := _player(h.owner)
 	var name: String = ("[bot] " if pl.get("bot", false) else "") + String(pl.get("name", "Hero"))
@@ -519,11 +793,11 @@ func draw_hero(h: Dictionary) -> void:
 	var tw := _font.get_string_size(name, HORIZONTAL_ALIGNMENT_LEFT, -1, 13).x + 34
 	draw_rect(Rect2(p.x - tw / 2, ty - 10, tw, 20), Color(0.04, 0.08, 0.05, 0.75))
 	draw_rect(Rect2(p.x - tw / 2, ty - 10, tw, 20), col, false, 1.6)
-	draw_circle(Vector2(p.x - tw / 2 + 10, ty), 8, Color("facc15"))
+	disc(Vector2(p.x - tw / 2 + 10, ty), 8, Color("facc15"))
 	text(Vector2(p.x - tw / 2 + 10, ty + 4.5), str(h.level), 11, Color("422006"), 0)
 	text(Vector2(p.x + 10, ty + 4.5), name, 13)
 	if h.pending > 0:
-		draw_circle(Vector2(p.x + tw / 2 + 9, ty + sin(time * 6) * 3), 7, Color("fde047"))
+		disc(Vector2(p.x + tw / 2 + 9, ty + sin(time * 6) * 3), 7, Color("fde047"))
 	if _emotes.has(int(h.owner)):
 		var em: Dictionary = _emotes[int(h.owner)]
 		var ea: float = clampf(em.t / 0.4, 0, 1)
@@ -589,9 +863,18 @@ const PROJ_COLORS := {"pea": "4ade80", "megapea": "fde047", "thorn": "7dd3fc", "
 
 
 func draw_projectiles() -> void:
+	var vr := _view_rect().grow(30)
+	var k := clampf(tick_alpha, 0, 1.2) * snap_dt
+	var lan := remote_interp and not _ha.is_empty()
 	for p in snap.get("projectiles", []):
-		var k := clampf(tick_alpha, 0, 1.2) * snap_dt
 		var at := Vector2(p.x + p.vx * k, p.y + p.vy * k)
+		if lan:
+			var hp = _hist_pos(p.id, false)
+			if hp == null:
+				continue  # fired after the moment being shown
+			at = hp
+		if not vr.has_point(at):
+			continue
 		var col := Color(PROJ_COLORS.get(p.kind, "ffffff"))
 		var r := 6.0
 		match p.kind:
@@ -599,14 +882,14 @@ func draw_projectiles() -> void:
 			"bubble": r = 8.0
 			"needle", "thorn": r = 4.0
 		var back := at - Vector2(p.vx, p.vy).normalized() * r * 2.2
-		draw_line(back, at, Color(col.r, col.g, col.b, 0.45), r * 1.2, true)
-		draw_circle(at, r * 1.8, Color(col.r, col.g, col.b, 0.18))
+		streak(back, at, r * 1.2, Color(col.r, col.g, col.b, 0.45))
+		glow(at, r * 2.2, Color(col.r, col.g, col.b, 0.35))
 		if p.kind == "bubble":
-			draw_circle(at, r, Color(0.58, 0.77, 0.99, 0.4))
-			draw_arc(at, r, 0, TAU, 20, Color.WHITE, 1.4, true)
+			disc(at, r, Color(0.58, 0.77, 0.99, 0.4))
+			ellipse_line(at, r, r, Color.WHITE, 1.4)
 		else:
-			draw_circle(at, r, col)
-			draw_arc(at, r, 0, TAU, 16, Color(0, 0, 0, 0.45), 1.2, true)
+			disc(at, r + 1.0, Color(0, 0, 0, 0.45))
+			disc(at, r, col)
 
 
 func _player(id: int) -> Dictionary:
@@ -667,6 +950,12 @@ func on_event(e: Dictionary) -> void:
 				var sp: float = e.range * (1.6 + randf() * 1.4)
 				_parts.append({"p": pos + Vector2(cos(ang), sin(ang)) * 12, "v": Vector2(cos(ang), sin(ang)) * sp, "drag": 3.2, "life": 0.42, "max": 0.42, "size": 7.0 + randf() * 6, "col": Color("fb923c"), "g": 0.0})
 		"enemy_pop":
+			if not e.get("structure", false) and not Sprites.pest_entry(String(e.get("kind", ""))).is_empty():
+				var an: Dictionary = _anim.get("e%d" % int(e.get("id", -1)), {})
+				var def: Dictionary = GameData.ENEMIES.get(String(e.kind), {})
+				var at := pos_of(int(e.get("id", -1)), pos) if e.has("id") else pos
+				_fx.append({"kind": "ghost", "p": at + Vector2(0, float(def.get("radius", 14)) * 0.75), "type": String(e.kind),
+					"face": int(an.get("face", 1)), "frame": int(fposmod(float(an.get("phase", 0.0)), 1.0) * 8) % 8, "life": 0.2, "max": 0.2})
 			burst(pos, [e.get("color", "#a3e635"), "#ffffff"], 40 if e.boss else 12, 260 if e.boss else 130)
 			ring(pos, 110 if e.boss else 26, Color.WHITE, 3, 0.25)
 			if e.boss:
@@ -1007,8 +1296,10 @@ func _update_fx(dt: float) -> void:
 		f.life -= dt
 		f.p.y -= 30 * dt
 	_floats = _floats.filter(func(f): return f.life > 0)
-	if _parts.size() > 1500:
-		_parts = _parts.slice(_parts.size() - 1500)
+	if _parts.size() > 900:
+		_parts = _parts.slice(_parts.size() - 900)
+	if _floats.size() > 80:
+		_floats = _floats.slice(_floats.size() - 80)
 
 
 func draw_fx() -> void:
@@ -1022,8 +1313,8 @@ func draw_fx() -> void:
 				draw_arc(f.p, r, 0, TAU, 48, c, f.w * (1 - k) + 1, true)
 			"flash":
 				var c: Color = f.col
-				c.a = 0.45 * (1 - k)
-				draw_circle(f.p, f.r, c)
+				c.a = 0.7 * (1 - k)
+				glow(f.p, f.r * 1.15, c)
 			"bolt":
 				var c: Color = f.col
 				c.a = 1 - k
@@ -1051,19 +1342,29 @@ func draw_fx() -> void:
 				var c: Color = f.col
 				c.a = 1 - k
 				draw_arc(f.p, 46, f.a - 1.0, f.a + 1.0, 16, c, 6 * (1 - k) + 1, true)
+			"ghost":
+				var ent := Sprites.pest_entry(f.type)
+				Sprites.draw_frame(self, Sprites.tex(ent.get("file", "")), ent, f.frame, f.p, f.face < 0, 1.0 + 0.35 * k, Color(2.2, 2.2, 2.2, 1.0 - k), Sprites.scale)
 			"warn":
 				var c: Color = f.col
 				c.a = 0.4 + sin(time * 18) * 0.25
 				ellipse_line(f.p, f.r, f.r * 0.6, c, 3)
 				ellipse(f.p, f.r * k, f.r * 0.6 * k, Color(c.r, c.g, c.b, 0.12))
+	var vr := _view_rect()
 	for p in _parts:
-		var c: Color = p.col
-		c.a = clampf(p.life / p.max, 0, 1)
-		draw_circle(p.p, p.size * (0.5 + 0.5 * c.a), c)
+		if vr.has_point(p.p):
+			var c: Color = p.col
+			c.a = clampf(p.life / p.max, 0, 1)
+			disc(p.p, p.size * (0.5 + 0.5 * c.a), c)
+	_defer_text = true
 	for f in _floats:
-		var c: Color = f.col
-		c.a = clampf(f.life / f.max * 1.5, 0, 1)
-		text(f.p, f.s, f.size, c, 4)
+		if vr.has_point(f.p):
+			var c: Color = f.col
+			c.a = clampf(f.life / f.max * 1.5, 0, 1)
+			# numbers pop up a little bigger, then settle
+			var pop := 1.0 + 0.35 * clampf((f.life / f.max - 0.8) / 0.2, 0, 1)
+			text(f.p, f.s, int(f.size * pop), c, 4)
+	_flush_text()
 
 
 # ---------------------------------------------------------------------------
@@ -1089,7 +1390,7 @@ func draw_fountain() -> void:
 
 func shield_bubble(c: Vector2, r: float, col: Color) -> void:
 	var pulse := 0.5 + sin(time * 3) * 0.5
-	draw_circle(c, r, Color(col.r, col.g, col.b, 0.12 + pulse * 0.06))
+	disc(c, r, Color(col.r, col.g, col.b, 0.12 + pulse * 0.06))
 	var n := 28
 	for i in n:
 		if i % 2 == 0:
@@ -1146,7 +1447,7 @@ func draw_ally(u: Dictionary) -> void:
 	ellipse(feet, R * 0.95, R * 0.32, Color(0, 0, 0, 0.25))
 	ellipse_line(feet, R * 1.05, R * 0.38, Color(0.22, 0.74, 0.97, 0.8), 2.5)
 	if u.get("big", false):
-		draw_circle(p - Vector2(0, R * 0.3), R * 1.5, Color(0.29, 0.87, 0.5, 0.16))
+		disc(p - Vector2(0, R * 0.3), R * 1.5, Color(0.29, 0.87, 0.5, 0.16))
 	var frame := int(fposmod(a.phase, 1.0) * 8) % 8
 	Sprites.draw_frame(self, Sprites.tex(entry.file), entry, frame, feet, a.face < 0, S, Color(1.7, 1.7, 1.7) if u.get("flash", false) else Color.WHITE, Sprites.scale)
 	if u.hp < u.maxHp:
@@ -1184,7 +1485,7 @@ func draw_clash_shots(clash: Dictionary) -> void:
 		var r: float = st[1]
 		var dir := Vector2(s.vx, s.vy).normalized()
 		draw_line(at - dir * r * 3, at, Color(c.r, c.g, c.b, 0.4), r * 1.1, true)
-		draw_circle(at, r * 2.2, Color(c.r, c.g, c.b, 0.2))
+		disc(at, r * 2.2, Color(c.r, c.g, c.b, 0.2))
 		if s.kind == "thorn":
 			var n := dir.orthogonal()
 			draw_colored_polygon(PackedVector2Array([at + dir * 10, at - dir * 7 + n * 5, at - dir * 4, at - dir * 7 - n * 5]), Color("c084fc"))
@@ -1194,8 +1495,8 @@ func draw_clash_shots(clash: Dictionary) -> void:
 			draw_colored_polygon(PackedVector2Array([at + dir * 12 * m, at + n * 3 * m, at - dir * 7 * m, at - n * 3 * m]), Color("facc15"))
 			draw_line(at - dir * 2 * m + n * 3 * m, at - dir * 2 * m - n * 3 * m, Color("1c1917"), 2 * m)
 		else:
-			draw_circle(at, r * 0.75, c)
-			draw_circle(at - Vector2(r, r) * 0.2, r * 0.28, Color(1, 1, 1, 0.8))
+			disc(at, r * 0.75, c)
+			disc(at - Vector2(r, r) * 0.2, r * 0.28, Color(1, 1, 1, 0.8))
 
 
 # ---------------------------------------------------------------------------
@@ -1256,7 +1557,7 @@ func _draw_pings() -> void:
 		var ph := fmod(time * 1.6, 1.0)
 		var a: float = clampf(pg.t / 0.6, 0, 1)
 		draw_arc(pg.p, 14 + ph * 46, 0, TAU, 40, Color(col.r, col.g, col.b, (1 - ph) * a), 4, true)
-		draw_circle(pg.p, 10, Color(col.r, col.g, col.b, 0.8 * a))
+		disc(pg.p, 10, Color(col.r, col.g, col.b, 0.8 * a))
 		var look: Array = PING_LOOK.get(pg.kind, PING_LOOK.look)
 		draw_line(pg.p, pg.p - Vector2(0, 46), Color(col.r, col.g, col.b, 0.8 * a), 3, true)
 		text(pg.p - Vector2(0, 52), "%s %s" % [look[0], look[1]], 15, Color(1, 1, 1, a), 4)
@@ -1285,23 +1586,23 @@ func _draw_features() -> void:
 				var head := p - Vector2(0, 30)
 				var grow := 0.55 + 0.45 * k
 				if ready:
-					draw_circle(head, 30, Color(0.99, 0.88, 0.28, 0.18 + 0.1 * sin(time * 4)))
+					disc(head, 30, Color(0.99, 0.88, 0.28, 0.18 + 0.1 * sin(time * 4)))
 				for i in 10:
 					var a := TAU * i / 10 + time * 0.3
-					draw_circle(head + Vector2(cos(a), sin(a)) * 13 * grow, 7 * grow, Color("facc15") if ready else Color("ca8a04"))
-				draw_circle(head, 8 * grow, Color("92400e"))
+					disc(head + Vector2(cos(a), sin(a)) * 13 * grow, 7 * grow, Color("facc15") if ready else Color("ca8a04"))
+				disc(head, 8 * grow, Color("92400e"))
 			"lilypad":
 				var col := Color("4ade80") if ready else Color("166534")
 				ellipse(p, 30, 15, Color(col.r, col.g, col.b, 0.9))
 				draw_colored_polygon(PackedVector2Array([p, p + Vector2(30, -4), p + Vector2(30, 6)]), Color(0.2, 0.5, 0.8, 0.6))
-				draw_circle(p + Vector2(-8, -3), 4, Color("f9a8d4"))
+				disc(p + Vector2(-8, -3), 4, Color("f9a8d4"))
 				if ready:
 					ellipse_line(p, 36, 19, Color(0.73, 0.97, 0.82, 0.4 + 0.3 * sin(time * 5)), 2)
 			"obelisk":
 				ellipse(p + Vector2(0, 10), 30, 10, Color(0, 0, 0, 0.3))
 				var glow := Color(0.65, 0.55, 0.98, 0.15 + 0.5 * k)
 				if ready:
-					draw_circle(p - Vector2(0, 40), 46, Color(0.77, 0.71, 0.99, 0.18 + 0.12 * sin(time * 6)))
+					disc(p - Vector2(0, 40), 46, Color(0.77, 0.71, 0.99, 0.18 + 0.12 * sin(time * 6)))
 				draw_colored_polygon(PackedVector2Array([p + Vector2(-14, 8), p + Vector2(-9, -60), p + Vector2(0, -84), p + Vector2(9, -60), p + Vector2(14, 8)]), Color("4c1d95"))
 				draw_colored_polygon(PackedVector2Array([p + Vector2(-9, -2), p + Vector2(-5, -56), p + Vector2(0, -72), p + Vector2(5, -56), p + Vector2(9, -2)]), glow.lightened(0.3))
 				bar(p + Vector2(0, 18), 50, 5, k, Color("a78bfa"))
@@ -1312,15 +1613,15 @@ func _draw_features() -> void:
 				for i in n:
 					var a := TAU * i / n
 					var lp := p + Vector2(cos(a) * 18, sin(a) * 8)
-					draw_circle(lp, 9, [Color("ea580c"), Color("f59e0b"), Color("b45309")][i % 3])
-				draw_circle(p, 10 if ready else 6, Color("dc2626"))
+					disc(lp, 9, [Color("ea580c"), Color("f59e0b"), Color("b45309")][i % 3])
+				disc(p, 10 if ready else 6, Color("dc2626"))
 			"geyser":
 				ellipse(p, 28, 12, Color("475569"))
 				ellipse(p, 18, 7, Color(0.73, 0.9, 0.99, 0.5 + 0.4 * k))
 				if k > 0.85:
 					for i in 3:
 						var a := time * 6 + i * 2.1
-						draw_circle(p + Vector2(cos(a) * 8, -12 - fmod(time * 30 + i * 10, 30)), 3, Color(0.88, 0.95, 1.0, 0.7))
+						disc(p + Vector2(cos(a) * 8, -12 - fmod(time * 30 + i * 10, 30)), 3, Color(0.88, 0.95, 1.0, 0.7))
 
 
 # ---------------------------------------------------------------------------
@@ -1380,24 +1681,22 @@ func _draw_ambient() -> void:
 	for a in _amb:
 		match _amb_kind:
 			"pollen":
-				draw_circle(a.p, 2.2 * a.s, Color(1.0, 0.95, 0.6, 0.55))
+				disc(a.p, 2.2 * a.s, Color(1.0, 0.95, 0.6, 0.55))
 			"snow":
-				draw_circle(a.p, 2.4 * a.s, Color(1, 1, 1, 0.85))
+				disc(a.p, 2.4 * a.s, Color(1, 1, 1, 0.85))
 			"leaf":
 				var col: Color = [Color("ea580c"), Color("dc2626"), Color("f59e0b")][int(a.s * 10) % 3]
-				draw_set_transform(a.p, a.rot, Vector2(1.0, 0.5))
-				draw_circle(Vector2.ZERO, 5 * a.s, Color(col.r, col.g, col.b, 0.85))
-				draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+				var d: Vector2 = Vector2(cos(a.rot), sin(a.rot)) * 5 * a.s
+				streak(a.p - d * 0.5, a.p + d * 0.5, 5 * a.s, Color(col.r, col.g, col.b, 0.85))
 			"petal":
-				draw_set_transform(a.p, a.rot, Vector2(1.0, 0.55))
-				draw_circle(Vector2.ZERO, 4.5 * a.s, Color(0.98, 0.66, 0.83, 0.85))
-				draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+				var d: Vector2 = Vector2(cos(a.rot), sin(a.rot)) * 4 * a.s
+				streak(a.p - d * 0.5, a.p + d * 0.5, 5 * a.s, Color(0.98, 0.66, 0.83, 0.85))
 			"firefly":
 				var blink := 0.5 + 0.5 * sin(a.ph * 3.0 + a.rot * 5)
-				draw_circle(a.p, 7 * a.s, Color(0.85, 1.0, 0.45, 0.12 * blink))
-				draw_circle(a.p, 2.2 * a.s, Color(0.95, 1.0, 0.6, 0.9 * blink))
+				glow(a.p, 9 * a.s, Color(0.85, 1.0, 0.45, 0.3 * blink))
+				disc(a.p, 2.2 * a.s, Color(0.95, 1.0, 0.6, 0.9 * blink))
 			"sparkle":
 				var k: float = clampf(a.life, 0, 1) * clampf(3.0 - a.life, 0, 1)
 				var sz: float = 4.0 * a.s * k
-				draw_line(a.p - Vector2(sz, 0), a.p + Vector2(sz, 0), Color(1, 1, 1, 0.8 * k), 1.5)
-				draw_line(a.p - Vector2(0, sz), a.p + Vector2(0, sz), Color(1, 1, 1, 0.8 * k), 1.5)
+				seg(a.p - Vector2(sz, 0), a.p + Vector2(sz, 0), 1.5, Color(1, 1, 1, 0.8 * k))
+				seg(a.p - Vector2(0, sz), a.p + Vector2(0, sz), 1.5, Color(1, 1, 1, 0.8 * k))

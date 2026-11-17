@@ -67,8 +67,12 @@ func _process(delta: float) -> void:
 	while acc >= SimWorld.TICK and n < 8:
 		acc -= SimWorld.TICK
 		n += 1
+		var t0 := Time.get_ticks_usec()
 		sim.step(SimWorld.TICK)
+		var t1 := Time.get_ticks_usec()
 		_emit()
+		PerfStats.add("sim", t1 - t0)
+		PerfStats.add("snapshot+view", Time.get_ticks_usec() - t1)
 	if sim.phase != "playing":
 		running = false
 

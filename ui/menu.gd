@@ -263,7 +263,7 @@ func show_title() -> void:
 	settings.pressed.connect(show_settings)
 	row.add_child(settings)
 	var quit := _button("Quit", 18, 100)
-	quit.pressed.connect(func(): get_tree().quit())
+	quit.pressed.connect(func(): get_parent().get_parent().quit_game())
 	row.add_child(quit)
 	if _error != "":
 		v.add_child(_label("⚠️ " + _error, 15, Color("fca5a5"), HORIZONTAL_ALIGNMENT_CENTER))

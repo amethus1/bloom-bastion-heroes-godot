@@ -107,7 +107,7 @@ The game uses UDP ports **24680** (ENet game traffic) and **24681** (discovery).
 | `net/game_host.gd` | Steps the sim and applies player actions (solo, or on the LAN host) |
 | `net/net_host.gd`, `net_client.gd` | ENet LAN play. Channel 0 is reliable (lobby, actions); channel 1 is unreliable-ordered (walking, snapshots at 20 Hz, zstd-compressed, about 5 KB in a big wave) |
 | `net/lan_finder.gd` | Listens for host beacons |
-| `render/world_view.gd` | Draws a snapshot: map, depth-sorted sprites, hats and pets, effects, damage numbers, camera with smoothing and shake |
+| `render/world_view.gd` | Draws a snapshot: map, depth-sorted sprites, hats and pets, effects, damage numbers, camera with smoothing and shake. Dots, shadows, rings, bars and trails all come from one small generated texture, and pests draw in layers (ground, bodies, overlay), so a 260-pest fight stays near 100 fps. Things off screen are skipped. A LAN friend sees everyone ~2 snapshots in the past, glided between time-stamped snapshots, so uneven Wi-Fi doesn't stutter |
 | `ui/` | HUD, menus and lobby, save profile (`user://profile.cfg`), shared theme |
 | `main.gd` | Game flow and local input. Your walking is predicted locally so it feels instant |
 | `art/` | Every sprite drawn by the real browser renderer and exported as PNG strips |
@@ -128,6 +128,8 @@ godot --headless --path . -s tests/test_rules.gd   # 2x speed = 1x per game-seco
 godot --headless --path . -s tests/test_play.gd    # real key presses: walk, leap, build, cards... plus Clash shop, juice, recall, revive, win
 godot --headless --path . -s tests/test_clash.gd -- hard boomshroom,bubblelily 3 idle   # bots play whole Garden Clash games
 godot --headless --path . -s tests/test_net.gd     # snapshot packets round-trip and stay small
+godot --headless --path . -s tests/test_smooth.gd  # LAN friends see even motion through Wi-Fi jitter; pause holds; dash slides; facing doesn't flicker
+godot --headless --path . -s tests/test_soak.gd    # 8 games across every map and mode: no script errors, memory flat (add `-- soak repeat` for 8x the same game)
 ```
 
 LAN test: run a host and a client on one computer.
@@ -137,7 +139,7 @@ godot --headless --path . -- --host --bind=127.0.0.1 --autostart=1 --netcheck=11
 godot --headless --path . -- --join=127.0.0.1 --hero=sunblossom --netcheck=8
 ```
 
-Each prints a `NETCHECK {...}` line: players, wave, how far the client's hero walked on the host, and packets received. Add `--mode=clash` to the host to test Garden Clash, where the client also buys an item.
+Each prints a `NETCHECK {...}` line: players, wave, how far the client's hero walked on the host, and packets received. Add `--mode=clash` to the host to test Garden Clash, where the client also buys an item. Run the client in a window with `--max-fps 60` and its line also has `smooth`: how evenly pests move from frame to frame (`avg_off_pct` about 7 now; add `--nointerp` to see the old blending, about 70).
 
 ### Garden Clash balance check
 
@@ -149,11 +151,9 @@ Each prints a `NETCHECK {...}` line: players, wave, how far the client's hero wa
 | Normal | 20–27 min | 17–29 min |
 | Hard | 48–68 min, bots win about 3 in 8 | 47–63 min, bots win about 2 in 13 |
 
-Other test flags: `--demo` (you are a bot too), `--warp=SECONDS` (fast-forward), `--shot=file.png --shot-after=3 --quit` (screenshot).
+Other test flags: `--demo` (you are a bot too), `--warp=SECONDS` (fast-forward), `--shot=file.png --shot-after=3 --quit` (screenshot), `--perflog` (every second: fps, worst frame, draw calls, memory, and milliseconds per frame for the sim, world drawing, HUD drawing and rendering). A big late-game check: `--demo --map=courtyard --mode=endless --bots=3 --wave=40 --warp=8 --perflog`.
 
 ## Not ported yet
 
-- **Sound.** The browser version makes its sounds with WebAudio code. These need to be rebuilt as Godot audio (AudioStreamGenerator or recorded sound files).
-- Emotes, pings, Tab scoreboard, touch controls and the pet unlock rules.
-- Garden Clash extras from the browser version: minimap clicks, the Tab stats table and the edge arrows pointing at off-screen buildings.
-- Shaders, lights and particle polish (Step 7 of the plan), and exported macOS/Windows app builds (an export preset plus export templates).
+- Touch controls and the pet unlock rules.
+- Shaders and lights, and exported macOS/Windows app builds (an export preset plus export templates).

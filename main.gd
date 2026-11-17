@@ -41,6 +41,7 @@ func _ready() -> void:
 			var kv: PackedStringArray = a.substr(2).split("=", true, 1)
 			args[kv[0]] = kv[1] if kv.size() > 1 else "1"
 	get_window().title = "Bloom Bastion Heroes"
+	get_tree().auto_accept_quit = false  # closing the window goes through quit_game()
 	if args.has("netcheck") or args.has("shot") or args.has("demo") or args.has("warp"):
 		Profile.path = "user://test_profile.cfg"  # test runs never change your real profile
 	world = WorldView.new()
@@ -108,6 +109,8 @@ func _ready() -> void:
 		_screenshot_later(String(args.shot), float(args.get("shot-after", "3")))
 	if args.has("netcheck"):
 		_netcheck(float(args.netcheck))
+	if args.has("perflog"):
+		_perflog()
 
 
 func show_menu() -> void:
@@ -117,6 +120,7 @@ func show_menu() -> void:
 	menu.show_title()
 	hud.visible = false
 	Audio.set_music_state("menu")
+	Sprites.warm_up()
 	start_attract()
 
 
@@ -261,6 +265,7 @@ func start_remote(id: int) -> void:
 		host = null
 	attract = false
 	world.reset()
+	world.remote_interp = true
 	world.zoom = 1.0
 	my_id = id
 	_begin_play()
@@ -512,6 +517,8 @@ func _my_event(e: Dictionary) -> void:
 	match String(e.type):
 		"dash", "teleport":
 			if mine and my_pos != null:
+				if e.type == "dash":
+					world.slide_from(my_pos, Vector2(e.x, e.y))
 				my_pos = Vector2(e.x, e.y)
 				move_path = []
 				last_sent = {"p": my_pos, "at": clock}
@@ -679,6 +686,12 @@ func send(a: Dictionary) -> void:
 
 
 func _process(delta: float) -> void:
+	var _pt0 := Time.get_ticks_usec()
+	_process_inner(delta)
+	PerfStats.add("main update" , Time.get_ticks_usec() - _pt0)
+
+
+func _process_inner(delta: float) -> void:
 	clock += delta
 	if attract and host and host.sim.phase != "playing":
 		host.queue_free()
@@ -1112,9 +1125,57 @@ func close_pause_menu() -> void:
 	_paused_by_menu = false
 
 
+## Test-only: print frame rate and timings once a second
+func _perflog() -> void:
+	PerfStats.on = true
+	var worst := 0.0
+	var last := Time.get_ticks_usec()
+	var t0 := Time.get_ticks_msec()
+	var marks := {"start": 0, "pre": 0}
+	get_tree().process_frame.connect(func(): marks.start = Time.get_ticks_usec())
+	RenderingServer.frame_pre_draw.connect(func():
+		marks.pre = Time.get_ticks_usec()
+		if marks.start > 0:
+			PerfStats.add("[whole process]", marks.pre - marks.start))
+	RenderingServer.frame_post_draw.connect(func(): PerfStats.add("[render]", Time.get_ticks_usec() - marks.pre))
+	while true:
+		await get_tree().process_frame
+		var now := Time.get_ticks_usec()
+		worst = maxf(worst, (now - last) / 1000.0)
+		last = now
+		if Time.get_ticks_msec() - t0 >= 1000:
+			t0 = Time.get_ticks_msec()
+			print("PERF fps %d | worst frame %.1f ms | process %.1f ms | draw calls %d | static %.0f MB | video %.0f MB | pests %d | wave %d" % [
+				Engine.get_frames_per_second(), worst, Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0,
+				int(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME)),
+				Performance.get_monitor(Performance.MEMORY_STATIC) / 1048576.0, Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED) / 1048576.0,
+				snap.get("enemies", []).size(), int(snap.get("wave", 0))])
+			worst = 0.0
+			var parts: Array = []
+			var tk := PerfStats.take()
+			for k in tk:
+				parts.append("%s %.1f ms" % [k, tk[k] / 1000.0 / maxf(1.0, Engine.get_frames_per_second())])
+			print("     per frame: ", ", ".join(parts))
+
+
+## Quit cleanly: stop every sound first (a stream still playing at exit shows up as a leak)
+func quit_game() -> void:
+	Sprites.finish_warm_up()
+	_leave_game()  # stop the game (and tell LAN friends) first, so nothing starts a new sound while we quit
+	attract = false
+	for c in Audio.get_children():
+		if c is AudioStreamPlayer or c is AudioStreamPlayer2D:
+			c.stop()
+			c.stream = null
+	Audio.process_mode = Node.PROCESS_MODE_DISABLED
+	# the sound card lets go of stopped music on its own thread; give it a moment
+	await get_tree().create_timer(0.2, true, false, true).timeout
+	get_tree().quit()
+
+
 func _notification(what: int) -> void:
-	if what == NOTIFICATION_WM_CLOSE_REQUEST and net:
-		net.close()
+	if what == NOTIFICATION_WM_CLOSE_REQUEST:
+		quit_game()  # closing the window: stop sounds, tell LAN friends, then quit
 
 
 # ---------------------------------------------------------------------------
@@ -1129,8 +1190,20 @@ func _netcheck(secs: float) -> void:
 	var picked := false
 	var readies := 0
 	var start_x := 0.0
+	var last_at := {}  # smoothness on a LAN friend's screen: how evenly do pests move frame to frame?
+	var steps: Array = []
 	while clock - t0 < secs:
 		await get_tree().process_frame
+		if net is NetClient and playing and not snap.is_empty():
+			if args.has("nointerp"):
+				world.remote_interp = false  # test-only: the old way, to compare
+			var now_at := {}
+			for e in snap.get("enemies", []):
+				var p := world.pos_of(e.id, Vector2(e.x, e.y))
+				now_at[e.id] = p
+				if last_at.has(e.id) and not e.stunned and not e.frozen and not e.get("trapped", false):
+					steps.append(p.distance_to(last_at[e.id]))
+			last_at = now_at
 		if net is NetHost and not net.in_game and net.lobby.size() >= int(args.get("autostart", "1")):
 			if full_at < 0:
 				full_at = clock
@@ -1166,6 +1239,17 @@ func _netcheck(secs: float) -> void:
 		out.enemies = snap.get("enemies", []).size()
 		out.wave = snap.get("wave", -1)
 		out.heroes = snap.get("heroes", []).size()
+		if steps.size() > 100:
+			steps.sort()
+			var med: float = steps[steps.size() / 2]
+			var frozen := 0
+			var off := 0.0
+			for st in steps:
+				if st < med * 0.1:
+					frozen += 1
+				off += absf(st - med)
+			out.smooth = {"samples": steps.size(), "median_step": snappedf(med, 0.01), "frozen_pct": snappedf(100.0 * frozen / steps.size(), 0.1),
+				"avg_off_pct": snappedf(100.0 * off / steps.size() / maxf(med, 0.001), 0.1)}
 		if snap.has("clash"):
 			out.items = h.get("items", [])
 			out.hp = h.get("hp", 0)
@@ -1222,4 +1306,4 @@ func _screenshot_later(path: String, after: float) -> void:
 	img.save_png(path)
 	print("screenshot saved: ", path)
 	if args.has("quit"):
-		get_tree().quit()
+		quit_game()

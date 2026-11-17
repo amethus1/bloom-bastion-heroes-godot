@@ -46,6 +46,10 @@ This document compiles a deep technical, UX, balance, and feature audit of **Blo
 * 8.3 First-time tips (each shows once per computer).
 * 8.1 Hats & pets unlock by playing (per computer, everyone in the game earns them), 🔒 items show how to earn them, new unlocks are listed on the end screen.
 * 10 Garden Clash is ported.
+* 11.4 Rendering speed: a 260-pest Endless wave-40 fight went from ~50 to ~95–100 fps (draw calls 1,900 → 800). All dots, shadows, rings, bars and trails come from one generated texture; pests draw in ground/body/overlay layers; off-screen things are skipped; particles and damage numbers are capped. Pest and tower sheets preload in the background at the title screen so new pests don't hitch. `--perflog` prints the per-frame breakdown.
+* 9.2 LAN smoothness: friends see everyone ~2 snapshots in the past, glided between time-stamped snapshots. In a real 2-process LAN game, frame-to-frame pest motion went from ~73% to ~7% off even (`tests/test_smooth.gd`, and the `smooth` field of `--netcheck`).
+* Smooth animation: your own dash zips over 0.14 s instead of blinking; pests fade and grow in, pop with a bright flash of their picture when defeated, and no longer flicker left/right when walking up or down; towers spring up when built and bounce when upgraded.
+* Stability: 8-game soak test (`tests/test_soak.gd`) with flat memory; closing the window or Quit stops every sound first, so exit is leak-free (10 of 10 windowed runs clean); removed the 2D MSAA setting the Compatibility renderer ignores (its startup warning is gone).
 
 **Left alone on purpose:** the 1.6 Sun Blossom share/Solar Beam and Mega-Pea knockback items are the browser original's own behavior and tuning, so changing them is a design choice. The same goes for the §6 balance items (Courtyard, chests).
 

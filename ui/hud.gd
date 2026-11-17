@@ -73,6 +73,12 @@ func banner(text: String, sub := "", col := Color("fde047"), life := 2.6) -> voi
 
 
 func _process(delta: float) -> void:
+	var _pt0 := Time.get_ticks_usec()
+	_process_inner(delta)
+	PerfStats.add("hud update" , Time.get_ticks_usec() - _pt0)
+
+
+func _process_inner(delta: float) -> void:
 	_time += delta
 	for t in _toasts:
 		t.t -= delta
@@ -190,6 +196,12 @@ func ability(c: Vector2, r: float, icon: String, key: String, cd: float, cd_max:
 # Main draw
 # ---------------------------------------------------------------------------
 func _draw() -> void:
+	var t0 := Time.get_ticks_usec()
+	_draw_hud()
+	PerfStats.add("hud draw", Time.get_ticks_usec() - t0)
+
+
+func _draw_hud() -> void:
 	_buttons.clear()
 	_block_rects.clear()
 	if snap.is_empty():

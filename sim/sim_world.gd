@@ -1334,7 +1334,7 @@ func on_defeated(e: Dictionary, killer_id: int) -> void:
 		for idx in kids.size():
 			var off := (idx - kids.size() / 2.0) * 14
 			spawn_enemy(kids[idx], e.path, e.seg, e.t, Vector2(e.x + off, e.y + (-8 if idx % 2 == 0 else 8)), e.resist)
-	ev({"type": "enemy_pop", "x": e.x, "y": e.y, "color": def.get("color", "#A3E635"), "boss": e.boss, "reward": e.reward, "kind": e.type})
+	ev({"type": "enemy_pop", "id": e.id, "x": e.x, "y": e.y, "color": def.get("color", "#A3E635"), "boss": e.boss, "reward": e.reward, "kind": e.type})
 
 
 # ---------------------------------------------------------------------------

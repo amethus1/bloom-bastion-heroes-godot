@@ -1654,7 +1654,7 @@ func on_defeated(e: Dictionary, killer_id: int) -> void:
 			kh._st = null
 			ev({"type": "powerup_get", "kind": buff, "x": e.x, "y": e.y, "slot": kh.slot, "name": kp.name if kp else "", "owner": kh.owner, "shared": 0})
 		ev({"type": "camp_down", "kind": e.type, "name": def.name, "x": e.x, "y": e.y, "epic": def.get("epic", false), "elder": e.elder})
-	ev({"type": "enemy_pop", "x": e.x, "y": e.y, "color": def.get("color", "#A3E635"), "boss": e.rival or def.get("epic", false), "reward": e.reward, "kind": e.type, "structure": e.structure})
+	ev({"type": "enemy_pop", "id": e.id, "x": e.x, "y": e.y, "color": def.get("color", "#A3E635"), "boss": e.rival or def.get("epic", false), "reward": e.reward, "kind": e.type, "structure": e.structure})
 
 
 func _near(e: Dictionary, r: float) -> Array:

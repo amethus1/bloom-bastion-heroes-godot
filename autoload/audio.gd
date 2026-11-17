@@ -330,6 +330,14 @@ func _apply_stem_gain(p: AudioStreamPlayer, k: float) -> void:
 		p.volume_db = linear_to_db(k)
 
 
+## Stop everything on exit so no sound streams are left playing when the app closes
+func _exit_tree() -> void:
+	for c in get_children():
+		if c is AudioStreamPlayer or c is AudioStreamPlayer2D:
+			c.stop()
+			c.stream = null
+
+
 func set_music_state(state: String, map_id := "") -> void:
 	_music_state = state
 	if not enabled:
