@@ -19,6 +19,7 @@ var _time := 0.0
 var couch: Couch  # couch co-op players on this computer (set by main.gd)
 var show_stats := false  # Tab held: scoreboard, hero stats, reaction guide
 var emote_open := false  # V: the emote bar
+var cards_hidden := false  # C: tuck the level-up cards away during a busy fight
 var minimap_on := true  # N hides the Adventure minimap
 var minimap_rect := Rect2()  # clicking the minimap walks there (main.gd)
 var world: WorldView  # for edge arrows (set by main.gd)
@@ -225,11 +226,15 @@ func _draw() -> void:
 			txt(Vector2(W / 2, 152), _banner.sub, 18, Color(1, 1, 1, a), HORIZONTAL_ALIGNMENT_CENTER, -1, 5)
 	if _subtitle.t > 0:
 		var sa: float = clampf(_subtitle.t / 0.4, 0, 1) * clampf((_subtitle.max - _subtitle.t) / 0.18 + 0.2, 0, 1)
-		var line := "%s: \"%s\"" % [_subtitle.speaker, _subtitle.text]
+		var is_foe: bool = _subtitle.speaker in ["Spore Zeppelin", "Dread Monarch", "Sir Shellbash", "Queen Stinger", "Digger Duke", "Spore Witch"]
+		var badge := "👑 " if is_foe else "🎙️ "
+		var line := "%s%s: \"%s\"" % [badge, _subtitle.speaker, _subtitle.text]
 		var sw := _font.get_string_size(line, HORIZONTAL_ALIGNMENT_LEFT, -1, 14).x + 28
 		var sy := 178.0 if _banner.t > 0 else 22.0
-		panel(Rect2(W / 2 - sw / 2, sy, sw, 28), Color(0.04, 0.09, 0.06, 0.88 * sa), Color(0.99, 0.88, 0.28, 0.65 * sa), 10)
-		txt(Vector2(W / 2, sy + 19), line, 14, Color(0.99, 0.96, 0.82, sa), HORIZONTAL_ALIGNMENT_CENTER)
+		var edge := Color(0.97, 0.44, 0.44, 0.75 * sa) if is_foe else Color(0.99, 0.88, 0.28, 0.65 * sa)
+		var tcol := Color(1.0, 0.85, 0.85, sa) if is_foe else Color(0.99, 0.96, 0.82, sa)
+		panel(Rect2(W / 2 - sw / 2, sy, sw, 28), Color(0.04, 0.09, 0.06, 0.88 * sa), edge, 10)
+		txt(Vector2(W / 2, sy + 19), line, 14, tcol, HORIZONTAL_ALIGNMENT_CENTER)
 
 	if clash.is_empty() and phase == "playing":
 		_draw_boss_bar(W)
@@ -247,6 +252,8 @@ func _draw() -> void:
 		_draw_emote_bar(W, H)
 	if clash.is_empty():
 		_draw_build_bar(me, W, H)
+		if snap.get("endless", false) and int(snap.wave) >= 5 and phase == "playing":
+			_draw_endless_shop(me, H)
 	else:
 		if not h.is_empty() and h.get("canShop", false) and phase == "playing":
 			_draw_shop(h, me, W, H)
@@ -257,7 +264,12 @@ func _draw() -> void:
 			txt(Vector2(W / 2, H * 0.36 + 30), "A friend standing right next to you can revive you sooner. You can still shop!", 16, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER, -1, 4)
 	_draw_controls(W, H)
 	if not h.is_empty() and h.pending > 0 and h.offer.size() > 0 and phase == "playing" and not me.get("bot", false):
-		_draw_cards(h, W, H)
+		if cards_hidden:
+			var label := "⭐ %d card%s waiting · C to show" % [int(h.pending), "s" if int(h.pending) > 1 else ""]
+			var w := _font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, 14).x + 28
+			button(Rect2(W / 2 - w / 2, H - 92 - 62, w, 32), label, {"t": "show_cards"}, Color("854d0e"), 14, true)
+		else:
+			_draw_cards(h, W, H)
 
 	# --- toasts
 	var ty := H - 150.0 - (190.0 if not h.is_empty() and h.pending > 0 else 0.0)
@@ -373,7 +385,11 @@ func _draw_controls(W: float, H: float) -> void:
 		# LAN friends: the host controls pause and speed
 		button(Rect2(x - 44, y, 44, 40), "🔇" if Audio.muted else "🔊", {"t": "mute"}, Color("334155"), 17, Audio.muted)
 		return
-	button(Rect2(x - 44, y, 44, 40), "⏸", {"t": "pause"}, Color("334155"), 18, snap.paused)
+	button(Rect2(x - 44, y, 44, 40), "", {"t": "pause"}, Color("334155"), 18, snap.paused)
+	if snap.paused:
+		UiKit.icon_play(self, Vector2(x - 22, y + 20), 18)
+	else:
+		UiKit.icon_pause(self, Vector2(x - 22, y + 20), 18)
 	button(Rect2(x - 98, y, 48, 40), "%dx" % int(snap.speed), {"t": "speed"}, Color("334155"), 16, snap.speed > 1)
 	if not snap.has("clash"):
 		button(Rect2(x - 172, y, 68, 40), "Auto", {"t": "auto"}, Color("334155"), 15, snap.autoWave)
@@ -384,11 +400,12 @@ func _draw_controls(W: float, H: float) -> void:
 
 func _draw_cards(h: Dictionary, W: float, H: float) -> void:
 	var cw := 210.0
-	var ch := 166.0
+	var ch := 184.0
 	var n: int = h.offer.size()
 	var x0 := W / 2 - (n * cw + (n - 1) * 14) / 2
 	var y0 := H - 104 - ch - 12
 	txt(Vector2(W / 2, y0 - 12), "⭐ LEVEL UP! Pick one (1, 2, 3 or click)", 20, Color("fde047"), HORIZONTAL_ALIGNMENT_CENTER, -1, 5)
+	button(Rect2(x0 + n * cw + (n - 1) * 14 - 70, y0 - 34, 70, 24), "▾ hide (C)", {"t": "hide_cards"}, Color("334155"), 11)
 	for i in n:
 		var c: Dictionary = h.offer[i]
 		var r := Rect2(x0 + i * (cw + 14), y0, cw, ch)
@@ -421,7 +438,16 @@ func _draw_cards(h: Dictionary, W: float, H: float) -> void:
 		txt(r.position + Vector2(cw / 2, 46), icon, 26, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
 		txt(r.position + Vector2(cw / 2, 74), title, 17, col.lightened(0.3), HORIZONTAL_ALIGNMENT_CENTER)
 		txt(r.position + Vector2(cw / 2, 92), head, 11, Color("a7f3d0"), HORIZONTAL_ALIGNMENT_CENTER)
-		wrap_text(r.position + Vector2(10, 112), desc, cw - 20, 13, Color("ecfdf5"), 2 if c.kind == "path" and int(c.tier) == 3 else 3)
+		wrap_text(r.position + Vector2(10, 112), desc, cw - 20, 13, Color("ecfdf5"), 2)
+		if c.kind == "path":
+			# progress along that path: ● = tiers you'll have
+			var pips := ""
+			for t in 4:
+				pips += "●" if t < int(c.tier) else "○"
+			txt(r.position + Vector2(cw - 14, 26), pips, 12, col, HORIZONTAL_ALIGNMENT_RIGHT)
+		var delta := _card_delta(h, c)
+		if delta != "":
+			txt(r.position + Vector2(cw / 2, ch - (28 if c.kind == "path" and int(c.tier) == 3 else 12)), fit(delta, cw - 16, 12), 12, Color("fde68a"), HORIZONTAL_ALIGNMENT_CENTER)
 		if c.kind == "path" and int(c.tier) == 3:
 			txt(r.position + Vector2(cw / 2, ch - 10), "🔒 Path %s will stop at tier 2" % ("B" if c.path == "A" else "A"), 11, Color("fdba74"), HORIZONTAL_ALIGNMENT_CENTER)
 		_buttons.append([r, {"t": "card", "i": i}])
@@ -527,13 +553,13 @@ func _draw_tree_panel(lives_k: float, me: Dictionary) -> void:
 	var tl := Rect2(12, 12, 420 if extra else 330, 66)
 	panel(tl)
 	_block_rects.append(tl)
-	txt(Vector2(26, 40), "🌳", 22)
+	UiKit.icon_tree(self, Vector2(36, 34), 24)
 	txt(Vector2(56, 38), "Bloom Tree", 13, Color("bbf7d0"))
 	meter(Rect2(56, 44, 120, 14), lives_k, Color("4ade80") if lives_k > 0.5 else (Color("facc15") if lives_k > 0.25 else Color("fb7185")))
 	txt(Vector2(182, 57), "%d/%d" % [snap.lives, snap.maxLives], 14)
 	var wave_label := ("Wave %d" % snap.wave) if snap.endless else ("Wave %d/%d" % [snap.wave, snap.maxWave])
 	txt(Vector2(250, 38), wave_label, 15, Color("fde68a"))
-	txt(Vector2(250, 60), "🌰 %d" % int(me.get("acorns", 0)), 16, Color("fcd34d"))
+	UiKit.acorns_text(self, Vector2(250, 60), int(me.get("acorns", 0)), 16)
 	if snap.waveActive:
 		var left: int = snap.get("enemies", []).size() + int(snap.get("toSpawn", 0))
 		txt(Vector2(345, 38), "Pests left", 11, Color("bbf7d0"))
@@ -591,7 +617,7 @@ func _draw_clash_top(cl: Dictionary, me: Dictionary, h: Dictionary, W: float) ->
 	var tl := Rect2(12, 12, 230, 52)
 	panel(tl)
 	_block_rects.append(tl)
-	txt(Vector2(26, 44), "🌰 %d" % int(me.get("acorns", 0)), 20, Color("fcd34d"))
+	UiKit.acorns_text(self, Vector2(26, 44), int(me.get("acorns", 0)), 20)
 	if not h.is_empty():
 		txt(Vector2(130, 44), "🧃 %d/%d" % [int(h.get("potions", 0)), int(GameData.clash.config.maxPotions)], 18, Color("f9a8d4"))
 	# the scoreboard (top-center)
@@ -615,7 +641,7 @@ func _draw_clash_top(cl: Dictionary, me: Dictionary, h: Dictionary, W: float) ->
 	for t in cl.get("foeTowers", []):
 		if not t.core and int(t.tier) != 3 and t.hp > 0:
 			foe_left += 1
-	txt(Vector2(x + 20, y + 25), "🌳", 20, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
+	UiKit.icon_tree(self, Vector2(x + 20, y + 20), 22)
 	txt(Vector2(x + sw - 20, y + 25), "💜", 20, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
 	meter(Rect2(x + 36, y + 11, 130, 10), tree_k, Color("4ade80") if tree_k > 0.35 else Color("fb7185"))
 	meter(Rect2(x + sw - 166, y + 11, 130, 10), heart_k, Color("e879f9"))
@@ -687,7 +713,7 @@ func _draw_shop(h: Dictionary, me: Dictionary, W: float, H: float) -> void:
 	panel(r, Color(0.05, 0.1, 0.07, 0.93), Color("facc15"), 14)
 	_block_rects.append(r)
 	txt(Vector2(r.position.x + 14, r.position.y + 24), "🛒 Bloom Tree Shop", 16, Color("fde047"))
-	txt(Vector2(r.end.x - 14, r.position.y + 24), "🌰 %d" % int(me.get("acorns", 0)), 15, Color("fcd34d"), HORIZONTAL_ALIGNMENT_RIGHT)
+	UiKit.acorns_text(self, Vector2(r.end.x - 14, r.position.y + 24), int(me.get("acorns", 0)), 15, Color("fcd34d"), true)
 	var items: Array = h.get("items", [])
 	var acorns := int(me.get("acorns", 0))
 	var y := r.position.y + 36
@@ -729,8 +755,10 @@ func _draw_shop(h: Dictionary, me: Dictionary, W: float, H: float) -> void:
 		txt(Vector2(cr.position.x + 20, cr.position.y + 28), icon, 20, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
 		txt(Vector2(cr.position.x + 40, cr.position.y + 17), name, 14, Color.WHITE if afford else Color(1, 1, 1, 0.55))
 		txt(Vector2(cr.position.x + 40, cr.position.y + 33), desc.substr(0, 34), 11, Color("a7f3d0") if afford else Color(0.65, 0.95, 0.82, 0.5))
-		var price := "✨ Golden" if state == "golden" else ("full" if state == "full" else "🌰 %d" % cost)
-		txt(Vector2(cr.end.x - 10, cr.position.y + 26), price, 13, Color("fcd34d") if afford else Color("fca5a5"), HORIZONTAL_ALIGNMENT_RIGHT)
+		if state == "":
+			UiKit.acorns_text(self, Vector2(cr.end.x - 10, cr.position.y + 26), cost, 13, Color("fcd34d") if afford else Color("fca5a5"), true)
+		else:
+			txt(Vector2(cr.end.x - 10, cr.position.y + 26), "✨ Golden" if state == "golden" else "full", 13, Color("fcd34d"), HORIZONTAL_ALIGNMENT_RIGHT)
 		if state == "":
 			_buttons.append([cr, {"t": "buy", "item": id}])
 		y += rh
@@ -1203,3 +1231,65 @@ func _draw_edge_arrows(W: float, H: float) -> void:
 		var side := dir.orthogonal() * 7
 		draw_colored_polygon(PackedVector2Array([tip, p + dir * 17 + side, p + dir * 17 - side]), Color(col.r, col.g, col.b, pulse))
 		txt(p + Vector2(0, 6), m[1], 15, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
+
+
+## The exact change a card makes, e.g. "Damage 36 → 41"
+func _card_delta(h: Dictionary, c: Dictionary) -> String:
+	var items: Array = h.get("items", [])
+	var now: Dictionary = GameData.compute_hero_stats(h.type, h.tierA, h.tierB, h.cards, h.level, h.buffs, items)
+	var nxt: Dictionary
+	if c.kind == "path":
+		var ta: int = h.tierA + (1 if c.path == "A" else 0)
+		var tb: int = h.tierB + (1 if c.path == "B" else 0)
+		nxt = GameData.compute_hero_stats(h.type, ta, tb, h.cards, h.level, h.buffs, items)
+	else:
+		var cards: Dictionary = h.cards.duplicate()
+		cards[c.id] = GameData.gnum(cards, c.id) + 1
+		nxt = GameData.compute_hero_stats(h.type, h.tierA, h.tierB, cards, h.level, h.buffs, items)
+	var parts: Array = []
+	for flag in [["armorPierce", "Breaks armor"], ["detectCamo", "Sees camo"]]:
+		if not now.get(flag[0], false) and nxt.get(flag[0], false):
+			parts.append("%s: no → yes" % flag[1])
+	for f in [["burnDps", "Burn", "%d/s"], ["damage", "Damage", "%d"], ["fireRate", "Speed", "%.2f"], ["range", "Range", "%d"], ["moveSpeed", "Walk", "%d"],
+			["critChance", "Lucky", "pct"], ["pickup", "Sun grab", "%d"], ["specialMult", "Special", "cd"], ["xpMult", "XP", "pct"]]:
+		var a := GameData.gnum(now, f[0])
+		var b := GameData.gnum(nxt, f[0])
+		if absf(b - a) < 0.0001:
+			continue
+		var fa: String
+		var fb: String
+		match String(f[2]):
+			"pct":
+				fa = "%d%%" % int(round(a * 100))
+				fb = "%d%%" % int(round(b * 100))
+			"cd":
+				var base := float(GameData.HERO_INFO[h.type].special.cooldown)
+				fa = "%ds" % int(round(base * a))
+				fb = "%ds" % int(round(base * b))
+			_:
+				fa = f[2] % a
+				fb = f[2] % b
+		parts.append("%s %s → %s" % [f[1], fa, fb])
+		if parts.size() >= 2:
+			break
+	return " · ".join(parts)
+
+
+## Endless: spend spare acorns (wave 5+)
+func _draw_endless_shop(me: Dictionary, H: float) -> void:
+	var acorns := int(me.get("acorns", 0))
+	var y := H - 108 - 36
+	var x := 12.0
+	var life_at := int(snap.get("lifeShopAt", 0))
+	var items := [["life", "🌳 +1 life", 250, int(snap.wave) >= life_at and int(snap.lives) < int(snap.maxLives)],
+		["overclock", "⚡ Overclock %s" % (("%ds" % int(snap.overclock)) if int(snap.get("overclock", 0)) > 0 else "60s"), 100, true],
+		["mystery", "🎁 Mystery", 120, true]]
+	for it in items:
+		var ok: bool = it[3] and acorns >= int(it[2])
+		var w := 122.0
+		var r := Rect2(x, y, w, 30)
+		button(r, "", {"t": "eshop", "item": it[0]}, Color("14532d") if ok else Color(0.2, 0.22, 0.2), 12)
+		txt(Vector2(r.position.x + 8, y + 20), it[1], 12, Color.WHITE if ok else Color(1, 1, 1, 0.5))
+		UiKit.acorns_text(self, Vector2(r.end.x - 6, y + 20), int(it[2]), 11, Color("fcd34d") if ok else Color(1, 0.8, 0.8, 0.6), true)
+		x += w + 4
+	_block_rects.append(Rect2(12, y, x - 12, 30))

@@ -89,3 +89,52 @@ static func hero_icon(type: String, a := 0, b := 0) -> AtlasTexture:
 		var s := Sprites.scale
 		t.region = Rect2(t.region.position + Vector2(24, 30) * s, Vector2(72, 80) * s)
 	return t
+
+
+# ---------------------------------------------------------------------------
+# Drawn HUD icons: the ones on screen all the time look the same on every
+# computer (emoji fonts differ between macOS, Windows and Linux)
+# ---------------------------------------------------------------------------
+static func icon_acorn(ci: CanvasItem, c: Vector2, s: float) -> void:
+	var k := s / 20.0
+	ci.draw_set_transform(c + Vector2(0, 2 * k), 0.0, Vector2(1.0, 1.15))
+	ci.draw_circle(Vector2.ZERO, 7.5 * k, Color("92400e"))
+	ci.draw_circle(Vector2(-2.5, -2) * k, 3 * k, Color(1, 1, 1, 0.25))
+	ci.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	ci.draw_set_transform(c + Vector2(0, -4 * k), 0.0, Vector2(1.0, 0.55))
+	ci.draw_circle(Vector2.ZERO, 8.5 * k, Color("a16207"))
+	ci.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	for i in 4:
+		ci.draw_line(c + Vector2(-7 + i * 4.5, -6.5) * k, c + Vector2(-5.5 + i * 4.5, -2) * k, Color("713f12"), 1.2 * k)
+	ci.draw_line(c + Vector2(0, -8.5) * k, c + Vector2(1.5, -12) * k, Color("713f12"), 2 * k)
+
+
+static func icon_tree(ci: CanvasItem, c: Vector2, s: float) -> void:
+	var k := s / 22.0
+	ci.draw_rect(Rect2(c + Vector2(-2.5, 1) * k, Vector2(5, 10) * k), Color("854d0e"))
+	for b in [[Vector2(0, -5), 8.5], [Vector2(-6, -1), 6.5], [Vector2(6, -1), 6.5], [Vector2(0, -10), 6.0]]:
+		ci.draw_circle(c + b[0] * k, b[1] * k, Color("16a34a"))
+	ci.draw_circle(c + Vector2(-2, -8) * k, 2.2 * k, Color("f9a8d4"))
+	ci.draw_circle(c + Vector2(4, -3) * k, 2.0 * k, Color("f9a8d4"))
+	ci.draw_circle(c + Vector2(0, -3) * k, 2.4 * k, Color("f43f5e"))
+
+
+static func icon_pause(ci: CanvasItem, c: Vector2, s: float, col := Color.WHITE) -> void:
+	ci.draw_rect(Rect2(c + Vector2(-s * 0.32, -s * 0.38), Vector2(s * 0.22, s * 0.76)), col)
+	ci.draw_rect(Rect2(c + Vector2(s * 0.1, -s * 0.38), Vector2(s * 0.22, s * 0.76)), col)
+
+
+static func icon_play(ci: CanvasItem, c: Vector2, s: float, col := Color.WHITE) -> void:
+	ci.draw_colored_polygon(PackedVector2Array([c + Vector2(-s * 0.3, -s * 0.4), c + Vector2(s * 0.4, 0), c + Vector2(-s * 0.3, s * 0.4)]), col)
+
+
+## "🌰 123" as a drawn acorn + number; returns the width used
+static func acorns_text(ci: CanvasItem, pos: Vector2, n: int, size := 16, col := Color("fcd34d"), right := false) -> float:
+	var f := font()
+	var label := str(n)
+	var w := f.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x
+	var total := size + 4 + w
+	var x := pos.x - total if right else pos.x
+	icon_acorn(ci, Vector2(x + size * 0.5, pos.y - size * 0.35), size)
+	ci.draw_string(f, Vector2(x + size + 4, pos.y), label, HORIZONTAL_ALIGNMENT_LEFT, -1, size, col)
+	return total

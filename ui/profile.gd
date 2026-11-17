@@ -10,9 +10,9 @@ static var path := "user://profile.cfg"
 static func defaults() -> Dictionary:
 	return {"name": "Player", "hero": "peashooter", "hat": "none", "pet": "none", "map": "meadow", "diff": "normal",
 		"gameMode": "adventure", "bots": 1, "address": "", "games": 0, "wins": 0, "bestEndless": 0,
-		"muted": false, "sfxVol": 0.85, "voiceVol": 0.95, "padP1": false,
+		"muted": false, "sfxVol": 0.85, "musicVol": 0.65, "voiceVol": 0.95, "dialogMode": "all", "padP1": false,
 		"shake": 1.0, "dmgNums": "all", "fullscreen": false,
-		"hats": [], "pets": [], "unlockAll": false, "unlocksStarted": false}
+		"hats": [], "pets": [], "unlockAll": false, "unlocksStarted": false, "medals": {}, "kidAssist": false, "tipsSeen": []}
 
 
 static func load_profile() -> Dictionary:
@@ -86,12 +86,38 @@ static func dmg_label(v: String) -> String:
 	return "Damage numbers: %s" % {"all": "all", "big": "big hits only", "off": "off"}.get(v, "all")
 
 
+static func next_vol(v: float) -> float:
+	return 0.65 if v > 0.8 else (0.35 if v > 0.5 else (0.0 if v > 0.1 else 1.0))
+
+
+static func vol_label(prefix: String, v: float) -> String:
+	return "%s: %s" % [prefix, "off" if v < 0.05 else ("%d%%" % int(round(v * 100)))]
+
+
+static func next_dialog(v: String) -> String:
+	return {"all": "key", "key": "off", "off": "all"}.get(v, "all")
+
+
+static func dialog_label(v: String) -> String:
+	return "Hero chatter: %s" % {"all": "all", "key": "key moments", "off": "off"}.get(v, "all")
+
+
+const MEDAL_LEVEL := {"easy": 1, "normal": 2, "hard": 3, "nightmare": 4}
+const MEDAL_ICON := ["", "🥉", "🥈", "🥇", "💎"]
+const MEDAL_NAME := ["", "won on Easy", "won on Normal", "won on Hard", "won on Nightmare"]
+
+
 ## Called when a game ends to keep simple records
-static func record_game(win: bool, endless: bool, wave: int) -> Dictionary:
+static func record_game(win: bool, endless: bool, wave: int, map_id := "", diff := "", game_mode := "") -> Dictionary:
 	var d := load_profile()
 	d.games = int(d.games) + 1
 	if win:
 		d.wins = int(d.wins) + 1
+		# medals: the hardest difficulty you've won each Adventure map on
+		if game_mode == "adventure" and map_id != "":
+			var m: Dictionary = d.get("medals", {})
+			m[map_id] = maxi(int(m.get(map_id, 0)), MEDAL_LEVEL.get(diff, 0))
+			d.medals = m
 	if endless:
 		d.bestEndless = maxi(int(d.bestEndless), wave)
 	save_profile(d)

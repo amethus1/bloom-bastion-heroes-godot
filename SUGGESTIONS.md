@@ -30,6 +30,20 @@ This document compiles a deep technical, UX, balance, and feature audit of **Blo
 * 3.7 Evolution fanfare at tier 3/4, team awards on the end screen, "Next challenge →" after a win.
 * 3.10 / 9.1 LAN: switch hero/hat/pet in the lobby, host changes map/difficulty/mode/bots live, Copy-address button, richer game list (difficulty, mode, wave), Refresh + firewall tip. 9.2 shots extrapolate by the real snapshot gap; a small "LAN: N updates a second" note on clients.
 * 7.1 Emotes (V, 1–5) and map pings (middle-click / Alt+click), sent reliably.
+* 1.6 / 5.4 Sun Blossom Golden Harvest: shares 50% base, +30%/+40% at tier 3/4 (removing the floor outright would have left her sharing nothing before tier 3); Solar Beam = 6x her damage and heals (every 3rd beam +1 Bloom Tree life; heroes in Clash).
+* 6.1 Balance: 4-trail maps ramp team toughness more gently and top out 20% lower; Golden Beetle chests give cards for the first 5 then XP + acorns (boss chests keep 2 cards). Tapering boss chests too made Hard Meadow unwinnable for a duo, so that part was dropped.
+* 5.1 Eight named team combos on top of the Team Combo blast (tested in `tests/test_rules.gd`).
+* 5.2 One light gimmick per Adventure map (`sim/map_features.gd`).
+* 3.8 Title screen: live animated hero + hat + pet preview, map thumbnail cards with medals; Controllers option moved to Settings.
+* 3.10 / 9.1 Lobby Ready toggle (✅/⏳, host's Start shows "n/m ready").
+* 4.3 Ambient particles per map (pollen, sparkles, fireflies, maple leaves, snow, petals) and a soft vignette; drawn acorn/tree/pause icons for the always-visible HUD (other icons are still emoji).
+* 6.3 Perfect-wave streak bonus; Kid assist option (tree regrows 2 lives a wave, 1.5x Sun grab range).
+* 6.2 Smarter Bot Buddies: wake sleeping towers, target the strongest pest while bosses are out, Seed Bomb pests close to the tree. (Hard Maple Hollow went from mostly losing around wave 15 to reaching waves 25-30.)
+* 5.7 Telegraphs: Healer Moth tethers, Snoozy Moth sleep-dust range, mole dirt; 3.6 ice-crystal frozen look and status pips (soaked, sunlit, frostbite, poisoned, trapped); 4.3 the Bloom Tree drops petals when hurt and blossoms when it gains lives.
+* 3.9 Level-up cards: path pips, exact stat changes, tuck away with C.
+* 5.4 Leaf Leap perks for every hero.
+* 5.5 Endless acorn shop (life / overclock / mystery power-up).
+* 8.3 First-time tips (each shows once per computer).
 * 8.1 Hats & pets unlock by playing (per computer, everyone in the game earns them), 🔒 items show how to earn them, new unlocks are listed on the end screen.
 * 10 Garden Clash is ported.
 

@@ -118,6 +118,10 @@ func push_snapshot(s: Dictionary) -> void:
 			_cur[e.id] = Vector2(e.x, e.y)
 	for u in s.get("clash", {}).get("allies", []):
 		_cur[u.id] = Vector2(u.x, u.y)
+	if not snap.is_empty() and s.get("map", "") == snap.get("map", "") and int(s.get("lives", 0)) > int(snap.get("lives", 0)) and not s.has("clash"):
+		var sc0: Vector2 = GameData.sanctuary(s.map)
+		burst(sc0 - Vector2(0, 80), ["f9a8d4", "fbcfe8", "fde047", "ffffff"], 30, 200)
+		float_text(sc0 - Vector2(0, 170), "🌸 +%d" % (int(s.lives) - int(snap.lives)), Color("f9a8d4"), 18, 1.2)
 	snap = s
 	if s.get("map", "") != _map_id:
 		_map_id = s.map
@@ -164,6 +168,7 @@ func _process(delta: float) -> void:
 	if _marker.t > 0:
 		_marker.t -= delta
 	_update_fx(delta)
+	_update_ambient(delta)
 	queue_redraw()
 
 
@@ -215,6 +220,7 @@ func _draw() -> void:
 	if _marker.t > 0:
 		var k: float = _marker.t / 0.6
 		ellipse_line(_marker.p, 18 * (1.4 - k * 0.4), 9 * (1.4 - k * 0.4), Color(1, 1, 1, k * 0.8), 2.5)
+	_draw_features()
 	for s in snap.get("spikes", []):
 		draw_colored_polygon(PackedVector2Array([Vector2(s.x - 8, s.y + 5), Vector2(s.x, s.y - 9), Vector2(s.x + 8, s.y + 5)]), GameData.player_color(s.slot))
 	# depth-sorted things
@@ -262,6 +268,7 @@ func _draw() -> void:
 		var e: Dictionary = Sprites.atlas.get("sun", {})
 		Sprites.draw_frame(self, Sprites.tex(e.get("file", "")), e, 0, Vector2(s.x, s.y + sin(time * 3 + s.x) * 3), false, 1.0, Color.WHITE, Sprites.scale)
 	draw_fx()
+	_draw_ambient()
 	_draw_pings()
 	if ghost != "" and my_pos != null:
 		# where the selected tower would go, with its real (round) range
@@ -285,6 +292,9 @@ func draw_tree(sc: Vector2) -> void:
 	var mod := Color(1, 1 - hurt * 0.5, 1 - hurt * 0.5) if hurt > 0 else (Color.WHITE if k > 0.35 else Color(1, 0.75, 0.75))
 	var off := Vector2(sin(time * 60) * hurt * 6, 0)
 	Sprites.draw_frame(self, Sprites.tex(e.get("file", "")), e, int(time * 2) % 4, sc + off, false, 1.0, mod, Sprites.scale)
+	# a hurt tree drops petals
+	if not snap.has("clash") and k < 0.5 and randf() < get_process_delta_time() * (2.0 + (0.5 - k) * 14.0):
+		_parts.append({"p": sc + Vector2((randf() - 0.5) * 90, -120 + randf() * 40), "v": Vector2(18 + randf() * 20, 30), "life": 2.2, "max": 2.2, "size": 3.5, "col": Color("f9a8d4"), "g": 25.0})
 	if snap.has("clash"):
 		for t in snap.clash.allyTowers:
 			if t.kind == "tree":
@@ -335,6 +345,8 @@ func draw_enemy(e: Dictionary) -> void:
 		ellipse(feet, R * 1.05, R * 0.32, Color(0, 0, 0, 0.22))
 		ellipse(p + Vector2(0, R * 0.2), R * 1.05, R * 0.5, Color("8a5a1e"))
 		draw_circle(p - Vector2(0, R * 0.3), R * 0.4, Color("facc15"))
+		if randf() < get_process_delta_time() * 12:
+			_parts.append({"p": p + Vector2((randf() - 0.5) * R * 1.6, 0), "v": Vector2((randf() - 0.5) * 70, -60 - randf() * 50), "life": 0.5, "max": 0.5, "size": 3.0, "col": Color("a16207") if randf() < 0.5 else Color("78350f"), "g": 300.0})
 		return
 	ellipse(feet, R * (0.7 if flyer else 0.95), R * (0.25 if flyer else 0.32), Color(0, 0, 0, 0.18 if flyer else 0.28))
 	if def.get("minion", false) or def.get("rival", false):
@@ -353,7 +365,15 @@ func draw_enemy(e: Dictionary) -> void:
 	Sprites.draw_frame(self, Sprites.tex(entry.file), entry, frame, feet, a.face < 0, S, mod, Sprites.scale)
 	var top := feet.y - (R * 2.6 if flyer else R * 2.0)
 	if e.frozen:
-		draw_rect(Rect2(p.x - R * 1.05, top + 2, R * 2.1, feet.y - top - 2), Color(0.75, 0.9, 1.0, 0.55))
+		var cy := (top + feet.y) / 2
+		var hw := R * 1.15
+		var hh := (feet.y - top) / 2 + 4
+		var ice := PackedVector2Array([Vector2(p.x, cy - hh), Vector2(p.x + hw, cy - hh * 0.45), Vector2(p.x + hw * 0.9, cy + hh * 0.6),
+			Vector2(p.x, cy + hh), Vector2(p.x - hw * 0.9, cy + hh * 0.6), Vector2(p.x - hw, cy - hh * 0.45)])
+		draw_colored_polygon(ice, Color(0.75, 0.9, 1.0, 0.5))
+		ice.append(ice[0])
+		draw_polyline(ice, Color(1, 1, 1, 0.85), 2, true)
+		draw_line(Vector2(p.x - hw * 0.4, cy - hh * 0.5), Vector2(p.x - hw * 0.1, cy - hh * 0.1), Color(1, 1, 1, 0.9), 2)
 	if e.get("trapped", false):
 		var br := R * 1.45
 		var by := p.y - R * 0.5 + sin(time * 4 + p.x) * 3
@@ -386,6 +406,29 @@ func draw_enemy(e: Dictionary) -> void:
 		draw_circle(bc, 9, Color(0.06, 0.09, 0.16, 0.85))
 		draw_arc(bc, 9, 0, TAU, 20, Color(rs.get("color", "#ffffff")), 2.0, true)
 		text(bc + Vector2(0, 4), String(rs.get("icon", "")), 10, Color.WHITE, 0)
+	# little coloured pips: soaked, sunlit, frostbite, poisoned, bubble-trapped
+	var pips: Array = []
+	if e.get("soaked", false):
+		pips.append(Color("60a5fa"))
+	if e.get("sunlit", false):
+		pips.append(Color("fde047"))
+	if e.get("frostbit", false):
+		pips.append(Color("e0f2fe"))
+	if e.get("poisoned", false):
+		pips.append(Color("a3e635"))
+	if e.get("trapped", false):
+		pips.append(Color("c4b5fd"))
+	for i in pips.size():
+		var pc := Vector2(p.x + R * 0.95 - i * 9, top + 8)
+		draw_circle(pc, 4.5, Color(0.06, 0.09, 0.16, 0.85))
+		draw_circle(pc, 3.2, pips[i])
+	# Healer Moth: green tethers to the pests it's healing. Snoozy Moth: its sleep-dust range
+	if def.has("heals"):
+		for o in snap.get("enemies", []):
+			if o.id != e.id and o.hp < o.maxHp and not GameData.ENEMIES.get(o.type, {}).get("boss", false) and Vector2(o.x, o.y).distance_to(p) <= float(def.healRadius):
+				draw_line(p, pos_of(o.id, Vector2(o.x, o.y)), Color(0.53, 0.94, 0.67, 0.35 + 0.2 * sin(time * 6)), 2, true)
+	if def.has("sleepDust"):
+		ellipse_line(feet, float(def.sleepDust), float(def.sleepDust) * 0.6, Color(0.77, 0.71, 0.99, 0.3 + 0.15 * sin(time * 3)), 2)
 	if def.get("rival", false):
 		var k: float = float(e.hp) / float(e.maxHp)
 		bar(Vector2(p.x, top - 10), 64, 7, k, Color("ef4444"))
@@ -658,7 +701,11 @@ func on_event(e: Dictionary) -> void:
 				ring(pos, 46, Color(rd.get("color", "#ffffff")), 4, 0.35)
 		"dash":
 			_fx.append({"kind": "beam", "a": Vector2(e.fromX, e.fromY - 10), "b": Vector2(e.x, e.y - 10), "col": GameData.player_color(e.slot), "life": 0.35, "max": 0.35})
-			burst(pos, ["86efac", "4ade80", "ffffff"], 10, 120)
+			var perk_cols: Array = {"frostlotus": ["bae6fd", "e0f2fe", "ffffff"], "snapdragon": ["fb923c", "f97316", "fde047"], "bubblelily": ["93c5fd", "60a5fa", "ffffff"],
+				"voltcactus": ["c084fc", "e9d5ff", "fde047"], "boomshroom": ["fb7185", "fde047", "f97316"], "sunblossom": ["fde047", "facc15", "ffffff"]}.get(String(e.get("perk", "")), ["86efac", "4ade80", "ffffff"])
+			burst(pos, perk_cols, 16, 150)
+			if String(e.get("perk", "")) in ["snapdragon", "bubblelily", "voltcactus", "boomshroom"]:
+				ring(pos, 110 if e.perk != "boomshroom" else 80, Color(perk_cols[0]), 4, 0.35)
 		"lily_wave", "tidal":
 			ring(pos, e.get("range", e.get("r", 200)), Color("3b82f6"), 12, 0.5)
 		"bubble_pop":
@@ -676,9 +723,15 @@ func on_event(e: Dictionary) -> void:
 		"teleport", "hero_spawn":
 			_fx.append({"kind": "pillar", "p": pos, "col": GameData.player_color(e.get("slot", 0)), "life": 0.8, "max": 0.8})
 		"combo":
-			float_text(pos - Vector2(0, 40), "TEAM COMBO!", Color("f0abfc"), 24, 1.6)
-			ring(pos, 330, Color("f0abfc"), 10, 0.7)
-			shake = maxf(shake, 10)
+			var named := String(e.get("id", "")) != ""
+			var cc: String = {"cryo": "bae6fd", "storm": "c084fc", "flare": "fb923c", "hail": "e0f2fe", "thunderboom": "fde047",
+				"glacier": "7dd3fc", "firecracker": "f472b6", "sunny": "fde047"}.get(String(e.get("id", "")), "f0abfc")
+			float_text(pos - Vector2(0, 40), String(e.get("name", "TEAM COMBO!")), Color(cc), 26 if named else 24, 1.8)
+			ring(pos, 330, Color(cc), 10, 0.7)
+			if named:
+				ring(pos, 200, Color.WHITE, 6, 0.5)
+				burst(pos, [cc, "ffffff", "fde047"], 50, 320)
+			shake = maxf(shake, 12 if named else 10)
 		"chest_open":
 			burst(pos, ["fde047", "f472b6", "60a5fa", "4ade80"], 40, 260)
 		"powerup_get":
@@ -687,6 +740,36 @@ func on_event(e: Dictionary) -> void:
 			_fx.append({"kind": "pillar", "p": pos, "col": Color("facc15"), "life": 0.6, "max": 0.6})
 		"gadget_boom":
 			shake = maxf(shake, 5)
+		"feature":
+			match String(e.kind):
+				"sunflower":
+					burst(pos - Vector2(0, 20), ["fde047", "facc15", "ffffff"], 18, 160)
+					Audio.play_sfx("sun_pickup", -2.0, 0.05, 200)
+				"lilypad":
+					ring(pos, 50, Color("86efac"), 4, 0.4)
+					float_text(pos - Vector2(0, 50), "💨 Speedy!", Color("bbf7d0"), 14, 1.0)
+					Audio.play_sfx("dash", -3.0, 0.05, 200)
+				"obelisk":
+					_fx.append({"kind": "flash", "p": pos, "r": e.r, "col": Color("c4b5fd"), "life": 0.4, "max": 0.4})
+					ring(pos, e.r, Color("a78bfa"), 10, 0.7)
+					burst(pos - Vector2(0, 60), ["e9d5ff", "a78bfa", "ffffff"], 50, 340)
+					float_text(pos - Vector2(0, 110), "✨ STARLIGHT BLAST!", Color("e9d5ff"), 20, 1.6)
+					shake = maxf(shake, 9)
+					Audio.play_sfx("thunder", 0.0, 0.03, 300)
+				"leafpile":
+					ring(pos, e.r, Color("fb923c"), 4, 0.5)
+					burst(pos, ["ea580c", "f59e0b", "b45309", "dc2626"], 30, 200)
+					Audio.play_sfx("sleep_dust", -3.0, 0.05, 200)
+				"geyser":
+					ring(pos, e.r, Color("bae6fd"), 6, 0.5)
+					for i in 24:
+						var ang := randf() * TAU
+						_parts.append({"p": pos, "v": Vector2(cos(ang) * 60, -180 - randf() * 120), "life": 0.9, "max": 0.9, "size": 4.0 + randf() * 3, "col": Color("e0f2fe"), "g": 260.0})
+					Audio.play_sfx("shoot_frost", -3.0, 0.05, 200)
+		"sun_heal":
+			ring(pos, 120, Color("fde047"), 6, 0.6)
+			_fx.append({"kind": "pillar", "p": pos, "col": Color("fef08a"), "life": 0.9, "max": 0.9})
+			float_text(pos - Vector2(0, 80), "☀️ Healing sunbeam!" if e.get("clash", false) else "☀️ +1 Bloom Tree life", Color("fde047"), 16, 1.4)
 		"solar_beam":
 			_fx.append({"kind": "pillar", "p": pos, "col": Color("fde047"), "life": 0.6, "max": 0.6})
 			ring(pos, 90, Color("fde047"), 6, 0.45)
@@ -762,85 +845,138 @@ func on_event(e: Dictionary) -> void:
 
 
 func _play_event_audio(e: Dictionary) -> void:
+	var pos := Vector2(float(e.get("x", 0.0)), float(e.get("y", 0.0)))
+	var has_pos := e.has("x") and e.has("y")
+	var owner_id := int(e.get("owner", -999))
+	var mine: bool = owner_id == my_owner or owner_id == -999
+	var play_pos := func(id: String, db := 0.0, jit := 0.07, cd := 55) -> void:
+		if has_pos:
+			Audio.play_sfx_at(id, pos, mine, db, jit, cd)
+		else:
+			Audio.play_sfx(id, db, jit, cd)
 	match String(e.get("type", "")):
 		"shot":
 			match String(e.get("kind", "")):
-				"pea": Audio.play_sfx("shoot_pea", -9.0, 0.08, 70)
-				"boom": Audio.play_sfx("shoot_boom", -5.0, 0.06, 100)
-				"bubble": Audio.play_sfx("shoot_bubble", -7.0, 0.08, 85)
+				"pea": play_pos.call("shoot_pea", -9.0, 0.08, 70)
+				"boom": play_pos.call("shoot_boom", -5.0, 0.06, 100)
+				"bubble": play_pos.call("shoot_bubble", -7.0, 0.08, 85)
 		"explosion":
-			Audio.play_sfx("explosion", -4.0, 0.08, 70)
+			play_pos.call("explosion", -4.0, 0.08, 70)
 		"nova":
-			Audio.play_sfx("shoot_frost", -5.0, 0.08, 120)
+			var nc := String(e.get("color", "")).to_upper()
+			if nc == "#FDE047":
+				play_pos.call("nova_sun", -4.0, 0.06, 140)
+			elif nc == "#C084FC":
+				play_pos.call("nova_shock", -4.0, 0.08, 110)
+			else:
+				play_pos.call("shoot_frost", -5.0, 0.08, 120)
 		"lightning":
-			Audio.play_sfx("shoot_zap", -4.0, 0.09, 80)
+			play_pos.call("shoot_zap", -4.0, 0.09, 80)
 		"thunder":
-			Audio.play_sfx("thunder", -2.0, 0.06, 110)
-		"beam", "snipe":
-			Audio.play_sfx("shoot_beam", -4.0, 0.06, 90)
+			play_pos.call("thunder", -2.0, 0.06, 110)
+		"beam":
+			var bpos := Vector2(float(e.get("x1", pos.x)), float(e.get("y1", pos.y)))
+			Audio.play_sfx_at("shoot_beam", bpos, mine, -4.0, 0.06, 90)
+		"snipe":
+			play_pos.call("snipe", -3.0, 0.05, 90)
+		"solar_beam":
+			play_pos.call("solar_beam", -2.0, 0.04, 150)
 		"flame":
-			Audio.play_sfx("shoot_flame", -6.0, 0.08, 140)
+			play_pos.call("shoot_flame", -6.0, 0.08, 140)
 		"enemy_pop":
 			if e.get("boss", false):
 				Audio.play_sfx("pop_boss", 0.0, 0.02, 200)
 			else:
-				Audio.play_sfx("pop_small", -5.0, 0.10, 65)
+				play_pos.call("pop_small", -5.0, 0.10, 65)
 		"sun_collected":
-			Audio.play_sfx("sun_pickup", -3.0, 0.06, 90)
+			play_pos.call("sun_pickup", -3.0, 0.06, 90)
 		"level_up":
 			Audio.play_sfx("level_up", -1.0, 0.02, 200)
 		"special":
-			Audio.play_sfx("special_cast", -1.0, 0.04, 150)
+			play_pos.call("special_cast", -1.0, 0.04, 150)
 			if e.has("heroType"):
-				Audio.say_hero(String(e.heroType), "special", int(e.get("owner", -1)))
+				Audio.say_hero(String(e.heroType), "special", owner_id)
 		"leak", "tree_hit":
 			Audio.play_sfx("tree_hurt", -1.0, 0.04, 180)
 		"reaction":
 			var kind := String(e.get("kind", ""))
 			if not kind.begins_with("resist_") and kind != "sunlit":
-				Audio.play_sfx("react_" + kind, -2.0, 0.05, 140)
+				play_pos.call("react_" + kind, -2.0, 0.05, 140)
 		"dash":
-			Audio.play_sfx("dash", -2.0, 0.07, 100)
+			play_pos.call("dash", -2.0, 0.07, 100)
 		"teleport", "hero_respawn":
-			Audio.play_sfx("teleport", -2.0, 0.04, 200)
+			play_pos.call("teleport", -2.0, 0.04, 200)
 		"lily_wave", "tidal":
-			Audio.play_sfx("shoot_bubble", -2.0, 0.05, 140)
+			play_pos.call("shoot_bubble", -2.0, 0.05, 140)
+		"bubble_trap":
+			play_pos.call("bubble_trap", -2.0, 0.05, 160)
+		"spring_life":
+			Audio.play_sfx("spring_life", -1.0, 0.03, 300)
+		"mole_down":
+			play_pos.call("mole_down", -4.0, 0.07, 160)
+		"mole_up":
+			play_pos.call("mole_up", -3.0, 0.07, 160)
 		"hero_dazed":
-			Audio.play_sfx("dazed", -2.0, 0.04, 250)
+			play_pos.call("dazed", -2.0, 0.04, 250)
 		"combo":
 			Audio.play_sfx("team_combo", 1.0, 0.0, 400)
 			Audio.say("ann_combo", -1, true)
 		"chest_drop":
-			Audio.play_sfx("chest_drop", -2.0, 0.04, 150)
+			play_pos.call("chest_drop", -2.0, 0.04, 150)
 		"chest_open":
 			Audio.play_sfx("chest_open", 0.0, 0.02, 200)
 		"powerup_get":
-			Audio.play_sfx("powerup", -1.0, 0.03, 150)
+			play_pos.call("powerup", -1.0, 0.03, 150)
 		"gadget_placed":
-			Audio.play_sfx("build", -2.0, 0.05, 100)
+			play_pos.call("build", -2.0, 0.05, 100)
 		"gadget_upgraded":
-			Audio.play_sfx("upgrade", -1.0, 0.04, 120)
+			play_pos.call("upgrade", -1.0, 0.04, 120)
 		"gadget_sold":
-			Audio.play_sfx("sell", -2.0, 0.04, 120)
+			play_pos.call("sell", -2.0, 0.04, 120)
+		"gadget_boom":
+			play_pos.call("gadget_boom", 0.0, 0.05, 100)
 		"gadget_wake":
-			Audio.play_sfx("gadget_wake", -2.0, 0.04, 250)
+			play_pos.call("gadget_wake", -2.0, 0.04, 250)
+			if mine:
+				Audio.say("coop_wake", owner_id)
 		"sleep_dust":
-			Audio.play_sfx("sleep_dust", -3.0, 0.04, 400)
+			play_pos.call("sleep_dust", -3.0, 0.04, 400)
 		"boss_enrage":
 			Audio.play_sfx("boss_warn", 0.0, 0.02, 500)
 			Audio.say("boss_enrage", -1, true)
-		"struct_down", "slam":
-			Audio.play_sfx("explosion", -2.0, 0.05, 120)
+		"struct_down":
+			Audio.play_sfx("struct_down", 0.0, 0.03, 200)
+		"tower_fire":
+			play_pos.call("clash_tower_fire", -7.0, 0.08, 120)
+		"slam_warn":
+			play_pos.call("slam_warn", -2.0, 0.04, 200)
+		"slam":
+			play_pos.call("slam_hit", -1.0, 0.05, 150)
 		"volley":
-			Audio.play_sfx("shoot_pea", -3.0, 0.06, 120)
+			play_pos.call("shoot_pea", -3.0, 0.06, 120)
 		"hero_down":
-			Audio.play_sfx("tree_hurt", 0.0, 0.03, 250)
-		"revive", "potion":
-			Audio.play_sfx("powerup", -2.0, 0.04, 200)
+			play_pos.call("hero_down", -1.0, 0.03, 250)
+			if mine:
+				Audio.say("clash_down", owner_id)
+		"revive":
+			play_pos.call("revive", -1.0, 0.03, 200)
+			Audio.say("clash_revive", int(e.get("owner", -1)))
+		"potion":
+			play_pos.call("potion_drink", -2.0, 0.04, 200)
+			if mine:
+				Audio.say("clash_potion", owner_id)
 		"item_bought":
-			Audio.play_sfx("upgrade", -2.0, 0.03, 150)
+			if e.get("golden", false):
+				Audio.play_sfx("golden_buy", 0.0, 0.02, 150)
+				if mine:
+					Audio.say("clash_golden", owner_id)
+			else:
+				Audio.play_sfx("upgrade", -2.0, 0.03, 150)
 		"rival_spawn":
 			Audio.play_sfx("boss_warn", -2.0, 0.03, 500)
+			var rk := String(e.get("kind", ""))
+			if rk != "":
+				Audio.say(rk, -1, false)
 
 
 func _update_fx(dt: float) -> void:
@@ -1134,3 +1270,134 @@ func evolve_fx(p: Vector2, tier: int) -> void:
 	ring(p, 60, Color.WHITE, 5, 0.5)
 	burst(p - Vector2(0, 30), ["fde047", "facc15", "ffffff", "fef08a"], 40 if tier >= 4 else 26, 240)
 	shake = maxf(shake, 4)
+
+
+## The map's little gimmicks (sunflowers, lily pads, the obelisk, leaf piles, geysers)
+func _draw_features() -> void:
+	for f in snap.get("features", []):
+		var p := Vector2(f.x, f.y)
+		var k: float = f.ready
+		var ready := k >= 0.999
+		match String(f.kind):
+			"sunflower":
+				ellipse(p + Vector2(0, 8), 26, 9, Color(0, 0, 0, 0.2))
+				draw_line(p + Vector2(0, 8), p - Vector2(0, 22), Color("15803d"), 4)
+				var head := p - Vector2(0, 30)
+				var grow := 0.55 + 0.45 * k
+				if ready:
+					draw_circle(head, 30, Color(0.99, 0.88, 0.28, 0.18 + 0.1 * sin(time * 4)))
+				for i in 10:
+					var a := TAU * i / 10 + time * 0.3
+					draw_circle(head + Vector2(cos(a), sin(a)) * 13 * grow, 7 * grow, Color("facc15") if ready else Color("ca8a04"))
+				draw_circle(head, 8 * grow, Color("92400e"))
+			"lilypad":
+				var col := Color("4ade80") if ready else Color("166534")
+				ellipse(p, 30, 15, Color(col.r, col.g, col.b, 0.9))
+				draw_colored_polygon(PackedVector2Array([p, p + Vector2(30, -4), p + Vector2(30, 6)]), Color(0.2, 0.5, 0.8, 0.6))
+				draw_circle(p + Vector2(-8, -3), 4, Color("f9a8d4"))
+				if ready:
+					ellipse_line(p, 36, 19, Color(0.73, 0.97, 0.82, 0.4 + 0.3 * sin(time * 5)), 2)
+			"obelisk":
+				ellipse(p + Vector2(0, 10), 30, 10, Color(0, 0, 0, 0.3))
+				var glow := Color(0.65, 0.55, 0.98, 0.15 + 0.5 * k)
+				if ready:
+					draw_circle(p - Vector2(0, 40), 46, Color(0.77, 0.71, 0.99, 0.18 + 0.12 * sin(time * 6)))
+				draw_colored_polygon(PackedVector2Array([p + Vector2(-14, 8), p + Vector2(-9, -60), p + Vector2(0, -84), p + Vector2(9, -60), p + Vector2(14, 8)]), Color("4c1d95"))
+				draw_colored_polygon(PackedVector2Array([p + Vector2(-9, -2), p + Vector2(-5, -56), p + Vector2(0, -72), p + Vector2(5, -56), p + Vector2(9, -2)]), glow.lightened(0.3))
+				bar(p + Vector2(0, 18), 50, 5, k, Color("a78bfa"))
+				if ready:
+					text(p + Vector2(0, -96), "✨ Stand here!", 13, Color("e9d5ff"), 3)
+			"leafpile":
+				var n := 9 if ready else 4
+				for i in n:
+					var a := TAU * i / n
+					var lp := p + Vector2(cos(a) * 18, sin(a) * 8)
+					draw_circle(lp, 9, [Color("ea580c"), Color("f59e0b"), Color("b45309")][i % 3])
+				draw_circle(p, 10 if ready else 6, Color("dc2626"))
+			"geyser":
+				ellipse(p, 28, 12, Color("475569"))
+				ellipse(p, 18, 7, Color(0.73, 0.9, 0.99, 0.5 + 0.4 * k))
+				if k > 0.85:
+					for i in 3:
+						var a := time * 6 + i * 2.1
+						draw_circle(p + Vector2(cos(a) * 8, -12 - fmod(time * 30 + i * 10, 30)), 3, Color(0.88, 0.95, 1.0, 0.7))
+
+
+# ---------------------------------------------------------------------------
+# Ambient life: pollen, sparkles, fireflies, falling leaves, snow, petals
+# ---------------------------------------------------------------------------
+const AMBIENT := {"meadow": "pollen", "river": "sparkle", "courtyard": "firefly", "hollow": "leaf", "frosty": "snow", "valley": "petal"}
+var _amb: Array = []
+var _amb_kind := ""
+
+
+func _view_rect() -> Rect2:
+	var vp := get_viewport_rect().size / maxf(0.1, camera.zoom.x)
+	return Rect2(camera.get_screen_center_position() - vp / 2, vp).grow(40)
+
+
+func _amb_new(kind: String, r: Rect2, anywhere: bool) -> Dictionary:
+	var p := Vector2(r.position.x + randf() * r.size.x, r.position.y + randf() * r.size.y)
+	if not anywhere and kind in ["leaf", "snow", "petal"]:
+		p.y = r.position.y - randf() * 30
+	return {"p": p, "ph": randf() * TAU, "s": 0.6 + randf() * 0.8, "rot": randf() * TAU, "life": 1.0 + randf() * 2.0}
+
+
+func _update_ambient(dt: float) -> void:
+	if _map_id == "":
+		return
+	var kind: String = AMBIENT.get(_map_id, "pollen")
+	var r := _view_rect()
+	var want: int = {"snow": 110, "leaf": 34, "petal": 30, "firefly": 36, "sparkle": 40, "pollen": 60}.get(kind, 50)
+	if kind != _amb_kind:
+		_amb_kind = kind
+		_amb.clear()
+	while _amb.size() < want:
+		_amb.append(_amb_new(kind, r, true))
+	for a in _amb:
+		a.ph += dt
+		match kind:
+			"pollen":
+				a.p += Vector2(14 + sin(a.ph * 1.3) * 8, -6 + cos(a.ph) * 6) * a.s * dt
+			"snow":
+				a.p += Vector2(sin(a.ph * 1.1) * 18, 46 * a.s) * dt
+			"leaf", "petal":
+				a.p += Vector2(22 + sin(a.ph * 1.7) * 26, 34 * a.s) * dt
+				a.rot += dt * 2.0 * a.s
+			"firefly":
+				a.p += Vector2(cos(a.ph * 0.7 + a.rot) * 18, sin(a.ph * 0.9) * 14) * dt
+			"sparkle":
+				a.life -= dt
+		var out: bool = not r.has_point(a.p)
+		if out or (kind == "sparkle" and a.life <= 0):
+			var fresh := _amb_new(kind, r, kind in ["sparkle", "firefly", "pollen"])
+			a.p = fresh.p
+			a.life = fresh.life
+			a.s = fresh.s
+
+
+func _draw_ambient() -> void:
+	for a in _amb:
+		match _amb_kind:
+			"pollen":
+				draw_circle(a.p, 2.2 * a.s, Color(1.0, 0.95, 0.6, 0.55))
+			"snow":
+				draw_circle(a.p, 2.4 * a.s, Color(1, 1, 1, 0.85))
+			"leaf":
+				var col: Color = [Color("ea580c"), Color("dc2626"), Color("f59e0b")][int(a.s * 10) % 3]
+				draw_set_transform(a.p, a.rot, Vector2(1.0, 0.5))
+				draw_circle(Vector2.ZERO, 5 * a.s, Color(col.r, col.g, col.b, 0.85))
+				draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+			"petal":
+				draw_set_transform(a.p, a.rot, Vector2(1.0, 0.55))
+				draw_circle(Vector2.ZERO, 4.5 * a.s, Color(0.98, 0.66, 0.83, 0.85))
+				draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+			"firefly":
+				var blink := 0.5 + 0.5 * sin(a.ph * 3.0 + a.rot * 5)
+				draw_circle(a.p, 7 * a.s, Color(0.85, 1.0, 0.45, 0.12 * blink))
+				draw_circle(a.p, 2.2 * a.s, Color(0.95, 1.0, 0.6, 0.9 * blink))
+			"sparkle":
+				var k: float = clampf(a.life, 0, 1) * clampf(3.0 - a.life, 0, 1)
+				var sz: float = 4.0 * a.s * k
+				draw_line(a.p - Vector2(sz, 0), a.p + Vector2(sz, 0), Color(1, 1, 1, 0.8 * k), 1.5)
+				draw_line(a.p - Vector2(0, sz), a.p + Vector2(0, sz), Color(1, 1, 1, 0.8 * k), 1.5)

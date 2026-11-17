@@ -1614,7 +1614,8 @@ func on_defeated(e: Dictionary, killer_id: int) -> void:
 		if kind == "gate":
 			cl.regrow.append({"side": "foe", "lane": e.lane, "t": float(C.gateRegrow) * D.gnum(cdiff(), "regrow", 1.0)})
 		update_shields()
-		ev({"type": "struct_down", "team": "foe", "x": e.x, "y": e.y, "lane": e.lane, "tier": e.tier, "kind": kind, "name": def.name, "by": killer.name if killer else ""})
+		var heart_open := kind == "guardian" and not enemies.any(func(o): return o.get("structure", false) and o.hp > 0 and o.tier == 4)
+		ev({"type": "struct_down", "team": "foe", "x": e.x, "y": e.y, "lane": e.lane, "tier": e.tier, "kind": kind, "name": def.name, "by": killer.name if killer else "", "heart_open": heart_open})
 	elif e.neutral:
 		for camp in cl.camps:
 			if camp.id == e.camp:
@@ -1652,7 +1653,7 @@ func on_defeated(e: Dictionary, killer_id: int) -> void:
 			kh.buffs[buff] = float(D.POWERUPS[buff].dur)
 			kh._st = null
 			ev({"type": "powerup_get", "kind": buff, "x": e.x, "y": e.y, "slot": kh.slot, "name": kp.name if kp else "", "owner": kh.owner, "shared": 0})
-		ev({"type": "camp_down", "kind": e.type, "name": def.name, "x": e.x, "y": e.y, "epic": def.get("epic", false)})
+		ev({"type": "camp_down", "kind": e.type, "name": def.name, "x": e.x, "y": e.y, "epic": def.get("epic", false), "elder": e.elder})
 	ev({"type": "enemy_pop", "x": e.x, "y": e.y, "color": def.get("color", "#A3E635"), "boss": e.rival or def.get("epic", false), "reward": e.reward, "kind": e.type, "structure": e.structure})
 
 

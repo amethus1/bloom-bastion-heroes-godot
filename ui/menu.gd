@@ -96,6 +96,7 @@ func _option(parent: Control, label: String, items: Array, current: String, on_p
 	row.add_child(l)
 	var ob := OptionButton.new()
 	ob.custom_minimum_size = Vector2(250, 40)
+	ob.fit_to_longest_item = false
 	ob.add_theme_font_size_override("font_size", 16)
 	for i in items.size():
 		ob.add_item(String(items[i][1]), i)
@@ -168,16 +169,25 @@ func show_title() -> void:
 		b.add_theme_font_size_override("font_size", 12)
 		b.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		b.vertical_icon_alignment = VERTICAL_ALIGNMENT_TOP
-		b.custom_minimum_size = Vector2(118, 124)
-		b.add_theme_constant_override("icon_max_width", 96)
+		b.custom_minimum_size = Vector2(118, 104)
+		b.add_theme_constant_override("icon_max_width", 78)
 		b.button_pressed = type == profile.hero
 		b.pressed.connect(func(): _pick_hero(type))
 		grid.add_child(b)
 		_hero_buttons[type] = b
-	_hero_info = _label("", 14, Color("ecfdf5"))
+	var prow := HBoxContainer.new()
+	prow.add_theme_constant_override("separation", 12)
+	left.add_child(prow)
+	_preview = HeroPreview.new()
+	_preview.custom_minimum_size = Vector2(150, 150)
+	prow.add_child(_preview)
+	var pinfo := VBoxContainer.new()
+	pinfo.add_theme_constant_override("separation", 6)
+	prow.add_child(pinfo)
+	_hero_info = _label("", 13, Color("ecfdf5"))
 	_hero_info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_hero_info.custom_minimum_size = Vector2(500, 64)
-	left.add_child(_hero_info)
+	_hero_info.custom_minimum_size = Vector2(340, 52)
+	pinfo.add_child(_hero_info)
 	_update_hero_info()
 
 	# right: game settings
@@ -185,17 +195,37 @@ func show_title() -> void:
 	right.add_theme_constant_override("separation", 10)
 	cols.add_child(right)
 	right.add_child(_label("Game settings", 16, Color("bbf7d0")))
-	var maps: Array = []
+	_map_label = _label("", 15, Color("ecfdf5"))
+	right.add_child(_map_label)
+	var mrow := HBoxContainer.new()
+	mrow.add_theme_constant_override("separation", 6)
+	right.add_child(mrow)
+	var mgroup := ButtonGroup.new()
+	var medals: Dictionary = profile.get("medals", {})
 	for id in GameData.maps.maps:
-		if not GameData.maps.maps[id].get("clash", false):
-			maps.append([id, GameData.maps.maps[id].name])
-	_option(right, "Map", maps, profile.map, func(id): profile.map = id; Profile.save_profile(profile))
+		if GameData.maps.maps[id].get("clash", false):
+			continue
+		var card := VBoxContainer.new()
+		card.add_theme_constant_override("separation", 0)
+		var b := Button.new()
+		b.toggle_mode = true
+		b.button_group = mgroup
+		b.icon = Sprites.tex(Sprites.atlas.maps.get(id, ""))
+		b.expand_icon = true
+		b.custom_minimum_size = Vector2(72, 50)
+		b.button_pressed = id == profile.map
+		var lvl := int(medals.get(id, 0))
+		b.tooltip_text = "%s%s" % [GameData.maps.maps[id].name, (" · %s %s" % [Profile.MEDAL_ICON[lvl], Profile.MEDAL_NAME[lvl]]) if lvl > 0 else ""]
+		b.pressed.connect(func(): profile.map = id; Profile.save_profile(profile); _update_map_label())
+		card.add_child(b)
+		card.add_child(_label(Profile.MEDAL_ICON[lvl] if lvl > 0 else "·", 13, Color("fde68a"), HORIZONTAL_ALIGNMENT_CENTER))
+		mrow.add_child(card)
+	_update_map_label()
 	var diffs: Array = []
 	for id in GameData.DIFFICULTIES:
 		diffs.append([id, GameData.DIFFICULTIES[id].name])
 	_option(right, "Difficulty", diffs, profile.diff, func(id): profile.diff = id; Profile.save_profile(profile); _update_mode_info())
 	_option(right, "Mode", [["adventure", "🗺️ Adventure"], ["endless", "♾️ Endless"], ["clash", "⚔️ Garden Clash (3 lanes)"]], profile.gameMode, func(id): profile.gameMode = id; Profile.save_profile(profile); _update_mode_info())
-	_option(right, "Controllers", [["couch", "🎮 Each controller = a new player"], ["p1", "🎮 Controller 1 = me, more = new players"]], "p1" if profile.get("padP1", false) else "couch", func(id): profile.padP1 = id == "p1"; Profile.save_profile(profile))
 	_mode_info = _label("", 13, Color("d1fae5"))
 	_mode_info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_mode_info.custom_minimum_size = Vector2(380, 0)
@@ -206,12 +236,12 @@ func show_title() -> void:
 	for hat in GameData.cosmetics.hats:
 		var ok := Profile.is_unlocked(profile, "hats", hat.id)
 		hats.append([hat.id, ("%s %s" % [hat.icon, hat.name]) if ok else ("🔒 %s: %s" % [hat.name, hat.how]), not ok])
-	_option(right, "Hat", hats, profile.hat, func(id): profile.hat = id; Profile.save_profile(profile))
+	_option(pinfo, "Hat", hats, profile.hat, func(id): profile.hat = id; Profile.save_profile(profile); _update_hero_info())
 	var pets: Array = []
 	for pet in GameData.cosmetics.pets:
 		var ok := Profile.is_unlocked(profile, "pets", pet.id)
 		pets.append([pet.id, ("%s %s" % [pet.icon, pet.name]) if ok else ("🔒 %s: %s" % [pet.name, pet.how]), not ok])
-	_option(right, "Pet", pets, profile.pet, func(id): profile.pet = id; Profile.save_profile(profile))
+	_option(pinfo, "Pet", pets, profile.pet, func(id): profile.pet = id; Profile.save_profile(profile); _update_hero_info())
 	right.add_child(_label("Games %d · Wins %d · Best Endless wave %d" % [int(profile.games), int(profile.wins), int(profile.bestEndless)], 13, Color("86efac")))
 
 	# buttons
@@ -242,6 +272,15 @@ func show_title() -> void:
 
 
 var _mode_info: Label
+var _preview: HeroPreview
+var _map_label: Label
+
+
+func _update_map_label() -> void:
+	if _map_label == null or not is_instance_valid(_map_label):
+		return
+	var lvl := int(profile.get("medals", {}).get(profile.map, 0))
+	_map_label.text = "Map: %s%s" % [GameData.maps.maps.get(profile.map, {}).get("name", profile.map), ("   %s %s" % [Profile.MEDAL_ICON[lvl], Profile.MEDAL_NAME[lvl]]) if lvl > 0 else ""]
 
 
 ## What the chosen difficulty and mode mean, in one or two lines
@@ -274,7 +313,13 @@ func _update_hero_info() -> void:
 		return
 	var t: Dictionary = GameData.TOWERS[profile.hero]
 	var info: Dictionary = GameData.HERO_INFO[profile.hero]
-	_hero_info.text = "%s (%s): %s\nSpecial (Q): %s %s: %s" % [t.name, t.role, info.style, info.special.icon, info.special.name, info.special.desc]
+	_hero_info.text = "%s (%s): %s\nSpecial (Q): %s %s" % [t.name, t.role, info.style, info.special.icon, info.special.name]
+	_hero_info.tooltip_text = String(info.special.desc)
+	_hero_info.mouse_filter = Control.MOUSE_FILTER_PASS
+	if _preview and is_instance_valid(_preview):
+		_preview.hero = profile.hero
+		_preview.hat = profile.hat
+		_preview.pet = profile.pet
 
 
 func _go(kind: String) -> void:
@@ -299,8 +344,15 @@ func show_settings() -> void:
 	_option(rows, "Screen shake", [["1.0", "100%"], ["0.5", "50%"], ["0.0", "Off"]], "%.1f" % float(prof.shake), func(id): Profile.set_value("shake", float(id)); settings_changed.emit())
 	_option(rows, "Damage numbers", [["all", "All"], ["big", "Big hits only"], ["off", "Off"]], String(prof.dmgNums), func(id): Profile.set_value("dmgNums", id); settings_changed.emit())
 	_option(rows, "Fullscreen", [["false", "Off"], ["true", "On (F11)"]], "true" if prof.fullscreen else "false", func(id): Profile.set_value("fullscreen", id == "true"); settings_changed.emit())
+	_option(rows, "Controllers", [["couch", "Each = a new player"], ["p1", "Controller 1 = me"]], "p1" if prof.get("padP1", false) else "couch", func(id): Profile.set_value("padP1", id == "p1"); settings_changed.emit())
+	_option(rows, "Kid assist", [["false", "Off"], ["true", "On: tree regrows, easier Sun"]], "true" if prof.get("kidAssist", false) else "false", func(id): Profile.set_value("kidAssist", id == "true"))
 	_option(rows, "Hats & pets", [["false", "Earn them by playing"], ["true", "Unlock everything (for little kids)"]], "true" if prof.unlockAll else "false", func(id): Profile.set_value("unlockAll", id == "true"))
 	_option(rows, "Sound", [["false", "🔊 On"], ["true", "🔇 Off (M in a game)"]], "true" if Audio.muted else "false", func(id): if (id == "true") != Audio.muted: Audio.toggle_mute())
+	var vols := [["1.0", "100%"], ["0.65", "65%"], ["0.35", "35%"], ["0.0", "Off"]]
+	_option(rows, "Music volume", vols, "%.2f" % float(prof.get("musicVol", 0.65)) if float(prof.get("musicVol", 0.65)) in [0.65, 0.35] else ("1.0" if float(prof.get("musicVol", 0.65)) > 0.8 else "0.0"), func(id): Profile.set_value("musicVol", float(id)); settings_changed.emit())
+	_option(rows, "SFX volume", [["1.0", "100%"], ["0.85", "85%"], ["0.35", "35%"], ["0.0", "Off"]], "%.2f" % float(prof.get("sfxVol", 0.85)) if absf(float(prof.get("sfxVol", 0.85)) - 0.85) < 0.05 else ("0.35" if absf(float(prof.get("sfxVol", 0.85)) - 0.35) < 0.05 else ("1.0" if float(prof.get("sfxVol", 0.85)) > 0.9 else "0.0")), func(id): Profile.set_value("sfxVol", float(id)); settings_changed.emit())
+	_option(rows, "Voice volume", [["1.0", "100%"], ["0.95", "95%"], ["0.65", "65%"], ["0.35", "35%"], ["0.0", "Off"]], "%.2f" % float(prof.get("voiceVol", 0.95)) if float(prof.get("voiceVol", 0.95)) in [0.95, 0.65, 0.35] else ("1.0" if float(prof.get("voiceVol", 0.95)) > 0.96 else "0.0"), func(id): Profile.set_value("voiceVol", float(id)); settings_changed.emit())
+	_option(rows, "Hero chatter", [["all", "All lines"], ["key", "Key moments only"], ["off", "Off"]], String(prof.get("dialogMode", "all")), func(id): Profile.set_value("dialogMode", id); settings_changed.emit())
 	var back := _button("◀ Back", 18, 140)
 	back.pressed.connect(show_title)
 	v.add_child(back)
@@ -474,9 +526,14 @@ func show_lobby(net: Node, is_host: bool) -> void:
 	row.add_theme_constant_override("separation", 14)
 	v.add_child(row)
 	if is_host:
-		_start_btn = _button("▶  Start Game", 22, 240)
+		_start_btn = _button("▶  Start Game", 22, 260)
 		_start_btn.pressed.connect(func(): net.start_game())
 		row.add_child(_start_btn)
+	else:
+		var rb := _button("✋ I'm ready!", 20, 200)
+		rb.toggle_mode = true
+		rb.toggled.connect(func(on): net.set_ready(on); rb.text = "✅ Ready!" if on else "✋ I'm ready!")
+		row.add_child(rb)
 	var back := _button("Leave", 18, 140)
 	back.pressed.connect(func(): leave.emit())
 	row.add_child(back)
@@ -508,8 +565,12 @@ func _refresh_lobby() -> void:
 		for x in GameData.cosmetics.pets:
 			if x.id == p.get("pet", "none") and x.id != "none":
 				pet_icon = " " + String(x.icon)
-		row.add_child(_label("%s%s  ·  %s%s%s" % [p.name, "  (host)" if p.get("host", false) else "", hero_name, hat_icon, pet_icon], 18))
+		var tick := "👑" if p.get("host", false) else ("✅" if p.get("ready", false) else "⏳")
+		row.add_child(_label("%s %s%s  ·  %s%s%s" % [tick, p.name, "  (host)" if p.get("host", false) else "", hero_name, hat_icon, pet_icon], 18))
 		_players_box.add_child(row)
+	if _is_host and _start_btn and is_instance_valid(_start_btn):
+		var rc: Array = _net.ready_count()
+		_start_btn.text = "▶  Start Game" if rc[1] == 0 else "▶  Start (%d/%d ready)" % [rc[0], rc[1]]
 	var c: Dictionary = _net.cfg if _is_host else _net.host_cfg
 	if not c.is_empty():
 		var map_name := String(GameData.maps.maps.get(c.get("map", ""), {}).get("name", ""))

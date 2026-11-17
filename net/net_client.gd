@@ -81,6 +81,14 @@ func pick_hero(hero: String) -> void:
 	set_my_pick("hero", hero)
 
 
+var is_ready_now := false
+
+
+func set_ready(on: bool) -> void:
+	is_ready_now = on
+	_send({"m": "ready", "on": on})
+
+
 func set_my_pick(key: String, value: String) -> void:
 	cfg[key] = value
 	_send({"m": "pick", key: value})

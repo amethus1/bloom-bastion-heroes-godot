@@ -46,6 +46,7 @@ func apply(pid: int, a: Dictionary) -> void:
 		"target": sim.set_target_mode(pid, String(a.get("mode", "first")))
 		"emote": sim.emote(pid, String(a.get("id", "")))
 		"ping": sim.ping(pid, float(a.get("x", 0)), float(a.get("y", 0)))
+		"eshop": sim.endless_shop(pid, String(a.get("item", "")))
 		# Garden Clash
 		"buy":
 			if sim is ClashWorld:

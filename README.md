@@ -59,6 +59,19 @@ Up to 4 players on one computer: press **Start** (or A) on a controller during a
 
 On the title screen, **Controllers: Controller 1 = me** lets one kid play solo on a controller.
 
+### Maps, combos and rewards
+
+* **Map gimmicks:** Sunny Meadow sunflowers bloom bonus Sun when you walk past. Lilypad Crossing lily pads give a speed boost. The Starlight Crossroads obelisk charges as pests pop nearby; stand on it when it's full for a Starlight Blast. Maple Hollow leaf piles slow pests when you walk through them. Frosty Glade geysers chill pests by themselves.
+* **Named team combos:** two heroes using Q close together always make a Team Combo, and these pairs get a signature move on top: Frost Lotus + Boom Shroom 💎 Cryo Nuke, Bubble Lily + Volt Cactus ⛈️ Storm Surge, Snapdragon + Sun Blossom ☀️ Solar Flare, Pea Blaster + Frost Lotus 🌨️ Hailstorm, Boom Shroom + Volt Cactus 💥 Thunderboom, Bubble Lily + Frost Lotus 🧊 Glacier Tide, Boom Shroom + Snapdragon 🎆 Firecracker, Pea Blaster + Sun Blossom 🌻 Sunny Volley.
+* **Chests:** boss chests give everyone 2 bonus cards. Golden Beetle chests give a card for the first 5, then XP and acorns, so late games don't snowball.
+* **Medals:** winning an Adventure map earns a medal on its card on the title screen (🥉 Easy, 🥈 Normal, 🥇 Hard, 💎 Nightmare).
+
+* **Perfect waves:** clear a wave without losing a life for bonus acorns and XP that grow with your streak.
+* **Leaf Leap perks:** Frost Lotus leaves a chilly trail, Snapdragon an ember puff, Bubble Lily a soaking splash, Volt Cactus zaps, Boom Shroom booms, Pea Blaster fires a ring of peas, Sun Blossom drops a little Sun.
+* **Endless acorn shop** (wave 5+, above the build bar): 🌳 +1 Tree life (once every 5 waves), ⚡ Overclock (towers 25% faster for a minute), 🎁 Mystery power-up.
+* **Level-up cards** show path progress (●●○○) and the exact change ("Damage 39 → 51"). C tucks them away during a busy fight.
+* **Kid assist** (⚙ Settings): the Bloom Tree regrows 2 lives after every wave and Sun is easier to grab.
+
 ### Settings and unlocks
 
 The ⚙ button on the title screen (or Esc in a game) has screen shake, damage numbers, fullscreen and sound. Hats and pets unlock by playing (the title screen shows how to earn each 🔒 one). Everyone in a game earns them on their own computer. **Hats & pets: Unlock everything** is there for little kids.
@@ -76,7 +89,7 @@ Stand right next to a knocked-out friend to revive them.
 
 ## Playing together on the LAN
 
-1. One computer presses **Host LAN Game**. The lobby shows its address (with a Copy button), for example `192.168.1.20`. The host can still change the map, difficulty, mode and bots there, and everyone can switch hero, hat and pet before the game starts.
+1. One computer presses **Host LAN Game**. The lobby shows its address (with a Copy button), for example `192.168.1.20`. The host can still change the map, difficulty, mode and bots there, and everyone can switch hero, hat and pet before the game starts. Friends press **I'm ready!** (the host's Start button counts them; the host can start any time).
 2. The other computers press **Join LAN Game**. Games on the same Wi-Fi appear in the list automatically (UDP beacon on port 24681). You can also type the address.
 3. The host presses **Start Game**. Friends can still join a game that has already started.
 

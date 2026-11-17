@@ -173,7 +173,7 @@
             {
               "name": "Radiant Orchard",
               "cost": 340,
-              "desc": "Drops Giant Suns (+60) & shares 30% with all teammates!",
+              "desc": "Drops Giant Suns (+60) & shares 80% of her Sun with every teammate!",
               "effects": {
                 "sunAmountAdd": 25,
                 "shareRatio": 0.3
@@ -182,7 +182,7 @@
             {
               "name": "Solar Nexus",
               "cost": 680,
-              "desc": "Massive Sun fountain (+95) & triggers healing Sunbeams!",
+              "desc": "Massive Sun fountain (+95), 90% shared, and Solar Beams that heal the Bloom Tree!",
               "effects": {
                 "sunAmountAdd": 35,
                 "sunIntervalMult": 0.7,

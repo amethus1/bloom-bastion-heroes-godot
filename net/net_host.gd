@@ -19,7 +19,7 @@ const RELIABLE_EVENTS := ["game_started", "wave_start", "wave_clear", "milestone
 	"gadget_fail", "powerup_get", "combo", "special", "teleport", "dash", "hero_spawn", "boss_enrage", "spring_life",
 	"clash_start", "struct_down", "hero_down", "revive", "hero_respawn", "rival_spawn", "rival_down", "camp_up",
 	"camp_down", "gate_regrow", "tower_alert", "item_bought", "item_sold", "potion", "recall_start", "recall_cancel",
-	"emote", "ping"]
+	"emote", "ping", "eshop"]
 
 var main: Node
 var peer: ENetMultiplayerPeer
@@ -73,7 +73,7 @@ static func local_addresses() -> Array:
 
 
 func players_for_menu() -> Array:
-	var out: Array = [{"id": 1, "name": cfg.get("name", "Host"), "hero": cfg.get("hero", "peashooter"), "hat": cfg.get("hat", "none"), "pet": cfg.get("pet", "none"), "host": true}]
+	var out: Array = [{"id": 1, "name": cfg.get("name", "Host"), "hero": cfg.get("hero", "peashooter"), "hat": cfg.get("hat", "none"), "pet": cfg.get("pet", "none"), "host": true, "ready": true}]
 	out.append_array(lobby)
 	return out
 
@@ -129,6 +129,14 @@ func start_game() -> void:
 
 
 ## The host changing its own hero/hat/pet, or the game settings, in the lobby
+func ready_count() -> Array:
+	var n := 0
+	for p in lobby:
+		if p.get("ready", false):
+			n += 1
+	return [n, lobby.size()]
+
+
 func set_my_pick(key: String, value: String) -> void:
 	cfg[key] = value
 	_send_lobby()
@@ -188,7 +196,7 @@ func _on_packet(id: int, bytes: PackedByteArray) -> void:
 			var hero := String(d.get("hero", "peashooter"))
 			if not GameData.HERO_ORDER.has(hero):
 				hero = "peashooter"
-			var p := {"id": id, "name": NetCommon.clean_name(String(d.get("name", ""))), "hero": hero, "hat": String(d.get("hat", "none")), "pet": String(d.get("pet", "none"))}
+			var p := {"id": id, "name": NetCommon.clean_name(String(d.get("name", ""))), "hero": hero, "hat": String(d.get("hat", "none")), "pet": String(d.get("pet", "none")), "ready": false}
 			lobby.append(p)
 			_send(id, {"m": "welcome", "id": id})
 			status = "%s joined!" % p.name
@@ -214,6 +222,11 @@ func _on_packet(id: int, bytes: PackedByteArray) -> void:
 				if String(a.get("t", "")) in ["pause", "speed", "auto"]:
 					return  # only the host controls the game speed
 				host.apply(id, a)
+		"ready":
+			for p in lobby:
+				if p.id == id:
+					p.ready = bool(d.get("on", false))
+			_send_lobby()
 		"pick":
 			for p in lobby:
 				if p.id != id:

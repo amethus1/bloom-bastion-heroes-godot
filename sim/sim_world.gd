@@ -31,6 +31,15 @@ var wave_hp_boost := 1.0
 var sky_sun_t := 7.5
 var powerup_cd := 8.0
 var last_special := {}
+var features := MapFeatures.new()  # each Adventure map's little gimmick
+var gold_chests := 0  # Golden Beetle chests opened this game
+var perfect_streak := 0  # waves in a row without losing a life
+var lives_at_wave_start := 0
+var kid_assist := false  # option: the tree regrows between waves, Sun is easier to grab
+var overclock_t := 0.0  # Endless shop: towers fire 25% faster while this runs
+var life_bought_wave := -99  # Endless shop: one Tree life every 5 waves
+const ENDLESS_SHOP := {"life": 250, "overclock": 100, "mystery": 120}
+var boss_chests := 0
 var react_fx := {}
 
 var players := {}  # id -> player dict
@@ -113,11 +122,17 @@ func start(map: String, difficulty: String, game_mode: String) -> void:
 	heroes.clear(); enemies.clear(); projectiles.clear(); suns.clear(); gadgets.clear(); spikes.clear()
 	wisps.clear(); chests.clear(); powerups.clear(); pending_fx.clear(); spawn_queue.clear(); events.clear()
 	twist_plan.clear()
+	gold_chests = 0
+	boss_chests = 0
+	perfect_streak = 0
+	overclock_t = 0.0
+	life_bought_wave = -99
 	current_twist = ""
 	game_time = 0.0
 	_paths.clear()
 	for i in D.map(map_id).paths.size():
 		_paths.append(D.path_points(map_id, i))
+	features.place(self)
 	for p in players.values():
 		p.acorns = 60
 		for k in ["pops", "damage", "specials", "reactions", "gadgets_planted", "combos", "chests", "powerups", "sun"]:
@@ -215,7 +230,49 @@ func dash(pid: int, dx: float, dy: float) -> void:
 	h.dash_cd = float(D.DASH.cooldown)
 	if absf(v.x) > 0.2:
 		h.facing = 1 if v.x > 0 else -1
-	ev({"type": "dash", "owner": pid, "slot": h.slot, "fromX": from.x, "fromY": from.y, "x": to.x, "y": to.y})
+	ev({"type": "dash", "owner": pid, "slot": h.slot, "fromX": from.x, "fromY": from.y, "x": to.x, "y": to.y, "perk": h.type})
+	leap_perk(h, from, to)
+
+
+## Each hero's Leaf Leap does a little something extra
+func leap_perk(h: Dictionary, from: Vector2, to: Vector2) -> void:
+	var st := hero_stats(h)
+	var dmg: float = st.damage
+	var near_land := enemies.filter(func(e): return e.hp > 0 and not e.sheltered and not e.get("structure", false) and dist(e.x, e.y, to.x, to.y) <= 110)
+	match String(h.type):
+		"frostlotus":  # a chilly trail
+			for e in enemies:
+				if e.hp <= 0 or e.sheltered or e.resist == "ice" or e.get("structure", false):
+					continue
+				var q := Geometry2D.get_closest_point_to_segment(Vector2(e.x, e.y), from, to)
+				if q.distance_to(Vector2(e.x, e.y)) <= 90:
+					e.chill_t = maxf(e.chill_t, 2.5)
+					e.slow = maxf(e.slow, 0.3)
+					e.slow_t = maxf(e.slow_t, 2.5)
+		"snapdragon":  # an ember puff where she lands
+			for e in near_land:
+				e.burn_dps = maxf(e.burn_dps, dmg * 0.3)
+				e.burn_t = maxf(e.burn_t, 2.5)
+				e.burn_owner = h.owner
+				e.burn_tower = h.id
+		"bubblelily":  # a splash that soaks
+			for e in near_land:
+				soak(e, 4.0)
+		"voltcactus":  # a zap on landing
+			for e in near_land.slice(0, 3):
+				apply_damage(e, round(dmg), h.owner, h.id, {"armorPierce": true})
+				try_stun(e, 0.3)
+		"boomshroom":  # a little boom
+			for e in near_land:
+				if dist(e.x, e.y, to.x, to.y) <= 80:
+					apply_damage(e, round(dmg * 1.2), h.owner, h.id, {})
+		"peashooter":  # a quick ring of peas
+			for i in 6:
+				var a := TAU * i / 6
+				add_projectile({"kind": "pea", "owner": h.owner, "tower": h.id, "x": to.x, "y": to.y, "vx": cos(a) * 540, "vy": sin(a) * 540,
+					"damage": round(dmg * 0.8), "pierce": 1, "ttl": 0.6, "radius": 8.0})
+		"sunblossom":  # a little Sun to grab
+			add_sun(from.x, from.y, 10, h.owner, 0.5, false, false)
 
 
 func teleport_home(pid: int) -> void:
@@ -352,6 +409,7 @@ func plan_twist(w: int) -> String:
 
 func start_next_wave() -> void:
 	wave += 1
+	lives_at_wave_start = lives
 	wave_active = true
 	wave_timer = 0.0
 	auto_wave_countdown = 0.0
@@ -379,6 +437,11 @@ func spawn_enemy(type: String, path_index: int, seg := 0, seg_t := 0.0, at = nul
 	var n_players := maxi(1, players.size())
 	var team_ramp := minf(1.0, 0.25 + wave * 0.075)
 	var team_part: float = (n_players - 1) * D.gnum(d, "teamHp", 0.6) + maxi(0, n_players - 2) * D.gnum(d, "teamHpBig", 0.3)
+	if _paths.size() >= 4:
+		# 4-trail maps (Starlight Crossroads) split the team up on short trails:
+		# extra-player toughness ramps in more gently and tops out 20% lower
+		team_ramp = minf(1.0, 0.15 + wave * 0.06)
+		team_part *= 0.8
 	var coop: float = 0.8 + team_part * team_ramp
 	var wave_scale := 1.0
 	if d.has("waveExp"):
@@ -425,6 +488,8 @@ func step(real_dt: float) -> void:
 
 func tick(dt: float, real_dt: float) -> void:
 	game_time += dt
+	if overclock_t > 0:
+		overclock_t = maxf(0.0, overclock_t - dt)
 	for h in heroes:
 		for k in ["special_cd", "rally_t", "home_cd", "dash_cd", "dazed_t", "daze_resist", "moved_t"]:
 			if h[k] > 0:
@@ -446,6 +511,7 @@ func tick(dt: float, real_dt: float) -> void:
 	update_chests(dt)
 	update_powerups(dt)
 	update_gadgets(dt)
+	features.update(self, dt)
 	update_enemies(dt)
 	update_pending(dt)
 	var auras := compute_auras()
@@ -463,10 +529,20 @@ func tick(dt: float, real_dt: float) -> void:
 		wave_active = false
 		var bonus := 15.0 + wave * 6
 		var acorn_bonus := int(round(10 + wave * 1.5))
+		# perfect wave (no lives lost): a growing bonus for keeping the streak
+		var perfect := lives >= lives_at_wave_start
+		perfect_streak = perfect_streak + 1 if perfect else 0
+		if perfect:
+			acorn_bonus += mini(25, 5 * perfect_streak)
+			bonus *= 1.0 + 0.1 * mini(5, perfect_streak)
 		for p in players.values():
 			grant_xp(p.id, bonus)
 			p.acorns += acorn_bonus
-		ev({"type": "wave_clear", "wave": wave, "bonus": bonus, "acorns": acorn_bonus})
+		var regrow := 0
+		if kid_assist and lives < max_lives:
+			regrow = mini(2, max_lives - lives)
+			lives += regrow
+		ev({"type": "wave_clear", "wave": wave, "bonus": bonus, "acorns": acorn_bonus, "perfect": perfect_streak, "regrow": regrow})
 		if endless and wave % 10 == 0:
 			lives = mini(max_lives, lives + 5)
 			for h in heroes:
@@ -502,7 +578,7 @@ func update_suns(dt: float, real_dt: float) -> void:
 		var taker := -1
 		if s.age > 0.35:
 			for h in heroes:
-				if not h.get("dead", false) and dist(h.x, h.y, s.x, s.y) <= hero_stats(h).pickup:
+				if not h.get("dead", false) and dist(h.x, h.y, s.x, s.y) <= hero_stats(h).pickup * (1.5 if kid_assist else 1.0):
 					taker = h.owner
 					break
 		if taker < 0 and s.auto and s.age >= 1.1:
@@ -571,12 +647,30 @@ func update_chests(dt: float) -> void:
 		if opener:
 			chests.remove_at(i)
 			opener.chests += 1
-			var bonus := 2 if c.big else 1
-			for h in heroes:
-				h.pending += bonus
-				h.bonus += bonus
-				ensure_offer(h)
-			ev({"type": "chest_open", "x": c.x, "y": c.y, "slot": opener.slot, "name": opener.name, "bonus": bonus})
+			# Golden Beetle chests give a bonus card for the first 5, then XP and
+			# acorns instead, so late games don't snowball. Boss chests always
+			# give 2 cards (bosses are the big moments).
+			var bonus := 0
+			if c.big:
+				boss_chests += 1
+				bonus = 2
+			else:
+				gold_chests += 1
+				bonus = 1 if gold_chests <= 5 else 0
+			var xp := 0.0
+			var acorns := 0
+			if bonus > 0:
+				for h in heroes:
+					h.pending += bonus
+					h.bonus += bonus
+					ensure_offer(h)
+			else:
+				xp = 40.0 + wave * 10
+				acorns = 25 + wave * 2
+				for p in players.values():
+					grant_xp(p.id, xp)
+					p.acorns += acorns
+			ev({"type": "chest_open", "x": c.x, "y": c.y, "slot": opener.slot, "name": opener.name, "bonus": bonus, "xp": xp, "acorns": acorns})
 		elif c.ttl <= 0:
 			chests.remove_at(i)
 			ev({"type": "chest_gone", "x": c.x, "y": c.y})
@@ -792,7 +886,7 @@ func update_gadgets(dt: float) -> void:
 		var B: Dictionary = D.gadget_branch(g.kind, g.branch)
 		var range: float = D.gnum(B, "range", def.get("range", 100))
 		var dmg_mult: float = D.gnum(B, "dmgMult", 1.0)
-		g.cd -= dt
+		g.cd -= dt * (1.25 if overclock_t > 0 else 1.0)
 		if g.cd > 0:
 			continue
 		match g.kind:
@@ -1215,6 +1309,7 @@ func apply_damage(e: Dictionary, raw: float, owner: int, tower: int, opts: Dicti
 
 
 func on_defeated(e: Dictionary, killer_id: int) -> void:
+	features.on_pop(self, e)
 	var killer = players.get(killer_id)
 	if killer:
 		killer.pops += 1
@@ -1440,7 +1535,8 @@ func sunblossom_extras(t: Dictionary, st: Dictionary, dt: float) -> void:
 			t.sun_t = st.sunInterval
 			var a := randf() * TAU
 			var r := 70 + randf() * 50
-			add_sun(t.x + cos(a) * r, t.y + sin(a) * r, st.sunAmount, t.owner, maxf(0.5, D.gnum(st, "shareRatio")), st.get("autoCollect", false))
+			# her Sun always shares half with the team; Golden Harvest tier 3/4 share more on top
+			add_sun(t.x + cos(a) * r, t.y + sin(a) * r, st.sunAmount, t.owner, minf(0.95, 0.5 + D.gnum(st, "shareRatio")), st.get("autoCollect", false))
 	if D.gnum(st, "pulseDamage") > 0:
 		t.pulse_t -= dt
 		if t.pulse_t <= 0:
@@ -1463,8 +1559,24 @@ func sunblossom_extras(t: Dictionary, st: Dictionary, dt: float) -> void:
 				if e.hp > 0 and (strongest == null or e.hp > strongest.hp):
 					strongest = e
 			if strongest:
-				apply_damage(strongest, round(110 * (1 + 0.05 * (t.level - 1))), t.owner, t.id, {"armorPierce": true})
+				# scales with her damage (levels, Power Bloom cards, buffs) like every other attack
+				apply_damage(strongest, round(maxf(110.0, st.damage * 6)), t.owner, t.id, {"armorPierce": true})
 				ev({"type": "solar_beam", "x": strongest.x, "y": strongest.y})
+				solar_heal(t, st)
+
+
+## "Healing Sunbeams": every 3rd beam gives the Bloom Tree a life back
+## (Garden Clash: heals heroes near her instead)
+func solar_heal(t: Dictionary, st: Dictionary) -> void:
+	t.beams = int(t.get("beams", 0)) + 1
+	if is_clash():
+		for o in heroes:
+			if not o.get("dead", false) and o.has("hp") and dist(o.x, o.y, t.x, t.y) <= st.range * 1.6:
+				o.hp = minf(hero_stats(o).maxHp, o.hp + hero_stats(o).maxHp * 0.1)
+		ev({"type": "sun_heal", "x": t.x, "y": t.y, "owner": t.owner, "clash": true})
+	elif t.beams % 3 == 0 and lives < max_lives:
+		lives += 1
+		ev({"type": "sun_heal", "x": t.x, "y": t.y, "owner": t.owner})
 
 
 func apply_frost(e: Dictionary, st: Dictionary, dmg: float, owner: int, tower: int) -> void:
@@ -1663,6 +1775,38 @@ func ping(pid: int, x: float, y: float) -> void:
 				kind = "rival" if e.get("rival", false) else ("tower" if e.get("structure", false) else "pests")
 				break
 	ev({"type": "ping", "owner": pid, "slot": p.slot, "x": x, "y": y, "kind": kind, "name": p.name})
+
+
+## Endless: something to spend late-game acorns on
+func endless_shop(pid: int, item: String) -> void:
+	var p = players.get(pid)
+	var h = hero_of(pid)
+	if p == null or h == null or not ENDLESS_SHOP.has(item):
+		return
+	if not endless or wave < 5:
+		gadget_fail(pid, "The acorn shop opens at wave 5 in Endless.")
+		return
+	var cost: int = ENDLESS_SHOP[item]
+	if p.acorns < cost:
+		gadget_fail(pid, "Not enough acorns: that costs %d" % cost)
+		return
+	match item:
+		"life":
+			if lives >= max_lives:
+				gadget_fail(pid, "The Bloom Tree is already full of lives!")
+				return
+			if wave - life_bought_wave < 5:
+				gadget_fail(pid, "You can buy another life at wave %d." % (life_bought_wave + 5))
+				return
+			life_bought_wave = wave
+			lives += 1
+		"overclock":
+			overclock_t = maxf(overclock_t, 0.0) + 60.0
+		"mystery":
+			var kinds := ["giant", "zoom", "frenzy", "magnet"]
+			spawn_powerup(h.x + 40, h.y, kinds[randi() % kinds.size()])
+	p.acorns -= cost
+	ev({"type": "eshop", "item": item, "owner": pid, "name": p.name, "x": h.x, "y": h.y})
 
 
 func set_target_mode(pid: int, target_mode: String) -> void:
@@ -1954,7 +2098,92 @@ func check_combo(h: Dictionary) -> void:
 		o.special_cd = maxf(0.0, o.special_cd - 4)
 	players[h.owner].combos += 1
 	players[other.owner].combos += 1
-	ev({"type": "combo", "x": m.x, "y": m.y, "slots": [other.slot, h.slot], "heroes": [other.type, h.type]})
+	var named := named_combo(h, other, m, dmg)
+	ev({"type": "combo", "x": m.x, "y": m.y, "slots": [other.slot, h.slot], "heroes": [other.type, h.type],
+		"name": named.get("name", "TEAM COMBO!"), "desc": named.get("desc", ""), "id": named.get("id", "")})
+
+
+## Some hero pairs have a signature combo on top of the team blast
+const NAMED_COMBOS := {
+	"boomshroom+frostlotus": ["cryo", "💎 CRYO NUKE!", "Everything nearby freezes solid and turns brittle"],
+	"bubblelily+voltcactus": ["storm", "⛈️ STORM SURGE!", "Every soaked pest gets zapped"],
+	"snapdragon+sunblossom": ["flare", "☀️ SOLAR FLARE!", "Pests burn, and Sun rains down for the team"],
+	"frostlotus+peashooter": ["hail", "🌨️ HAILSTORM!", "A ring of frozen peas"],
+	"boomshroom+voltcactus": ["thunderboom", "💥 THUNDERBOOM!", "Every pest nearby is stunned"],
+	"bubblelily+frostlotus": ["glacier", "🧊 GLACIER TIDE!", "A frozen wave shoves pests back"],
+	"boomshroom+snapdragon": ["firecracker", "🎆 FIRECRACKER!", "Explosions all around"],
+	"peashooter+sunblossom": ["sunny", "🌻 SUNNY VOLLEY!", "Everyone is rallied, and peas fly everywhere"],
+}
+
+
+func named_combo(h: Dictionary, other: Dictionary, m: Vector2, dmg: float) -> Dictionary:
+	var pair := [String(h.type), String(other.type)]
+	pair.sort()
+	var info: Array = NAMED_COMBOS.get("%s+%s" % pair, [])
+	if info.is_empty():
+		return {}
+	var near := enemies.filter(func(e): return e.hp > 0 and not e.sheltered and dist(m.x, m.y, e.x, e.y) <= 330)
+	var hero_dmg: float = hero_stats(h).damage + hero_stats(other).damage
+	match String(info[0]):
+		"cryo":
+			for e in near:
+				try_freeze(e, 2.2)
+				e.brittle = maxf(e.brittle, 0.4)
+				e.slow_t = maxf(e.slow_t, 5.0)
+			ev({"type": "nova", "x": m.x, "y": m.y, "radius": 330, "color": "#bae6fd"})
+		"storm":
+			for e in near:
+				soak(e, 5.0)
+			for e in enemies:
+				if e.hp > 0 and not e.sheltered and e.soak_t > 0 and dist(m.x, m.y, e.x, e.y) <= 900:
+					apply_damage(e, round(hero_dmg * 1.5), h.owner, h.id, {"armorPierce": true, "noReact": true})
+					try_stun(e, 0.8)
+					ev({"type": "thunder", "x": e.x, "y": e.y})
+		"flare":
+			for e in near:
+				e.burn_dps = maxf(e.burn_dps, hero_dmg * 0.6)
+				e.burn_t = maxf(e.burn_t, 6.0)
+				e.burn_owner = h.owner
+				e.burn_tower = h.id
+			for i in 4:
+				var a := TAU * i / 4
+				add_sun(m.x + cos(a) * 90, m.y + sin(a) * 90, 30, -1, 0.5, false, true)
+			ev({"type": "flame", "x": m.x, "y": m.y, "angle": 0.0, "range": 330, "coneAngle": TAU, "ring": true})
+		"hail":
+			var st := hero_stats(other if other.type == "frostlotus" else h)
+			for i in 32:
+				var a := TAU * i / 32
+				add_projectile({"kind": "icicle", "owner": h.owner, "tower": h.id, "x": m.x, "y": m.y, "vx": cos(a) * 520, "vy": sin(a) * 520,
+					"damage": round(hero_dmg * 1.2), "pierce": 3, "ttl": 0.9, "radius": 10.0, "armorPierce": true, "detectCamo": true,
+					"slowAmount": D.gnum(st, "slowAmount", 0.3), "slowDuration": 3.0, "brittle": 0.25, "frostDot": 0.0})
+		"thunderboom":
+			for e in near:
+				try_stun(e, 2.0)
+				ev({"type": "thunder", "x": e.x, "y": e.y})
+			ev({"type": "explosion", "x": m.x, "y": m.y, "radius": 200, "kind": "boom"})
+		"glacier":
+			for e in near:
+				push_back(e, 160.0, m)
+				try_freeze(e, 1.5)
+			ev({"type": "tidal", "x": m.x, "y": m.y, "r": 330})
+		"firecracker":
+			for i in 6:
+				var a := TAU * i / 6
+				var c := m + Vector2(cos(a), sin(a)) * 180
+				for e in enemies:
+					if e.hp > 0 and not e.sheltered and dist(c.x, c.y, e.x, e.y) <= 120:
+						apply_damage(e, round(hero_dmg * 2), h.owner, h.id, {"armorPierce": true})
+						e.burn_dps = maxf(e.burn_dps, hero_dmg * 0.4)
+						e.burn_t = maxf(e.burn_t, 4.0)
+				ev({"type": "explosion", "x": c.x, "y": c.y, "radius": 120, "kind": "boom"})
+		"sunny":
+			for o in heroes:
+				o.rally_t = maxf(o.rally_t, 6.0)
+			for i in 24:
+				var a := TAU * i / 24
+				add_projectile({"kind": "megapea", "owner": h.owner, "tower": h.id, "x": m.x, "y": m.y, "vx": cos(a) * 560, "vy": sin(a) * 560,
+					"damage": round(hero_dmg * 1.2), "pierce": 4, "ttl": 0.9, "radius": 11.0, "armorPierce": true, "detectCamo": true})
+	return {"id": info[0], "name": info[1], "desc": info[2]}
 
 
 # ---------------------------------------------------------------------------
@@ -1969,7 +2198,7 @@ func update_bots(dt: float) -> void:
 		if h == null:
 			continue
 		if not p.has("brain"):
-			p.brain = {"path": [], "pt": 0.0, "tx": -999.0, "ty": -999.0, "card_t": 1.2, "build_t": 2.0, "built": 0, "pref": "A" if randf() < 0.5 else "B"}
+			p.brain = {"path": [], "pt": 0.0, "tx": -999.0, "ty": -999.0, "card_t": 1.2, "build_t": 2.0, "built": 0, "pref": "A" if randf() < 0.5 else "B", "bomb_t": 4.0}
 		var b: Dictionary = p.brain
 		var idx := k
 		k += 1
@@ -1996,10 +2225,25 @@ func update_bots(dt: float) -> void:
 			if near >= 3 or big:
 				use_special(p.id)
 		var st := hero_stats(h)
+		# bosses out: shoot the strongest pest; otherwise the one in front
+		h.target_mode = "strong" if enemies.any(func(e): return e.boss and e.hp > 0) else "first"
 		var target := Vector2.INF
 		for s in suns:
 			if dist(s.x, s.y, h.x, h.y) < 190:
 				target = Vector2(s.x, s.y)
+		if target == Vector2.INF:
+			# a Snoozy Moth put a tower to sleep and nobody is near it: go wake it
+			var sleepy = null
+			var sd := 900.0
+			for g in gadgets:
+				if g.sleep_t <= 0 or heroes.any(func(o): return o.id != h.id and dist(o.x, o.y, g.x, g.y) < 90):
+					continue
+				var d := dist(g.x, g.y, h.x, h.y)
+				if d < sd:
+					sd = d
+					sleepy = g
+			if sleepy:
+				target = Vector2(sleepy.x, sleepy.y + 30)
 		if target == Vector2.INF:
 			for c in chests:
 				target = Vector2(c.x, c.y)
@@ -2024,6 +2268,16 @@ func update_bots(dt: float) -> void:
 				var c := Vector2(D.W / 2, D.H / 2)
 				target = hs + (c - hs).normalized() * 160.0
 		_bot_walk(h, b, target, st.moveSpeed * dt)
+		# a pest is about to reach the Bloom Tree: drop a Seed Bomb in front of it
+		b.bomb_t = float(b.get("bomb_t", 4.0)) - dt
+		if b.bomb_t <= 0 and p.acorns >= int(D.GADGETS.bomb.cost) + 10:
+			var sc: Vector2 = D.sanctuary(map_id)
+			for e in enemies:
+				if e.hp > 0 and not e.boss and dist(e.x, e.y, sc.x, sc.y) < 340 and dist(e.x, e.y, h.x, h.y) < 120:
+					var before := gadgets.size()
+					plant(p.id, "bomb")
+					b.bomb_t = 10.0 if gadgets.size() > before else 2.0
+					break
 		b.build_t -= dt
 		if b.build_t <= 0:
 			b.build_t = 2.0
@@ -2107,9 +2361,11 @@ func snapshot() -> Dictionary:
 		"autoWave": auto_wave, "time": game_time, "players": pl, "heroes": hs, "enemies": es, "projectiles": ps, "gadgets": gs,
 		"toSpawn": spawn_queue.size(), "autoIn": snappedf(auto_wave_countdown, 0.1) if auto_wave and not wave_active and wave > 0 else 0.0,
 		"nextTwist": plan_twist(wave + 1) if endless and not wave_active and phase == "playing" else "",
+		"overclock": ceili(overclock_t), "lifeShopAt": life_bought_wave + 5,
 		"suns": suns.map(func(s): return {"id": s.id, "x": roundf(s.x), "y": roundf(s.y), "amount": s.amount, "sky": s.sky}),
 		"chests": chests.map(func(c): return {"id": c.id, "x": roundf(c.x), "y": roundf(c.y), "big": c.big}),
 		"powerups": powerups.map(func(p): return {"id": p.id, "kind": p.kind, "x": roundf(p.x), "y": roundf(p.y), "ttl": p.ttl}),
 		"spikes": spikes.map(func(s): return {"id": s.id, "x": roundf(s.x), "y": roundf(s.y), "slot": s.slot}),
+		"features": features.snapshot(),
 		"wisps": wisps.map(func(w): return {"id": w.id, "x": roundf(w.x), "y": roundf(w.y), "slot": w.slot}),
 		"events": events.duplicate()}

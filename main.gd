@@ -45,6 +45,29 @@ func _ready() -> void:
 		Profile.path = "user://test_profile.cfg"  # test runs never change your real profile
 	world = WorldView.new()
 	add_child(world)
+	# a soft vignette frames the garden (under the HUD)
+	var vig_layer := CanvasLayer.new()
+	vig_layer.layer = 2
+	add_child(vig_layer)
+	var vig := TextureRect.new()
+	var grad := Gradient.new()
+	grad.set_color(0, Color(0, 0, 0, 0))
+	grad.set_offset(0, 0.62)
+	grad.set_color(1, Color(0.0, 0.03, 0.01, 0.38))
+	grad.set_offset(1, 1.0)
+	var gt := GradientTexture2D.new()
+	gt.gradient = grad
+	gt.fill = GradientTexture2D.FILL_RADIAL
+	gt.fill_from = Vector2(0.5, 0.5)
+	gt.fill_to = Vector2(1.05, 1.05)
+	gt.width = 256
+	gt.height = 256
+	vig.texture = gt
+	vig.stretch_mode = TextureRect.STRETCH_SCALE
+	vig.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	vig.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	vig.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	vig_layer.add_child(vig)
 	var hud_layer := CanvasLayer.new()
 	hud_layer.layer = 5
 	add_child(hud_layer)
@@ -93,11 +116,13 @@ func show_menu() -> void:
 	couch.p1_pad = bool(Profile.load_profile().get("padP1", false))
 	menu.show_title()
 	hud.visible = false
+	Audio.set_music_state("menu")
 	start_attract()
 
 
 ## A bot-only game plays behind the title screen
 var attract := false
+var _tree_low_warned := false
 
 
 func start_attract() -> void:
@@ -210,6 +235,7 @@ func start_local(cfg: Dictionary, demo := false, lan_players: Array = []) -> voi
 		net.attach_host(host)
 	_begin_play()
 	host.start(String(cfg.map), String(cfg.diff), String(cfg.gameMode))
+	host.sim.kid_assist = bool(Profile.load_profile().get("kidAssist", false))
 	if demo:
 		host.sim.auto_wave = true
 		host.sim.start_wave()
@@ -254,7 +280,11 @@ func _begin_play() -> void:
 	hud.is_host = host != null
 	world.my_owner = my_id
 	world.mute_audio = false
+	_tree_low_warned = false
+	var m_id := "valley" if String(last_cfg.get("gameMode", "")) == "clash" else String(last_cfg.get("map", "meadow"))
+	Audio.set_music_state("calm", m_id)
 	hud.banner("Defend the Bloom Tree!", "WASD or click to walk · Space starts a wave · Q special · Shift leaps")
+	_tips_started_at = clock
 	if not args.has("warp"):
 		Audio.say("ann_welcome", -1, true)
 
@@ -270,8 +300,42 @@ func _on_snapshot(s: Dictionary) -> void:
 	hud.snap = s
 	_sync_my_hero()
 	_unlock_from_snapshot(s)
+	if playing and not attract:
+		_update_music_from_snap(s)
 	for e in s.get("events", []):
 		_my_event(e)
+
+
+func _update_music_from_snap(s: Dictionary) -> void:
+	var ph := String(s.get("phase", "playing"))
+	if ph != "playing":
+		Audio.set_music_state("silent")
+		return
+	var mid := String(s.get("map", "meadow"))
+	if s.has("clash"):
+		var cl: Dictionary = s.clash
+		var boss_on: bool = int(cl.get("elderT", 0)) > 0
+		if not boss_on:
+			for ft in cl.get("foeTowers", []):
+				if ft.get("core", false) and not ft.get("shield", true):
+					boss_on = true
+					break
+		Audio.set_music_state("boss" if boss_on else "wave", mid)
+		return
+	if not _tree_low_warned and float(s.get("maxLives", 1)) > 0 and float(s.get("lives", 1)) / float(s.get("maxLives", 1)) <= 0.30:
+		_tree_low_warned = true
+		Audio.say("ann_tree_low", -1, true)
+	var has_boss := false
+	for e in s.get("enemies", []):
+		if e.get("boss", false):
+			has_boss = true
+			break
+	if has_boss:
+		Audio.set_music_state("boss", mid)
+	elif s.get("waveActive", false):
+		Audio.set_music_state("wave", mid)
+	else:
+		Audio.set_music_state("calm", mid)
 
 
 ## Events that came on their own (reliably) over the LAN
@@ -352,6 +416,7 @@ func _unlock_from_event(e: Dictionary) -> void:
 				if int(e.get("owner", -1)) == my_id:
 					hud.banner("✨ Evolved: %s!" % e.label, "%s, path %s tier %d" % [tw.get("name", ""), e.path, int(e.tier)], Color("fde047"), 3.0)
 				Audio.play_sfx("level_up", 0.0, 0.0, 200)
+				Audio.say_hero(String(e.get("hero", "")), "evolve", int(e.get("owner", -1)))
 
 
 func _unlock_from_snapshot(s: Dictionary) -> void:
@@ -472,7 +537,14 @@ func _my_event(e: Dictionary) -> void:
 				elif wn == 1 or wn % 4 == 0:
 					Audio.say("ann_wave")
 		"wave_clear":
-			hud.banner("Wave %d cleared!" % int(e.wave), "+%d XP · +%d acorns" % [int(e.bonus), int(e.acorns)], Color("86efac"))
+			var streak := int(e.get("perfect", 0))
+			var sub := "+%d XP · +%d acorns" % [int(e.bonus), int(e.acorns)]
+			if int(e.get("regrow", 0)) > 0:
+				sub += " · 🌳 +%d lives" % int(e.regrow)
+			if streak > 0:
+				hud.banner("✨ Perfect wave %d!%s" % [int(e.wave), ("  ×%d in a row" % streak) if streak > 1 else ""], sub, Color("fde047"))
+			else:
+				hud.banner("Wave %d cleared!" % int(e.wave), sub, Color("86efac"))
 			if not attract:
 				Audio.play_sfx("wave_clear")
 				if int(e.wave) % 5 == 0:
@@ -503,13 +575,24 @@ func _my_event(e: Dictionary) -> void:
 		"gadget_sold":
 			if mine:
 				hud.toast("Sold for %d acorns" % int(e.refund), Color("fcd34d"), 2.0)
+		"eshop":
+			var what: String = {"life": "a Bloom Tree life 🌳", "overclock": "Overclock ⚡ (towers 25% faster for a minute)", "mystery": "a mystery power-up 🎁"}.get(String(e.item), "")
+			hud.toast("%s bought %s" % [e.name, what], Color("fde047"), 3.0)
+		"chest_drop":
+			_tip("chest", "🎁 A treasure chest! Walk over it: everyone gets a bonus.")
 		"level_up":
 			if mine:
 				hud.toast("Level %d! Pick a card with 1, 2 or 3" % int(e.level), Color("fde047"), 3.0)
+				_tip("cards", "⭐ Level-up cards make your hero stronger. Press 1, 2 or 3, or click one. C hides them for a moment.")
 				if not attract:
 					Audio.say_hero(String(_my_hero().get("type", "")), "level", my_id)
 		"combo":
-			hud.banner("TEAM COMBO!", "", Color("f0abfc"), 2.0)
+			hud.banner(String(e.get("name", "TEAM COMBO!")), String(e.get("desc", "")), Color("f0abfc"), 2.4)
+		"chest_open":
+			if int(e.get("bonus", 0)) > 0:
+				hud.toast("🎁 %s opened a chest: +%d card%s for everyone!" % [e.name, int(e.bonus), "s" if int(e.bonus) > 1 else ""], Color("fde047"), 3.0)
+			else:
+				hud.toast("🎁 %s opened a chest: +%d XP and +%d acorns for everyone!" % [e.name, int(e.xp), int(e.acorns)], Color("fde047"), 3.0)
 		"boss_enrage":
 			hud.banner("👑 %s is ENRAGED!" % e.get("name", "The boss"), "Faster, and it calls helpers more often. Focus fire!", Color("f87171"), 3.0)
 		"victory", "game_over":
@@ -519,7 +602,7 @@ func _my_event(e: Dictionary) -> void:
 					var label := "Next: %s →" % String(GameData.maps.maps.get(nc.map, {}).get("name", nc.map)) if nc.get("map", "") != last_cfg.get("map", "") else "Next: %s →" % String(GameData.DIFFICULTIES.get(nc.diff, {}).get("short", nc.diff))
 					hud.next_challenge = label
 			if playing and not attract:
-				Profile.record_game(e.type == "victory", bool(snap.endless), int(snap.wave))
+				Profile.record_game(e.type == "victory", bool(snap.endless), int(snap.wave), String(snap.get("map", "")), String(snap.get("difficulty", "")), String(snap.get("mode", "")))
 				Audio.play_sfx("victory" if e.type == "victory" else "game_over", 0.0, 0.0, 500)
 				Audio.say("ann_victory" if e.type == "victory" else "ann_gameover", -1, true)
 		# --- Garden Clash
@@ -541,6 +624,11 @@ func _my_event(e: Dictionary) -> void:
 				hud.feed(("💥 %s smashed%s!" if foe else "😢 Our %s fell!") % ([e.name, (" by " + String(e.by)) if String(e.get("by", "")) != "" else ""] if foe else [e.name]), Color("f5d0fe") if foe else Color("fca5a5"))
 				if foe and int(e.get("tier", 0)) == 3:
 					hud.banner("Gate smashed!", "Super Sprouts march down that lane now", Color("f0abfc"))
+					if not attract:
+						Audio.say("ann_gate_down", -1, true)
+				elif foe and e.get("heart_open", false):
+					if not attract:
+						Audio.say("ann_heart_open", -1, true)
 		"hero_down":
 			hud.feed("💫 %s was knocked out%s" % [e.name, (" by " + String(e.by)) if String(e.by) != "" else ""], Color("fca5a5"))
 			if mine:
@@ -549,12 +637,18 @@ func _my_event(e: Dictionary) -> void:
 			hud.feed("💚 %s revived %s" % [e.by, e.name], Color("86efac"))
 		"tower_alert":
 			hud.toast("⚠️ A %s is under attack and nobody is there!" % ("Bloom Gate" if e.kind == "gate" else ("Tree Guardian" if e.kind == "guardian" else ("Bloom Tree" if e.kind == "tree" else "Bloom Tower"))), Color("fca5a5"), 4.0)
+			if not attract:
+				Audio.say("ann_tower_alert", -1, true)
 		"camp_up":
 			if e.get("epic", false):
 				hud.feed("🐸 %s woke up in the jungle!" % e.name, Color("86efac"))
+				if not attract:
+					Audio.say("ann_toad_up", -1, true)
 		"camp_down":
 			if e.get("epic", false):
 				hud.banner("🐸 Toad Power!", "Your Sproutlings grow big and strong for a while", Color("86efac"))
+				if not attract:
+					Audio.say("ann_elder_power" if e.get("elder", false) else "ann_toad_power", -1, true)
 		"gate_regrow":
 			hud.feed(("🌱 Our Bloom Gate grew back" if e.side == "ally" else "🌿 A Thorn Gate grew back"), Color("bbf7d0"))
 		"recall_cancel":
@@ -595,6 +689,8 @@ func _process(delta: float) -> void:
 	else:
 		world.tick_alpha = clampf((clock - snap_at) / maxf(snap_gap, 0.016), 0, 1.5)
 	_update_movement(delta)
+	if playing and int(clock * 2) != int((clock - delta) * 2):
+		_check_tips()
 	if net and net is NetClient and playing:
 		world.snap_dt = snap_gap
 		hud.net_note = "📶 LAN: %d updates a second" % roundi(1.0 / maxf(snap_gap, 0.01))
@@ -760,6 +856,13 @@ func do_hud_action(a: Dictionary) -> void:
 		"emote":
 			hud.emote_open = false
 			send(a)
+		"eshop":
+			Audio.play_sfx("ui_click", -3.0)
+			send(a)
+		"hide_cards":
+			hud.cards_hidden = true
+		"show_cards":
+			hud.cards_hidden = false
 		"set_shake":
 			Audio.play_sfx("ui_click", -3.0)
 			Profile.set_value("shake", Profile.next_shake(float(Profile.load_profile().shake)))
@@ -865,6 +968,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			hud.emote_open = not hud.emote_open
 		KEY_N:
 			hud.minimap_on = not hud.minimap_on
+		KEY_C:
+			hud.cards_hidden = not hud.cards_hidden
 		KEY_SPACE:
 			if not snap.waveActive:
 				send({"t": "wave"})
@@ -905,9 +1010,10 @@ func _unhandled_input(event: InputEvent) -> void:
 			pass
 
 
-## Screen shake, damage numbers and fullscreen from the profile
+## Screen shake, damage numbers, fullscreen and audio from the profile
 func apply_settings() -> void:
 	var prof := Profile.load_profile()
+	Audio.apply_settings()
 	world.shake_mult = float(prof.shake)
 	world.dmg_mode = String(prof.dmgNums)
 	if DisplayServer.get_name() != "headless":
@@ -927,6 +1033,43 @@ func _input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo and (event as InputEventKey).physical_keycode == KEY_F11:
 		toggle_fullscreen()
 		get_viewport().set_input_as_handled()
+
+
+# ---------------------------------------------------------------------------
+# First-time tips: each shows once per computer, at the moment it's useful
+# ---------------------------------------------------------------------------
+var _tips_started_at := 0.0
+
+
+func _tip(id: String, text: String) -> void:
+	if attract or not playing or args.has("warp") or args.has("demo"):
+		return
+	var prof := Profile.load_profile()
+	var seen: Array = Array(prof.get("tipsSeen", []))
+	if seen.has(id):
+		return
+	seen.append(id)
+	Profile.set_value("tipsSeen", seen)
+	hud.toast("💡 " + text, Color("bae6fd"), 6.0)
+
+
+func _check_tips() -> void:
+	if not playing or snap.is_empty() or snap.phase != "playing":
+		return
+	var t := clock - _tips_started_at
+	if snap.has("clash"):
+		if t > 4:
+			_tip("clash", "⚔️ Walk down a lane WITH your Sproutlings. Smash the Thorn Towers, then the Thorn Heart. B goes home to heal and shop.")
+		return
+	if t > 5 and int(snap.wave) == 0 and not snap.waveActive:
+		_tip("start", "▶ Press Space (or the green button) to start the first wave.")
+	if int(snap.wave) >= 1 and not snap.waveActive:
+		_tip("build", "🏗️ Build a tower: press 1–6 to pick one, then F where you stand. Towers cost acorns.")
+	var h := _my_hero()
+	if not h.is_empty() and snap.waveActive and float(h.get("specialCd", 1)) <= 0 and snap.get("enemies", []).size() >= 4:
+		_tip("special", "✨ Your special is ready: press Q next to lots of pests! Two friends pressing Q together make a Team Combo.")
+	if int(snap.wave) >= 3 and snap.waveActive:
+		_tip("leap", "💨 Press Shift to Leaf Leap: a quick dash, and every hero's leap does something special.")
 
 
 func pick_gadget(kind: String) -> void:
@@ -984,6 +1127,7 @@ func _netcheck(secs: float) -> void:
 	var walked := false
 	var full_at := -1.0
 	var picked := false
+	var readies := 0
 	var start_x := 0.0
 	while clock - t0 < secs:
 		await get_tree().process_frame
@@ -995,6 +1139,9 @@ func _netcheck(secs: float) -> void:
 		if net is NetClient and not playing and not picked and args.has("pick") and net.my_id > 0:
 			picked = true
 			net.set_my_pick("hero", String(args.pick))
+			net.set_ready(true)
+		if net is NetHost and not net.lobby.is_empty():
+			readies = net.ready_count()[0]
 		if net is NetClient and playing and my_pos != null and not walked:
 			walked = true
 			start_x = my_pos.x
@@ -1009,6 +1156,7 @@ func _netcheck(secs: float) -> void:
 		for h in host.sim.heroes:
 			out.players.append({"owner": h.owner, "type": h.type, "x": roundf(h.x), "y": roundf(h.y)})
 		out.wave = host.sim.wave
+		out.readyFriends = readies
 	elif net is NetClient:
 		out.packets = net.packets
 		out.kb_per_snap = 0
@@ -1060,6 +1208,8 @@ func _screenshot_later(path: String, after: float) -> void:
 			m.axis = JOY_AXIS_LEFT_X
 			m.axis_value = 0.0
 			Input.parse_input_event(m)
+	if args.has("xp") and playing:  # test-only: level my hero up
+		host.sim.grant_xp(my_id, float(args.xp))
 	if args.has("ghost") and playing:
 		selected_gadget = String(args.ghost)
 		ghost_until = clock + 999.0
