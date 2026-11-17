@@ -45,6 +45,58 @@ var GADGET_ORDER: Array = []
 var PLAYER_COLORS: Array = []
 var POWERUPS: Dictionary = {}
 var DASH: Dictionary = {}
+## Rare cards for heroes from level 12 on, when the plain stat cards get samey
+## (new in this version; they show up among the stat cards with a gold edge)
+const CAPSTONE_LEVEL := 12
+const CAPSTONES := {
+	"catalyst": {"id": "catalyst", "name": "Catalyst Mastery", "icon": "⚗️", "desc": "Reactions you set off hit 30% harder", "max": 1, "capstone": true},
+	"echo": {"id": "echo", "name": "Echo Shot", "icon": "🔁", "desc": "15% of your hits echo onto a nearby pest (60% damage)", "max": 1, "capstone": true},
+	"acornmagnet": {"id": "acornmagnet", "name": "Acorn Magnet", "icon": "🌰", "desc": "Pests you pop drop 50% more acorns", "max": 1, "capstone": true},
+	"roots": {"id": "roots", "name": "Guardian Roots", "icon": "🌳", "desc": "Your towers near your hero fire 15% faster", "max": 1, "capstone": true},
+}
+const REROLL_COST := 30  # acorns, once the free rerolls are used up
+## Optional "Garden Rules" picked before an Adventure / Endless game
+const MUTATORS := {
+	"twists": {"name": "Oops! All Twists", "icon": "🌀", "desc": "Every wave from wave 3 has a surprise twist."},
+	"heroes": {"name": "Hero Mode", "icon": "🦸", "desc": "No towers (Seed Bombs only), but heroes earn 60% more XP, hit 25% harder and use specials more often."},
+	"chaos": {"name": "Reaction Chaos", "icon": "⚗️", "desc": "Elemental reactions (Shatter, Melt, Electrocute...) are 50% stronger."},
+	"turbo": {"name": "Turbo Garden", "icon": "⏩", "desc": "Heroes walk 40% faster, shots fly 40% faster, and pests come quicker."},
+}
+const MUTATOR_ORDER := ["twists", "heroes", "chaos", "turbo"]
+## Garden Guide tips for pests whose data has no description
+const PEST_TIPS := {
+	"sprout": "The most common pest. Any hero or tower pops it.",
+	"wasp": "Very fast! Frost Ferns, Bubble Lily and other slows help catch it.",
+	"beetle": "Armored shell: shrugs off part of every hit, so big hits work best.",
+	"camopuff": "Camo: only heroes and towers that can see Camo can hit it (Keen Eyes card, Sniper Sunflower, Sun Blossom's light, Sap Pitcher).",
+	"nutknight": "Armored, with a shield that halves damage. Armor Breaker cards and blast cut through.",
+	"ironpod": "Lead shell: most attacks barely scratch it. Use blast (Boom Shroom, Puffball Mortar) or armor-piercing hits.",
+	"zeppelin": "Wave 10 boss. Drops spore clouds on heroes: step out of the circle! Bursts into beetles and wasps.",
+	"dreadblimp": "The big boss. Gets ENRAGED at half health and calls helpers. Everyone focus fire!",
+	"slugling": "Tiny and quick: what a Splitter Slug turns into.",
+}
+## Pests in the Garden Guide's pest book (Adventure and Endless), in the order you meet them
+const GUIDE_PESTS := ["sprout", "wasp", "beetle", "camopuff", "goldbug", "nutknight", "slug", "slugling", "puffcap", "mothmedic",
+	"zeppelin", "mole", "snoozemoth", "ironpod", "thorntoad", "dreadblimp"]
+
+
+## Hero elements that set off a reaction together (for the lobby's "Great Team Combo!" badge)
+const TEAM_REACTIONS := [["ice", "blast", "❄️💥 SHATTER"], ["ice", "fire", "❄️🔥 MELT"], ["shock", "water", "⚡💧 ELECTROCUTE"],
+	["ice", "water", "❄️💧 FLASH FREEZE"], ["shock", "fire", "⚡🔥 OVERLOAD"]]
+
+
+## Which reactions a team of heroes can set off together
+func team_reactions(hero_types: Array) -> Array:
+	var els := {}
+	for t in hero_types:
+		els[String(HERO_ELEMENT.get(String(t), ""))] = true
+	var out: Array = []
+	for r in TEAM_REACTIONS:
+		if els.has(r[0]) and els.has(r[1]):
+			out.append(r[2])
+	if els.has("sun") and els.size() > 1:
+		out.append("☀️ SUNLIT")
+	return out
 
 # per-map caches: blocked tiles, path tiles, pest entries
 var _blocked: Dictionary = {}
@@ -88,6 +140,8 @@ func load_all() -> void:
 	TIER_LEVELS = heroes.tierLevels
 	STAT_CARDS = heroes.statCards
 	STAT_CARD_ORDER = heroes.statCardOrder
+	for id in CAPSTONES:
+		STAT_CARDS[id] = CAPSTONES[id]
 	DASH = heroes.dash
 	ENEMIES = enemies.enemies
 	REACTIONS = elements.reactions
@@ -523,6 +577,12 @@ func is_twist_wave(wave: int) -> bool:
 
 
 ## Final pest groups for a wave (counts scaled for the team; huge waves capped)
+## Wave 13 (between the first Spore Zeppelin and the double one; in Endless also
+## every 10 waves after) brings the Thornback Toad mini-boss
+static func mini_boss_wave(wave: int, endless: bool) -> bool:
+	return wave == 13 or (endless and wave > 13 and wave % 10 == 3)
+
+
 func plan_wave(wave: int, diff: Dictionary, hero_count: int, endless: bool, twist: String) -> Dictionary:
 	var mult := 1.0 + gnum(diff, "teamCount") * (maxi(1, hero_count) - 1)
 	if endless:

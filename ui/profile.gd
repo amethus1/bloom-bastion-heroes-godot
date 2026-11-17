@@ -12,7 +12,7 @@ static func defaults() -> Dictionary:
 		"gameMode": "adventure", "bots": 1, "address": "", "games": 0, "wins": 0, "bestEndless": 0,
 		"muted": false, "sfxVol": 0.85, "musicVol": 0.65, "voiceVol": 0.95, "dialogMode": "all", "padP1": false,
 		"shake": 1.0, "dmgNums": "all", "fullscreen": false,
-		"hats": [], "pets": [], "unlockAll": false, "unlocksStarted": false, "medals": {}, "kidAssist": false, "tipsSeen": []}
+		"hats": [], "pets": [], "unlockAll": false, "unlocksStarted": false, "medals": {}, "kidAssist": false, "tipsSeen": [], "clientKey": "", "mutators": [], "guideSeen": [], "practiceDone": false}
 
 
 static func load_profile() -> Dictionary:
@@ -30,6 +30,17 @@ static func load_profile() -> Dictionary:
 		d.pets = [d.pet]
 		save_profile(d)
 	return d
+
+
+## A random id for this computer, so a LAN host can give you your hero back
+## if your Wi-Fi drops and you join again
+static func client_key() -> String:
+	var d := load_profile()
+	if String(d.clientKey) == "":
+		var c := Crypto.new()
+		d.clientKey = c.generate_random_bytes(9).hex_encode()
+		save_profile(d)
+	return String(d.clientKey)
 
 
 ## Free items, things you've earned, or everything with "Unlock everything" on

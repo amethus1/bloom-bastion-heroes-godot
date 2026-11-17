@@ -16,24 +16,72 @@ var in_game := false
 var status := "Connecting…"
 var failed := false
 var packets := 0
+## Wi-Fi dropped in the middle of a game: keep trying to get back in (the host
+## keeps your hero for you)
+const RETRIES := 20
+const RETRY_EVERY := 2.5
+var reconnecting := false
+var _tries := 0
+var _retry_t := 0.0
+var _key := ""
 
 
 func join(c: Dictionary) -> void:
 	cfg = c
+	_key = Profile.client_key()
+	_connect()
+
+
+func _connect() -> void:
 	peer = ENetMultiplayerPeer.new()
-	var err := peer.create_client(String(c.address), NetHost.PORT)
+	var err := peer.create_client(String(cfg.address), NetHost.PORT)
 	if err != OK:
-		status = "Could not reach %s" % c.address
+		peer = null
+		if reconnecting:
+			_retry_t = RETRY_EVERY  # the network isn't back yet: try again soon
+			main.hud.net_trouble = "📶 Lost the host. Reconnecting… (try %d of %d)" % [_tries + 1, RETRIES]
+			return
+		status = "Could not reach %s" % cfg.address
 		failed = true
 		return
 	mp = SceneMultiplayer.new()
 	mp.root_path = get_path()
 	mp.multiplayer_peer = peer
 	mp.connected_to_server.connect(_on_connected)
-	mp.connection_failed.connect(func(): _fail("Could not connect to %s. Is the host's game open?" % c.address))
-	mp.server_disconnected.connect(func(): _fail("The host closed the game."))
+	mp.connection_failed.connect(func(): _dropped("Could not connect to %s. Is the host's game open?" % cfg.address))
+	mp.server_disconnected.connect(func(): _dropped("Lost the connection to the host."))
 	mp.peer_packet.connect(_on_packet)
-	status = "Connecting to %s…" % c.address
+	if not reconnecting:
+		status = "Connecting to %s…" % cfg.address
+
+
+## The connection went away. In a game, try again for a while (Wi-Fi blips);
+## in the lobby, just say so.
+func _dropped(why: String) -> void:
+	if (in_game or reconnecting) and _tries < RETRIES:
+		if not reconnecting:
+			print("[lan] lost the host; reconnecting")
+		reconnecting = true
+		_retry_t = RETRY_EVERY
+		main.hud.net_trouble = "📶 Lost the host. Reconnecting… (try %d of %d)" % [_tries + 1, RETRIES]
+		call_deferred("_drop_peer")
+		return
+	main.hud.net_trouble = ""
+	reconnecting = false
+	_fail(why)
+
+
+func _drop_peer() -> void:
+	if peer:
+		peer.close()
+	peer = null
+	mp = null
+
+
+## Test-only (--dropat): pretend the Wi-Fi went away for a moment
+func simulate_drop() -> void:
+	_drop_peer()
+	_dropped("test drop")
 
 
 func close() -> void:
@@ -47,9 +95,19 @@ func players_for_menu() -> Array:
 	return lobby
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	if mp:
 		mp.poll()
+	elif reconnecting:
+		_retry_t -= delta
+		if _retry_t <= 0:
+			_tries += 1
+			if _tries > RETRIES:
+				reconnecting = false
+				main.hud.net_trouble = ""
+				_fail("Lost the connection to the host.")
+			else:
+				_connect()
 
 
 func _fail(why: String) -> void:
@@ -96,8 +154,9 @@ func set_my_pick(key: String, value: String) -> void:
 
 func _on_connected() -> void:
 	my_id = mp.get_unique_id()
-	status = "Connected! Waiting for the host to start…"
-	_send({"m": "hello", "ver": NetHost.VERSION, "name": cfg.get("name", "Player"), "hero": cfg.get("hero", "peashooter"), "hat": cfg.get("hat", "none"), "pet": cfg.get("pet", "none")})
+	if not reconnecting:
+		status = "Connected! Waiting for the host to start…"
+	_send({"m": "hello", "ver": NetHost.VERSION, "name": cfg.get("name", "Player"), "hero": cfg.get("hero", "peashooter"), "hat": cfg.get("hat", "none"), "pet": cfg.get("pet", "none"), "key": _key})
 	lobby_changed.emit()
 
 
@@ -107,6 +166,13 @@ func _on_packet(_id: int, bytes: PackedByteArray) -> void:
 	match String(d.get("m", "")):
 		"welcome":
 			my_id = int(d.id)
+			if reconnecting:
+				# back on the network: the host sends "start" if our hero is still in its game
+				get_tree().create_timer(5.0).timeout.connect(func():
+					if reconnecting and mp:
+						reconnecting = false
+						main.hud.net_trouble = ""
+						_fail("Back on the network, but the host's game has ended."))
 		"refuse":
 			_fail(String(d.get("why", "The host said no.")))
 			call_deferred("close")
@@ -117,6 +183,11 @@ func _on_packet(_id: int, bytes: PackedByteArray) -> void:
 		"start":
 			in_game = true
 			status = "Playing!"
+			if reconnecting:
+				reconnecting = false
+				_tries = 0
+				main.hud.net_trouble = ""
+				main.hud.toast("📶 Back in the game!", Color("86efac"))
 			main.start_remote(my_id)
 		"snap":
 			if in_game and typeof(d.get("s")) == TYPE_DICTIONARY:

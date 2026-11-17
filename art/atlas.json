@@ -679,6 +679,23 @@
     71.39999999999999
    ],
    "frames": 8
+  },
+  "thorntoad": {
+   "file": "pests/rumbletoad.png",
+   "cell": [
+    176,
+    193.60000000000002
+   ],
+   "origin": [
+    88,
+    149.6
+   ],
+   "frames": 8,
+   "tint": [
+    0.82,
+    0.72,
+    0.56
+   ]
   }
  },
  "pets": {
@@ -1129,6 +1146,90 @@
     "1_s1": "gadgets/bomb_1_s1.png",
     "1_s2": "gadgets/bomb_1_s2.png",
     "1_s3": "gadgets/bomb_1_s3.png"
+   }
+  },
+  "pot": {
+   "cell": [
+    150,
+    160
+   ],
+   "origin": [
+    75,
+    118
+   ],
+   "looks": {
+    "1_s0": "gadgets/pot_1_s0.png",
+    "1_s1": "gadgets/pot_1_s1.png",
+    "1_s2": "gadgets/pot_1_s2.png",
+    "1_s3": "gadgets/pot_1_s3.png",
+    "2_s0": "gadgets/pot_2_s0.png",
+    "2_s1": "gadgets/pot_2_s1.png",
+    "2_s2": "gadgets/pot_2_s2.png",
+    "2_s3": "gadgets/pot_2_s3.png",
+    "3a_s0": "gadgets/pot_3a_s0.png",
+    "3a_s1": "gadgets/pot_3a_s1.png",
+    "3a_s2": "gadgets/pot_3a_s2.png",
+    "3a_s3": "gadgets/pot_3a_s3.png",
+    "3b_s0": "gadgets/pot_3b_s0.png",
+    "3b_s1": "gadgets/pot_3b_s1.png",
+    "3b_s2": "gadgets/pot_3b_s2.png",
+    "3b_s3": "gadgets/pot_3b_s3.png"
+   }
+  },
+  "sap": {
+   "cell": [
+    150,
+    160
+   ],
+   "origin": [
+    75,
+    118
+   ],
+   "looks": {
+    "1_s0": "gadgets/sap_1_s0.png",
+    "1_s1": "gadgets/sap_1_s1.png",
+    "1_s2": "gadgets/sap_1_s2.png",
+    "1_s3": "gadgets/sap_1_s3.png",
+    "2_s0": "gadgets/sap_2_s0.png",
+    "2_s1": "gadgets/sap_2_s1.png",
+    "2_s2": "gadgets/sap_2_s2.png",
+    "2_s3": "gadgets/sap_2_s3.png",
+    "3a_s0": "gadgets/sap_3a_s0.png",
+    "3a_s1": "gadgets/sap_3a_s1.png",
+    "3a_s2": "gadgets/sap_3a_s2.png",
+    "3a_s3": "gadgets/sap_3a_s3.png",
+    "3b_s0": "gadgets/sap_3b_s0.png",
+    "3b_s1": "gadgets/sap_3b_s1.png",
+    "3b_s2": "gadgets/sap_3b_s2.png",
+    "3b_s3": "gadgets/sap_3b_s3.png"
+   }
+  },
+  "gust": {
+   "cell": [
+    150,
+    160
+   ],
+   "origin": [
+    75,
+    118
+   ],
+   "looks": {
+    "1_s0": "gadgets/gust_1_s0.png",
+    "1_s1": "gadgets/gust_1_s1.png",
+    "1_s2": "gadgets/gust_1_s2.png",
+    "1_s3": "gadgets/gust_1_s3.png",
+    "2_s0": "gadgets/gust_2_s0.png",
+    "2_s1": "gadgets/gust_2_s1.png",
+    "2_s2": "gadgets/gust_2_s2.png",
+    "2_s3": "gadgets/gust_2_s3.png",
+    "3a_s0": "gadgets/gust_3a_s0.png",
+    "3a_s1": "gadgets/gust_3a_s1.png",
+    "3a_s2": "gadgets/gust_3a_s2.png",
+    "3a_s3": "gadgets/gust_3a_s3.png",
+    "3b_s0": "gadgets/gust_3b_s0.png",
+    "3b_s1": "gadgets/gust_3b_s1.png",
+    "3b_s2": "gadgets/gust_3b_s2.png",
+    "3b_s3": "gadgets/gust_3b_s3.png"
    }
   }
  },

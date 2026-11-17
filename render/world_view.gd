@@ -12,6 +12,7 @@ var my_pos = null  # Vector2: my hero's predicted position (moves instantly)
 var tick_alpha := 1.0
 var time := 0.0
 var ghost := ""  # tower preview kind
+var ghost_at = null  # where the mouse aims it (null: at my hero's feet)
 
 var _prev := {}
 var _cur := {}
@@ -491,7 +492,10 @@ func _draw_world() -> void:
 	_draw_pings()
 	if ghost != "" and my_pos != null:
 		# where the selected tower would go, with its real (round) range
-		var spot: Dictionary = GameData.gadget_spot(_map_id, ghost, my_pos.x, my_pos.y)
+		var gp: Vector2 = ghost_at if ghost_at != null else my_pos
+		if ghost_at != null:
+			ellipse_line(_me(), SimWorld.AIM_REACH, SimWorld.AIM_REACH, Color(1, 1, 1, 0.18), 2.0)  # how far from my hero I can build
+		var spot: Dictionary = GameData.gadget_spot(_map_id, ghost, gp.x, gp.y)
 		var def: Dictionary = GameData.GADGETS[ghost]
 		var sp := Vector2(spot.x, spot.y)
 		var col := Color(0.5, 1, 0.6, 0.55) if spot.ok else Color(1, 0.4, 0.4, 0.55)
@@ -499,7 +503,7 @@ func _draw_world() -> void:
 		draw_arc(sp, def.range, 0, TAU, 64, col, 2, true)
 		var gt := Sprites.gadget_tex(ghost, 1, -1, 0)
 		Sprites.draw_frame(self, gt, Sprites.atlas.gadgets.get(ghost, {}), 0, sp, false, 1.0, Color(1, 1, 1, 0.55) if spot.ok else Color(1, 0.5, 0.5, 0.45), Sprites.scale)
-		var why := "F: build here" if spot.ok else String(spot.get("reason", "Can't build here"))
+		var why := ("Click or F: build here" if ghost_at != null else "F: build here") if spot.ok else String(spot.get("reason", "Can't build here"))
 		text(sp + Vector2(0, 34), why, 13, Color("bbf7d0") if spot.ok else Color("fca5a5"), 4)
 	_draw_tower_help()
 
@@ -642,6 +646,8 @@ func draw_enemy(e: Dictionary, p: Vector2) -> void:
 	var born := clampf((time - float(a.born)) / 0.25, 0.0, 1.0)
 	alpha *= born
 	var mod := Color(1, 1, 1, alpha)
+	if entry.has("tint"):
+		mod = Color(float(entry.tint[0]), float(entry.tint[1]), float(entry.tint[2]), alpha)
 	if e.flash:
 		mod = Color(1.8, 1.8, 1.8, alpha)
 	var frame := int(fposmod(a.phase, 1.0) * 8) % 8
@@ -668,12 +674,33 @@ func draw_enemy(e: Dictionary, p: Vector2) -> void:
 		_parts.append({"p": Vector2(p.x + (randf() - 0.5) * R * 1.4, p.y - R * 0.2), "v": Vector2(0, -28), "life": 0.55, "max": 0.55, "size": 3.0, "col": Color("a3e635"), "g": 0.0})
 
 
+## A pest someone right-clicked: a turning gold crosshair
+func _draw_mark(p: Vector2, R: float) -> void:
+	var c := p + Vector2(0, -R * 0.4)
+	var rr := R * 1.2 + 8 + sin(time * 6) * 2
+	ellipse_line(c, rr, rr, Color(1, 0.85, 0.2, 0.9), 2.5)
+	for k in 4:
+		var a := time * 1.5 + k * TAU / 4
+		var d := Vector2(cos(a), sin(a))
+		seg(c + d * (rr - 6), c + d * (rr + 8), 3.0, Color(1, 0.35, 0.2, 0.95))
+
+
 func draw_enemy_over(e: Dictionary, p: Vector2) -> void:
 	var def: Dictionary = GameData.ENEMIES.get(e.type, {})
+	if e.get("marked", false):
+		_draw_mark(p, float(def.get("radius", 20)) * (1.35 if e.get("big", false) else 1.0))
 	if def.get("structure", false) or e.burrowed:
 		return
 	var S := 1.35 if e.big else 1.0
 	var R: float = def.radius * S
+	if e.type == "thorntoad":
+		# thorny back
+		var tc := p + Vector2(0, R * 0.15)
+		for k in 6:
+			var ta := deg_to_rad(-150.0 + k * 24.0)
+			var dv := Vector2(cos(ta), sin(ta) * 0.8)
+			seg(tc + dv * R * 0.7, tc + dv * (R * 0.7 + 13.0), 5.0, Color("3f2a12"))
+			seg(tc + dv * (R * 0.7 + 6.0), tc + dv * (R * 0.7 + 13.0), 2.5, Color("d9f99d"))
 	var flyer: bool = def.get("art", e.type) in FLYERS
 	var feet := p + Vector2(0, R * 0.75)
 	var top := feet.y - (R * 2.6 if flyer else R * 2.0)
@@ -694,7 +721,7 @@ func draw_enemy_over(e: Dictionary, p: Vector2) -> void:
 		text(bc + Vector2(0, 4), String(rs.get("icon", "")), 10, Color.WHITE, 0)
 	# little coloured pips: soaked, sunlit, frostbite, poisoned, bubble-trapped
 	var n := 0
-	for pip in [["soaked", "60a5fa"], ["sunlit", "fde047"], ["frostbit", "e0f2fe"], ["poisoned", "a3e635"], ["trapped", "c4b5fd"]]:
+	for pip in [["soaked", "60a5fa"], ["sunlit", "fde047"], ["frostbit", "e0f2fe"], ["poisoned", "a3e635"], ["trapped", "c4b5fd"], ["sapped", "f59e0b"], ["guarded", "4d7c0f"]]:
 		if e.get(pip[0], false):
 			var pc := Vector2(p.x + R * 0.95 - n * 9, top + 8)
 			disc(pc, 4.5, Color(0.06, 0.09, 0.16, 0.85))
@@ -939,6 +966,34 @@ func on_event(e: Dictionary) -> void:
 		"thunder":
 			_fx.append({"kind": "bolt", "pts": PackedVector2Array([Vector2(pos.x + 30, pos.y - 400), Vector2(pos.x + 10, pos.y - 120), pos]), "col": Color("a5b4fc"), "life": 0.4, "max": 0.4})
 			shake = maxf(shake, 4)
+		"echo":
+			var eb := Vector2(float(e.get("x2", pos.x)), float(e.get("y2", pos.y)))
+			_fx.append({"kind": "beam", "a": pos, "b": eb, "col": Color("c4b5fd"), "life": 0.22, "max": 0.22})
+			ring(eb, 20, Color("ddd6fe"), 3, 0.25)
+		"mark":
+			ring(pos, 40, Color("fbbf24"), 4, 0.35)
+		"gift":
+			if float(e.get("x", 0)) > 0:
+				float_text(pos - Vector2(0, 64), "🎁 +%d 🌰" % int(e.get("amount", 0)), Color("fde68a"), 16, 1.3)
+				burst(pos - Vector2(0, 40), ["fde68a", "f59e0b", "ffffff"], 12, 120)
+		"pot_grow":
+			burst(pos - Vector2(0, 30), ["f9a8d4", "fde047", "86efac"], 8, 90)
+			if int(e.get("owner", -1)) == my_owner:
+				float_text(pos - Vector2(0, 58), "+%d 🌰" % int(e.get("acorns", 0)), Color("fcd34d"), 14, 0.9)
+		"sap":
+			ring(pos, float(e.get("radius", 70)), Color("f59e0b"), 4, 0.4)
+		"toad_stomp":
+			ring(pos, float(e.get("r", 170)), Color("a3e635"), 8, 0.5)
+			ring(pos, float(e.get("r", 170)) * 0.6, Color("65a30d"), 5, 0.4)
+			shake = maxf(shake, 7)
+			burst(pos + Vector2(0, 20), ["a16207", "78350f", "65a30d"], 18, 200)
+		"gust":
+			var gr := float(e.get("radius", 170))
+			ring(pos, gr, Color(0.9, 0.97, 1.0, 0.9), 6, 0.45)
+			for i in 14:
+				var ang := TAU * i / 14.0 + randf() * 0.3
+				_parts.append({"p": pos + Vector2(cos(ang), sin(ang)) * 20, "v": Vector2(cos(ang), sin(ang)) * gr * 2.2, "drag": 2.6, "life": 0.5, "max": 0.5,
+					"size": 5.0 + randf() * 4, "col": Color(0.88, 0.96, 1.0, 0.8), "g": 0.0})
 		"beam", "snipe":
 			var a := Vector2(e.get("x1", pos.x), e.get("y1", pos.y))
 			var b := Vector2(e.get("x2", e.get("tx", pos.x)), e.get("y2", e.get("ty", pos.y)))
@@ -1151,6 +1206,16 @@ func _play_event_audio(e: Dictionary) -> void:
 				"bubble": play_pos.call("shoot_bubble", -7.0, 0.08, 85)
 		"explosion":
 			play_pos.call("explosion", -4.0, 0.08, 70)
+		"gust":
+			play_pos.call("dash", -3.0, 0.1, 150)
+		"toad_stomp":
+			play_pos.call("slam_hit", -2.0, 0.05, 300)
+		"sap":
+			play_pos.call("bubble_trap", -9.0, 0.1, 300)
+		"pot_grow":
+			play_pos.call("sun_pickup", -10.0, 0.1, 400)
+		"echo":
+			play_pos.call("shoot_bubble", -10.0, 0.1, 120)
 		"nova":
 			var nc := String(e.get("color", "")).to_upper()
 			if nc == "#FDE047":

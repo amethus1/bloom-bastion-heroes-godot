@@ -41,6 +41,9 @@ var life_bought_wave := -99  # Endless shop: one Tree life every 5 waves
 const ENDLESS_SHOP := {"life": 250, "overclock": 100, "mystery": 120}
 var boss_chests := 0
 var react_fx := {}
+var marked: Array = []  # pests a player right-clicked: heroes and towers shoot these first
+var mutators := {}  # optional Garden Rules picked before the game (see GameDataLib.MUTATORS)
+var practice := false  # Practice Garden: a gentle guided first game (never saved)
 
 var players := {}  # id -> player dict
 var heroes: Array = []
@@ -108,6 +111,66 @@ func remove_player(id: int) -> void:
 	players.erase(id)
 
 
+## LAN: a friend's connection dropped. Their hero stays in the game and a Bot
+## Buddy plays it, so when they come back (same computer and name) they get
+## their level, cards, acorns and towers back. `key` identifies them.
+func set_away(id: int, key: String) -> void:
+	var p = players.get(id)
+	if p == null:
+		return
+	if phase != "playing" or p.is_bot or key == "":
+		remove_player(id)
+		return
+	p.is_bot = true
+	p.away = key
+	ev({"type": "player_away", "name": p.name, "slot": p.slot})
+
+
+## True if a dropped friend with this key is waiting to come back
+func is_away(key: String) -> bool:
+	if key == "":
+		return false
+	for p in players.values():
+		if String(p.get("away", "")) == key:
+			return true
+	return false
+
+
+## A dropped friend joined again under a new connection id: hand their hero back
+func rejoin(new_id: int, key: String) -> bool:
+	if key == "" or players.has(new_id):
+		return false
+	for old_id in players.keys():
+		var p: Dictionary = players[old_id]
+		if String(p.get("away", "")) != key:
+			continue
+		players.erase(old_id)
+		p.id = new_id
+		p.is_bot = false
+		p.erase("away")
+		p.erase("brain")
+		players[new_id] = p
+		_change_owner(old_id, new_id)
+		var h = hero_of(new_id)
+		if h:
+			ev({"type": "player_back", "name": p.name, "slot": p.slot, "x": h.x, "y": h.y})
+		return true
+	return false
+
+
+## Everything that remembers who owns it (hero, towers, shots, Sun, spikes, wisps)
+func _change_owner(old_id: int, new_id: int) -> void:
+	for list in [heroes, gadgets, projectiles, suns, spikes, wisps]:
+		for x in list:
+			if int(x.get("owner", -999)) == old_id:
+				x.owner = new_id
+	for h in heroes:
+		if int(h.get("reviver", -999)) == old_id:
+			h.reviver = new_id
+	if int(last_special.get("owner", -999)) == old_id:
+		last_special.owner = new_id
+
+
 func start(map: String, difficulty: String, game_mode: String) -> void:
 	map_id = map if D.maps.maps.has(map) and not D.maps.maps[map].get("clash", false) else "meadow"
 	difficulty_id = difficulty if D.DIFFICULTIES.has(difficulty) else "normal"
@@ -119,7 +182,7 @@ func start(map: String, difficulty: String, game_mode: String) -> void:
 	lives = int(d.startLives)
 	max_lives = lives
 	wave_active = false
-	heroes.clear(); enemies.clear(); projectiles.clear(); suns.clear(); gadgets.clear(); spikes.clear()
+	heroes.clear(); enemies.clear(); projectiles.clear(); suns.clear(); gadgets.clear(); spikes.clear(); marked.clear()
 	wisps.clear(); chests.clear(); powerups.clear(); pending_fx.clear(); spawn_queue.clear(); events.clear()
 	twist_plan.clear()
 	gold_chests = 0
@@ -163,7 +226,7 @@ func spawn_hero(p: Dictionary, mid_game: bool) -> void:
 		"x": at.x, "y": at.y, "tierA": 0, "tierB": 0, "cards": {}, "level": 1, "xp": 0.0, "pending": 0, "bonus": 0, "offer": [],
 		"target_mode": "first", "pops": 0, "cooldown": 0.3, "angle": 0.0, "shots": 0, "sun_t": 3.5, "pulse_t": 1.5, "beam_t": 4.0,
 		"recoil": 0.0, "special_cd": 5.0, "rally_t": 0.0, "home_cd": 0.0, "dash_cd": 0.0, "dazed_t": 0.0, "daze_resist": 0.0,
-		"buffs": {}, "facing": 1, "moved_t": 0.0, "spring_t": 40.0, "_st": null}
+		"buffs": {}, "facing": 1, "moved_t": 0.0, "spring_t": 40.0, "_st": null, "rerolls": 1}
 	if mid_game and heroes.size() > 0:
 		var avg := 0.0
 		for o in heroes:
@@ -185,7 +248,19 @@ func hero_of(pid: int):
 func hero_stats(h: Dictionary) -> Dictionary:
 	if h._st == null:
 		h._st = D.compute_hero_stats(h.type, h.tierA, h.tierB, h.cards, h.level, h.buffs, h.get("items", []))
+		if not mutators.is_empty():
+			apply_mutators(h._st, mutators)
 	return h._st
+
+
+## Garden Rules that change hero stats (also used by main.gd for walking speed)
+static func apply_mutators(st: Dictionary, m) -> void:
+	if m.has("turbo"):
+		st.moveSpeed *= 1.4
+	if m.has("heroes"):
+		st.damage = round(float(st.damage) * 1.25)
+		st.specialMult *= 0.7
+		st.xpMult *= 1.6
 
 
 # ---------------------------------------------------------------------------
@@ -337,7 +412,7 @@ func on_hero_hit(_e: Dictionary, _tower: int, _owner: int, _final: float, _opts:
 	pass
 
 
-func ensure_offer(h: Dictionary) -> void:
+func ensure_offer(h: Dictionary, avoid: Array = []) -> void:
 	if h.offer.size() > 0 or h.pending <= 0:
 		return
 	var st := hero_stats(h)
@@ -356,11 +431,46 @@ func ensure_offer(h: Dictionary) -> void:
 			continue
 		ids.append(id)
 	ids.shuffle()
+	# a reroll tries to show different cards than last time
+	ids.sort_custom(func(a, b): return int(avoid.has(a)) < int(avoid.has(b)))
 	while opts.size() < 3 and ids.size() > 0:
 		opts.append({"kind": "stat", "id": ids.pop_front()})
+	# from level 12: sometimes a rare capstone card in place of a stat card
+	var caps: Array = D.CAPSTONES.keys().filter(func(id): return D.gnum(h.cards, id) < 1 and not (id == "acornmagnet" and is_clash()) and not avoid.has(id))
+	if h.level >= D.CAPSTONE_LEVEL and not caps.is_empty() and randf() < 0.45:
+		var cap = caps[randi() % caps.size()]
+		var put := false
+		for i in range(opts.size() - 1, -1, -1):
+			if opts[i].kind == "stat":
+				opts[i] = {"kind": "stat", "id": cap}
+				put = true
+				break
+		if not put and opts.size() < 3:
+			opts.append({"kind": "stat", "id": cap})
 	if opts.is_empty():
 		opts.append({"kind": "stat", "id": "power"})
 	h.offer = opts
+
+
+## Swap the level-up cards for new ones: free ones first (one at the start,
+## one more per boss chest), then 30 acorns each
+func reroll(pid: int) -> void:
+	var h = hero_of(pid)
+	var p = players.get(pid)
+	if h == null or p == null or h.pending <= 0 or h.offer.is_empty():
+		return
+	var free := int(h.get("rerolls", 0)) > 0
+	if not free and int(p.acorns) < D.REROLL_COST:
+		gadget_fail(pid, "Not enough acorns: a new hand of cards costs %d" % D.REROLL_COST)
+		return
+	if free:
+		h.rerolls -= 1
+	else:
+		p.acorns -= D.REROLL_COST
+	var old: Array = h.offer.map(func(c): return String(c.get("id", "")))
+	h.offer = []
+	ensure_offer(h, old)
+	ev({"type": "reroll", "owner": pid, "x": h.x, "y": h.y, "free": free})
 
 
 func pick_card(pid: int, index: int) -> void:
@@ -398,12 +508,15 @@ func pick_card(pid: int, index: int) -> void:
 # Waves
 # ---------------------------------------------------------------------------
 func plan_twist(w: int) -> String:
-	if not endless or not D.is_twist_wave(w):
+	var all_twists := mutators.has("twists") and w >= 3
+	if not all_twists and (not endless or not D.is_twist_wave(w)):
 		return ""
 	if not twist_plan.has(w):
 		var prev: String = twist_plan.get(w - 1, twist_plan.get(w - 2, twist_plan.get(w - 3, "")))
 		var options: Array = D.TWIST_ORDER.filter(func(t): return t != prev and w >= D.gnum(D.TWISTS[t], "minWave"))
-		twist_plan[w] = options[randi() % options.size()]
+		if options.is_empty() and all_twists:
+			options = D.TWIST_ORDER.filter(func(t): return t != prev)
+		twist_plan[w] = options[randi() % options.size()] if not options.is_empty() else ""
 	return twist_plan[w]
 
 
@@ -419,12 +532,15 @@ func start_next_wave() -> void:
 	current_twist = plan_twist(wave)
 	var plan: Dictionary = D.plan_wave(wave, diff(), heroes.size(), endless, current_twist)
 	wave_hp_boost = plan.hpBoost
+	var gap := 0.75 if mutators.has("turbo") else 1.0  # Turbo Garden: pests come quicker
 	for g in plan.groups:
 		for i in g.count:
-			spawn_queue.append({"type": g.type, "at": g.delay + i * g.interval, "path": cursor % npaths, "resist": g.resist})
+			spawn_queue.append({"type": g.type, "at": (g.delay + i * g.interval) * gap, "path": cursor % npaths, "resist": g.resist})
 			cursor += 1
 	if wave >= 3 and (wave % 10 == 5 or randf() < 0.35):
 		spawn_queue.append({"type": "goldbug", "at": 3 + randf() * 8, "path": randi() % npaths, "resist": ""})
+	if D.mini_boss_wave(wave, endless) and not practice:
+		spawn_queue.append({"type": "thorntoad", "at": 8.0, "path": randi() % npaths, "resist": ""})
 	spawn_queue.sort_custom(func(a, b): return a.at < b.at)
 	ev({"type": "wave_start", "wave": wave, "twist": current_twist, "endless": endless})
 
@@ -458,7 +574,7 @@ func spawn_enemy(type: String, path_index: int, seg := 0, seg_t := 0.0, at = nul
 	var big: bool = tw.get("big", false) and not boss
 	enemies.append({"id": gen_id(), "type": type, "path": path_index % _paths.size(), "seg": seg, "t": seg_t, "progress": seg + seg_t,
 		"x": pos.x, "y": pos.y, "angle": 0.0, "hp": max_hp, "max_hp": max_hp,
-		"speed": def.speed * d.speedMult * D.gnum(D.map(map_id), "pestSpeed", 1.0) * (1.0 + D.gnum(d, "teamSpeed") * (maxi(1, heroes.size()) - 1) * team_ramp) * ramp.speed * D.gnum(tw, "speedMult", 1.0),
+		"speed": def.speed * d.speedMult * D.gnum(D.map(map_id), "pestSpeed", 1.0) * (1.0 + D.gnum(d, "teamSpeed") * (maxi(1, heroes.size()) - 1) * team_ramp) * ramp.speed * D.gnum(tw, "speedMult", 1.0) * (1.15 if mutators.has("turbo") else 1.0),
 		"radius": def.radius * (1.35 if big else 1.0), "big": big, "twist_armor": D.gnum(tw, "armor"), "regen": D.gnum(tw, "regen"),
 		"reward": maxf(4, round(def.reward * d.rewardMult)), "lives": int(def.get("lives", 1)),
 		"camo": def.get("camo", false) or (tw.get("camo", false) and not boss), "armored": def.get("armored", false),
@@ -512,6 +628,7 @@ func tick(dt: float, real_dt: float) -> void:
 	update_powerups(dt)
 	update_gadgets(dt)
 	features.update(self, dt)
+	update_marks(dt)
 	update_enemies(dt)
 	update_pending(dt)
 	var auras := compute_auras()
@@ -654,6 +771,8 @@ func update_chests(dt: float) -> void:
 			if c.big:
 				boss_chests += 1
 				bonus = 2
+				for h in heroes:
+					h.rerolls = int(h.get("rerolls", 0)) + 1  # and a free card reroll
 			else:
 				gold_chests += 1
 				bonus = 1 if gold_chests <= 5 else 0
@@ -760,13 +879,23 @@ func gadget_fail(pid: int, reason: String) -> void:
 	ev({"type": "gadget_fail", "owner": pid, "reason": reason})
 
 
-func plant(pid: int, kind: String) -> void:
+## Towers can be planted this far from your hero (aimed with the mouse)
+const AIM_REACH := 170.0
+
+
+func plant(pid: int, kind: String, at := Vector2.INF) -> void:
 	var def: Dictionary = D.GADGETS.get(kind, {})
 	var h = hero_of(pid)
 	var p = players.get(pid)
 	if def.is_empty() or h == null:
 		return
-	var spot: Dictionary = D.gadget_spot(map_id, kind, h.x, h.y)
+	if mutators.has("heroes") and not def.get("once", false):
+		gadget_fail(pid, "Hero Mode: no towers this game. Your hero is extra strong instead!")
+		return
+	var from := Vector2(h.x, h.y)
+	if at.is_finite():
+		from += (at - from).limit_length(AIM_REACH)
+	var spot: Dictionary = D.gadget_spot(map_id, kind, from.x, from.y)
 	for g in gadgets:
 		if g.owner == pid and g.kind == kind and dist(g.x, g.y, spot.x, spot.y) < 60 and not def.get("once", false):
 			upgrade_gadget(pid, g.id, -1)
@@ -851,7 +980,51 @@ func sell_gadget(pid: int) -> void:
 	ev({"type": "gadget_sold", "owner": pid, "kind": g.kind, "x": g.x, "y": g.y, "refund": refund})
 
 
+## Right-click a pest: everyone's heroes and towers in range shoot it first for a few seconds
+func mark(pid: int, x: float, y: float) -> void:
+	var best = null
+	var bd := 70.0
+	for e in enemies:
+		if e.hp <= 0:
+			continue
+		var d := dist(e.x, e.y, x, y) - float(e.get("radius", 20)) * 0.5
+		if d < bd:
+			bd = d
+			best = e
+	if best == null:
+		return
+	best.mark_t = 6.0
+	if not marked.has(best):
+		marked.append(best)
+	while marked.size() > 3:
+		marked[0].mark_t = 0.0
+		marked.remove_at(0)
+	var p = players.get(pid)
+	ev({"type": "mark", "owner": pid, "id": best.id, "x": best.x, "y": best.y, "name": p.name if p else "", "pest": String(D.ENEMIES.get(best.type, {}).get("name", best.type))})
+
+
+func update_marks(dt: float) -> void:
+	for i in range(marked.size() - 1, -1, -1):
+		var e: Dictionary = marked[i]
+		e.mark_t = float(e.get("mark_t", 0.0)) - dt
+		if e.mark_t <= 0 or e.hp <= 0 or not enemies.has(e):
+			e.mark_t = 0.0
+			marked.remove_at(i)
+
+
+## A marked pest in range (and visible), if there is one
+func marked_target(x: float, y: float, range: float, ok: Callable):
+	for e in marked:
+		if e.hp > 0 and not e.sheltered and dist(x, y, e.x, e.y) <= range + e.radius * 0.5 and ok.call(e):
+			return e
+	return null
+
+
 func gadget_target(g: Dictionary, range: float, see_camo := false, skip := {}):
+	if not marked.is_empty():
+		var m = marked_target(g.x, g.y, range, func(e): return not skip.has(e.id) and (see_camo or not e.camo or dist(e.x, e.y, g.x, g.y) <= 130))
+		if m != null:
+			return m
 	var best = null
 	var bp := -INF
 	for e in enemies:
@@ -868,6 +1041,15 @@ func gadget_target(g: Dictionary, range: float, see_camo := false, skip := {}):
 
 func update_gadgets(dt: float) -> void:
 	var scale := tower_scale()
+	var roots_heroes := {}  # owner -> hero, for heroes with Guardian Roots
+	for h in heroes:
+		if D.gnum(h.cards, "roots") > 0:
+			roots_heroes[h.owner] = h
+	var pots: Array = []  # Bloom Pots speed up the towers around them
+	for g in gadgets:
+		if g.kind == "pot":
+			var PB: Dictionary = D.gadget_branch("pot", g.branch)
+			pots.append([Vector2(g.x, g.y), D.gnum(PB, "range", D.GADGETS.pot.range), D.gnum(PB, "boost", D.GADGETS.pot.boost)])
 	for i in range(gadgets.size() - 1, -1, -1):
 		var g: Dictionary = gadgets[i]
 		var def: Dictionary = D.GADGETS[g.kind]
@@ -886,7 +1068,18 @@ func update_gadgets(dt: float) -> void:
 		var B: Dictionary = D.gadget_branch(g.kind, g.branch)
 		var range: float = D.gnum(B, "range", def.get("range", 100))
 		var dmg_mult: float = D.gnum(B, "dmgMult", 1.0)
-		g.cd -= dt * (1.25 if overclock_t > 0 else 1.0)
+		var rate := 1.25 if overclock_t > 0 else 1.0
+		if g.kind != "pot" and not pots.is_empty():
+			var best := 0.0
+			for pt in pots:
+				if pt[0].distance_to(Vector2(g.x, g.y)) <= pt[1]:
+					best = maxf(best, pt[2])
+			rate *= 1.0 + best
+		if roots_heroes.has(g.owner):
+			var rh: Dictionary = roots_heroes[g.owner]
+			if dist(rh.x, rh.y, g.x, g.y) <= float(hero_stats(rh).range):
+				rate *= 1.15  # Guardian Roots
+		g.cd -= dt * rate
 		if g.cd > 0:
 			continue
 		match g.kind:
@@ -942,6 +1135,54 @@ func update_gadgets(dt: float) -> void:
 					if freeze > 0:
 						try_freeze(e, freeze)
 				ev({"type": "nova", "x": g.x, "y": g.y, "radius": range, "color": "#f0f9ff" if freeze > 0 else "#7dd3fc"})
+			"pot":
+				# Bloom Pot: grows acorns for its owner and a Sun orb during waves
+				if not wave_active:
+					g.cd = 1.0
+					continue
+				g.cd = 1.0 / D.gnum(B, "rate", def.rate)
+				var ac := int(round(def.acorns * lv * D.gnum(B, "acornMult", 1.0)))
+				var pp = players.get(g.owner)
+				if pp:
+					pp.acorns += ac
+				add_sun(g.x + randf_range(-40, 40), g.y + randf_range(24, 48), round((def.sun + wave) * lv * D.gnum(B, "sunMult", 1.0)), g.owner)
+				ev({"type": "pot_grow", "x": g.x, "y": g.y, "acorns": ac, "owner": g.owner})
+			"sap":
+				# Sap Pitcher: sticky sap slows pests, washes off Camo, and fire & blast hurt them more
+				g.cd = 0.5
+				var sap_time: float = D.gnum(B, "sapTime", def.sapTime)
+				var sap_slow: float = D.gnum(B, "sapSlow", def.sapSlow)
+				var sap_bonus: float = D.gnum(B, "sapBonus", def.sapBonus) * (1.0 + (g.level - 1) * 0.25)
+				var sapped := 0
+				for e in enemies:
+					if e.hp <= 0 or e.sheltered or e.burrowed or dist(e.x, e.y, g.x, g.y) > range:
+						continue
+					var fresh: bool = float(e.get("sap_until", 0.0)) <= game_time
+					e.sap_until = game_time + sap_time
+					e.sap_bonus = maxf(float(e.get("sap_bonus", 0.0)) if not fresh else 0.0, sap_bonus)
+					e.camo = false
+					e.slow = maxf(e.slow, sap_slow)
+					e.slow_t = maxf(e.slow_t, sap_time)
+					if fresh:
+						sapped += 1
+				if sapped > 0:
+					ev({"type": "sap", "x": g.x, "y": g.y, "radius": range})
+			"gust":
+				# Gust Blossom: blows the pests nearest the tree back along the trail
+				var near: Array = enemies.filter(func(e): return e.hp > 0 and not e.sheltered and not e.burrowed and dist(e.x, e.y, g.x, g.y) <= range)
+				if near.is_empty():
+					g.cd = 0.25
+					continue
+				g.cd = 1.0 / D.gnum(B, "rate", def.rate)
+				near.sort_custom(func(a, b): return a.progress > b.progress)
+				var how_many := int((B.targets if B.has("targets") else def.targets)[g.level - 1])
+				var push: float = D.gnum(B, "push", def.push) * (1.0 + (g.level - 1) * 0.2)
+				for k in mini(how_many, near.size()):
+					var e: Dictionary = near[k]
+					push_back(e, push, Vector2(g.x, g.y))
+					if B.has("stun"):
+						try_stun(e, B.stun)
+				ev({"type": "gust", "x": g.x, "y": g.y, "radius": range, "n": mini(how_many, near.size())})
 			_:
 				var target = gadget_target(g, range, B.get("seeCamo", false))
 				if target == null:
@@ -1172,6 +1413,25 @@ func enemy_powers(e: Dictionary, dt: float) -> void:
 				var h: Dictionary = near[randi() % near.size()]
 				pending_fx.append({"t": 1.3, "kind": "spore", "x": h.x, "y": h.y, "r": 105.0})
 				ev({"type": "spore_warn", "x": h.x, "y": h.y, "r": 105, "delay": 1.3, "fromX": e.x, "fromY": e.y})
+	if e.type == "thorntoad" and not e.sheltered:
+		# stomp: towers nearby fall asleep (a hero walking by wakes them)
+		e.abil_t = (4.0 if e.abil_t < 0 else e.abil_t) - dt
+		if e.abil_t <= 0:
+			e.abil_t = 7.5
+			var n := 0
+			for g in gadgets:
+				if g.wake_t > 0 or D.GADGETS[g.kind].get("onPath", false) or dist(g.x, g.y, e.x, e.y) > def.stompRadius:
+					continue
+				g.sleep_t = maxf(g.sleep_t, 3.5)
+				n += 1
+			ev({"type": "toad_stomp", "x": e.x, "y": e.y, "r": def.stompRadius, "n": n})
+		# thorny guard: pests close to it take 40% less damage
+		e.heal_t -= dt
+		if e.heal_t <= 0:
+			e.heal_t = 0.4
+			for o in enemies:
+				if o.id != e.id and o.hp > 0 and dist(o.x, o.y, e.x, e.y) <= def.guardRadius:
+					o.guard_until = game_time + 0.6
 	if e.type == "dreadblimp" and not e.sheltered:
 		if not e.enraged and e.hp < e.max_hp * 0.5:
 			e.enraged = true
@@ -1251,6 +1511,11 @@ func reaction_mult(e: Dictionary, el: String, raw: float, owner: int, tower: int
 		reaction = "knockout"
 	if reaction != "":
 		mult *= float(D.REACTIONS[reaction].mult)
+		if mutators.has("chaos"):
+			mult *= 1.5  # Reaction Chaos
+		var rh = hero_of(owner)
+		if rh and D.gnum(rh.cards, "catalyst") > 0:
+			mult *= 1.3  # Catalyst Mastery
 		if reaction == "overload" or reaction == "electrocute":
 			for o in enemies:
 				if o.id == e.id or o.hp <= 0 or dist(o.x, o.y, e.x, e.y) > 80:
@@ -1289,6 +1554,10 @@ func apply_damage(e: Dictionary, raw: float, owner: int, tower: int, opts: Dicti
 		dmg *= 1.0 + e.brittle
 	if e.trap_t > 0:
 		dmg *= 1.25
+	if float(e.get("guard_until", 0.0)) > game_time:
+		dmg *= 0.6  # shielded by a Thornback Toad's thorns
+	if (el == "fire" or el == "blast") and float(e.get("sap_until", 0.0)) > game_time:
+		dmg *= 1.0 + float(e.get("sap_bonus", 0.0))  # Sap Pitcher
 	dmg *= damage_mult(e, tower)
 	var final := maxf(1.0, round(dmg))
 	e.hp -= final
@@ -1297,9 +1566,24 @@ func apply_damage(e: Dictionary, raw: float, owner: int, tower: int, opts: Dicti
 	var p = players.get(owner)
 	if p:
 		p.damage += final
+	var by_hero = null
 	for h in heroes:
 		if h.id == tower:
 			h.pops += final
+			by_hero = h
+	if by_hero and not opts.get("isDot", false) and not opts.get("echo", false) and D.gnum(by_hero.cards, "echo") > 0 and randf() < 0.15:
+		# Echo Shot: a ghostly copy of the hit jumps to a nearby pest
+		var near = null
+		var nd := 140.0
+		for o in enemies:
+			if o.id != e.id and o.hp > 0 and not o.sheltered:
+				var d := dist(o.x, o.y, e.x, e.y)
+				if d < nd:
+					nd = d
+					near = o
+		if near:
+			ev({"type": "echo", "x": e.x, "y": e.y, "x2": near.x, "y2": near.y, "slot": by_hero.slot})
+			apply_damage(near, round(raw * 0.6), owner, tower, {"echo": true, "element": el, "noReact": true, "armorPierce": opts.get("armorPierce", false)})
 	if e.get("clash", false) and tower >= 0:
 		on_hero_hit(e, tower, owner, final, opts)
 	if not opts.get("isDot", false) and (opts.get("crit", false) or final >= 25):
@@ -1314,7 +1598,9 @@ func on_defeated(e: Dictionary, killer_id: int) -> void:
 	if killer:
 		killer.pops += 1
 		grant_xp(killer_id, e.reward)
-		killer.acorn_frac += 25.0 if e.boss else (1.5 if e.reward >= 40 else 0.4)
+		var kh = hero_of(killer_id)
+		var magnet := 1.5 if kh and D.gnum(kh.cards, "acornmagnet") > 0 else 1.0  # Acorn Magnet
+		killer.acorn_frac += (25.0 if e.boss else (1.5 if e.reward >= 40 else 0.4)) * magnet
 		var whole := int(floor(killer.acorn_frac))
 		killer.acorn_frac -= whole
 		killer.acorns += whole
@@ -1364,6 +1650,11 @@ func compute_auras() -> Dictionary:
 			a.speed += 0.05
 		if h.rally_t > 0:
 			a.speed += 0.5
+		for g in gadgets:  # Sunshine Pot: heroes standing by it attack faster
+			if g.kind == "pot" and g.branch >= 0:
+				var B: Dictionary = D.gadget_branch("pot", g.branch)
+				if D.gnum(B, "heroBoost") > 0 and dist(h.x, h.y, g.x, g.y) <= D.gnum(B, "range", 160):
+					a.speed = maxf(a.speed, D.gnum(B, "heroBoost"))
 		out[h.id] = a
 	return out
 
@@ -1380,6 +1671,10 @@ func can_see(t: Dictionary, st: Dictionary, aura: Dictionary, e: Dictionary) -> 
 
 func pick_target(t: Dictionary, st: Dictionary, aura: Dictionary, custom_range := 0.0):
 	var r: float = custom_range if custom_range > 0 else st.range
+	if not marked.is_empty():
+		var m = marked_target(t.x, t.y, r, func(e): return can_see(t, st, aura, e))
+		if m != null:
+			return m
 	var best = null
 	var low: bool = t.target_mode == "last" or t.target_mode == "close"
 	var bv := INF if low else -INF
@@ -1402,6 +1697,9 @@ func pick_target(t: Dictionary, st: Dictionary, aura: Dictionary, custom_range :
 
 func add_projectile(p: Dictionary) -> void:
 	p.id = gen_id()
+	if mutators.has("turbo") and p.has("vx"):
+		p.vx *= 1.4
+		p.vy *= 1.4
 	if not p.has("hit"):
 		p.hit = {}
 	if not p.has("pierce"):
@@ -1738,6 +2036,24 @@ func push_back(e: Dictionary, px: float, _from := Vector2.ZERO) -> void:
 	e.x = a.x + (b.x - a.x) * e.t
 	e.y = a.y + (b.y - a.y) * e.t
 	e.progress = e.seg + e.t
+
+
+## Gift acorns to a teammate (click the 🎁 by their name)
+const GIFT := 25
+
+
+func gift(pid: int, to: int) -> void:
+	var p = players.get(pid)
+	var q = players.get(to)
+	if p == null or q == null or pid == to:
+		return
+	if int(p.acorns) < GIFT:
+		gadget_fail(pid, "You need %d acorns to send a gift" % GIFT)
+		return
+	p.acorns -= GIFT
+	q.acorns += GIFT
+	var h = hero_of(to)
+	ev({"type": "gift", "owner": pid, "to": to, "name": p.name, "toName": q.name, "amount": GIFT, "x": h.x if h else 0.0, "y": h.y if h else 0.0})
 
 
 ## Emotes and map pings (talking without typing)
@@ -2202,7 +2518,8 @@ func update_bots(dt: float) -> void:
 		var b: Dictionary = p.brain
 		var idx := k
 		k += 1
-		if h.pending > 0 and h.offer.size() > 0:
+		var away: bool = p.has("away")  # a dropped LAN friend's hero: fight, but leave their cards and acorns to them
+		if h.pending > 0 and h.offer.size() > 0 and not away:
 			b.card_t -= dt
 			if b.card_t <= 0:
 				b.card_t = 1.0 + randf()
@@ -2269,7 +2586,11 @@ func update_bots(dt: float) -> void:
 				target = hs + (c - hs).normalized() * 160.0
 		_bot_walk(h, b, target, st.moveSpeed * dt)
 		# a pest is about to reach the Bloom Tree: drop a Seed Bomb in front of it
+		if away:
+			continue
 		b.bomb_t = float(b.get("bomb_t", 4.0)) - dt
+		if mutators.has("heroes"):
+			b.build_t = 99.0  # Hero Mode: no towers (Seed Bombs still work)
 		if b.bomb_t <= 0 and p.acorns >= int(D.GADGETS.bomb.cost) + 10:
 			var sc: Vector2 = D.sanctuary(map_id)
 			for e in enemies:
@@ -2336,7 +2657,7 @@ func snapshot() -> Dictionary:
 			"specialCd": snappedf(h.special_cd, 0.1), "specialMax": snappedf(float(D.HERO_INFO[h.type].special.cooldown) * st.specialMult, 0.1),
 			"dashCd": snappedf(h.dash_cd, 0.1), "homeCd": snappedf(h.home_cd, 0.1), "rally": h.rally_t > 0, "dazed": h.dazed_t > 0,
 			"buffs": h.buffs, "moving": h.moved_t > 0, "facing": h.facing, "range": st.range, "angle": snappedf(h.angle, 0.01),
-			"recoil": snappedf(h.recoil, 0.01), "pops": h.pops, "targetMode": h.target_mode,
+			"recoil": snappedf(h.recoil, 0.01), "pops": h.pops, "targetMode": h.target_mode, "rerolls": h.get("rerolls", 0),
 			"hat": players[h.owner].hat if players.has(h.owner) else "none", "pet": players[h.owner].pet if players.has(h.owner) else "none"})
 	var es: Array = []
 	for e in enemies:
@@ -2344,12 +2665,18 @@ func snapshot() -> Dictionary:
 			"frozen": e.freeze_t > 0, "stunned": e.stun_t > 0, "slowed": e.slow_t > 0, "burning": e.burn_t > 0, "frostbit": e.get("frost_t", 0.0) > 0, "enraged": e.get("enraged", false), "flash": e.flash > 0,
 			"sheltered": e.sheltered, "big": e.big, "resist": e.resist, "sunlit": e.sunlit_t > 0, "burrowed": e.burrowed,
 			"poisoned": e.poison_t > 0, "soaked": e.soak_t > 0, "trapped": e.trap_t > 0, "boss": e.boss})
+		if e.get("mark_t", 0.0) > 0:
+			es[-1].marked = true
+		if float(e.get("sap_until", 0.0)) > game_time:
+			es[-1].sapped = true
+		if float(e.get("guard_until", 0.0)) > game_time:
+			es[-1].guarded = true
 	var ps: Array = []
 	for p in projectiles:
 		ps.append({"id": p.id, "kind": p.kind, "x": roundf(p.x), "y": roundf(p.y), "vx": roundf(p.vx), "vy": roundf(p.vy)})
 	var pl: Array = []
 	for p in players.values():
-		pl.append({"id": p.id, "name": p.name, "slot": p.slot, "hero": p.hero_type, "bot": p.is_bot, "acorns": p.acorns, "pops": p.pops,
+		pl.append({"id": p.id, "name": p.name, "slot": p.slot, "hero": p.hero_type, "bot": p.is_bot, "away": p.has("away"), "acorns": p.acorns, "pops": p.pops,
 			"damage": p.damage, "specials": p.specials, "reactions": p.reactions, "built": p.gadgets_planted, "hat": p.hat, "pet": p.pet,
 			"combos": p.get("combos", 0), "sun": p.get("sun", 0), "chests": p.get("chests", 0)})
 	var gs: Array = []
@@ -2360,8 +2687,8 @@ func snapshot() -> Dictionary:
 		"waveActive": wave_active, "lives": lives, "maxLives": max_lives, "twist": current_twist, "paused": paused, "speed": speed_mult,
 		"autoWave": auto_wave, "time": game_time, "players": pl, "heroes": hs, "enemies": es, "projectiles": ps, "gadgets": gs,
 		"toSpawn": spawn_queue.size(), "autoIn": snappedf(auto_wave_countdown, 0.1) if auto_wave and not wave_active and wave > 0 else 0.0,
-		"nextTwist": plan_twist(wave + 1) if endless and not wave_active and phase == "playing" else "",
-		"overclock": ceili(overclock_t), "lifeShopAt": life_bought_wave + 5,
+		"nextTwist": plan_twist(wave + 1) if (endless or mutators.has("twists")) and not wave_active and phase == "playing" else "",
+		"overclock": ceili(overclock_t), "lifeShopAt": life_bought_wave + 5, "practice": practice, "mutators": mutators.keys(),
 		"suns": suns.map(func(s): return {"id": s.id, "x": roundf(s.x), "y": roundf(s.y), "amount": s.amount, "sky": s.sky}),
 		"chests": chests.map(func(c): return {"id": c.id, "x": roundf(c.x), "y": roundf(c.y), "big": c.big}),
 		"powerups": powerups.map(func(p): return {"id": p.id, "kind": p.kind, "x": roundf(p.x), "y": roundf(p.y), "ttl": p.ttl}),

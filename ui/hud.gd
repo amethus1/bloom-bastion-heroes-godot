@@ -9,6 +9,8 @@ var my_owner := -1
 var selected_gadget := "sentry"
 var is_host := true
 var net_note := ""
+var net_trouble := ""  # LAN friend: the connection dropped and we're trying to get back in
+var practice := {}  # Practice Garden: {text, step, of} of the current step
 
 var _font: Font
 var _buttons: Array = []  # [Rect2, action]
@@ -295,6 +297,12 @@ func _draw_hud() -> void:
 
 	if net_note != "":
 		txt(Vector2(W / 2, H - 8), net_note, 12, Color(1, 1, 1, 0.6), HORIZONTAL_ALIGNMENT_CENTER)
+	if net_trouble != "":
+		draw_rect(Rect2(0, 0, W, H), Color(0, 0, 0, 0.45))
+		var nw := _font.get_string_size(net_trouble, HORIZONTAL_ALIGNMENT_LEFT, -1, 22).x + 48
+		panel(Rect2(W / 2 - nw / 2, H / 2 - 50, nw, 92), Color(0.06, 0.1, 0.08, 0.95), Color("fcd34d"))
+		txt(Vector2(W / 2, H / 2 - 12), net_trouble, 22, Color("fde68a"), HORIZONTAL_ALIGNMENT_CENTER)
+		txt(Vector2(W / 2, H / 2 + 20), "Your hero is safe: a Bot Buddy plays it until you're back.", 15, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
 	if snap.paused and phase == "playing" and not menu_open:
 		draw_rect(Rect2(0, 0, W, H), Color(0, 0, 0, 0.35))
 		txt(Vector2(W / 2, H / 2), "⏸ Paused", 48, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER, -1, 8)
@@ -307,8 +315,25 @@ func _draw_hud() -> void:
 		_draw_stats(W, H)
 
 
+## The hero bar sits in the middle, nudged right if the build bar needs the room
+func _hero_bar_rect(W: float, H: float) -> Rect2:
+	var x := W / 2 - 250
+	if not snap.has("clash"):
+		x = clampf(x, 12 + _build_bar_w() + 10, maxf(12 + _build_bar_w() + 10, W - 234 - 10 - 500))
+	return Rect2(x, H - 92, 500, 80)
+
+
+func _build_bar_w() -> float:
+	var n := GameData.GADGET_ORDER.size()
+	return 16 + n * (_build_cell() + (6 if n <= 6 else 5))
+
+
+func _build_cell() -> float:
+	return 54.0 if GameData.GADGET_ORDER.size() <= 6 else 50.0
+
+
 func _draw_hero_bar(h: Dictionary, W: float, H: float) -> void:
-	var r := Rect2(W / 2 - 250, H - 92, 500, 80)
+	var r := _hero_bar_rect(W, H)
 	panel(r)
 	_block_rects.append(r)
 	var info: Dictionary = GameData.HERO_INFO.get(h.type, {})
@@ -346,8 +371,9 @@ func _draw_hero_bar(h: Dictionary, W: float, H: float) -> void:
 
 func _draw_build_bar(me: Dictionary, W: float, H: float) -> void:
 	var n := GameData.GADGET_ORDER.size()
-	var cw := 54.0
-	var r := Rect2(12, H - 108, 16 + n * (cw + 6), 96)
+	var cw := _build_cell()
+	var gap := 6.0 if n <= 6 else 5.0
+	var r := Rect2(12, H - 108, _build_bar_w(), 96)
 	panel(r)
 	_block_rects.append(r)
 	_build_rect = r
@@ -357,13 +383,18 @@ func _draw_build_bar(me: Dictionary, W: float, H: float) -> void:
 			mine += 1
 	var cap := int(GameData.gadgets.limitPerPlayer)
 	txt(Vector2(24, H - 88), "Build %d/%d" % [mine, cap], 12, Color("fde047") if mine >= cap else Color("bbf7d0"))
-	txt(Vector2(r.end.x - 10, H - 88), "1-6 pick · F build · U up · X sell", 10, Color(0.73, 0.97, 0.82, 0.8), HORIZONTAL_ALIGNMENT_RIGHT)
+	txt(Vector2(r.end.x - 10, H - 88), "1-%d pick · F or click to build · U up · X sell" % mini(9, n), 10, Color(0.73, 0.97, 0.82, 0.8), HORIZONTAL_ALIGNMENT_RIGHT)
 	var acorns := int(me.get("acorns", 0))
 	var hovered := ""
+	var hero_mode: bool = snap.get("mutators", []).has("heroes")
 	for i in n:
 		var kind: String = GameData.GADGET_ORDER[i]
+		if hero_mode and not GameData.GADGETS[kind].get("once", false):
+			acorns = -1  # Hero Mode: only Seed Bombs (drawn greyed out)
+		else:
+			acorns = int(me.get("acorns", 0))
 		var def: Dictionary = GameData.GADGETS[kind]
-		var cr := Rect2(20 + i * (cw + 6), H - 78, cw, 58)
+		var cr := Rect2(20 + i * (cw + gap), H - 78, cw, 58)
 		var sel := kind == selected_gadget
 		var afford: bool = acorns >= int(def.cost)
 		var hover := cr.has_point(get_local_mouse_position())
@@ -377,6 +408,8 @@ func _draw_build_bar(me: Dictionary, W: float, H: float) -> void:
 		_buttons.append([cr, {"t": "select_gadget", "kind": kind}])
 		if hover:
 			hovered = kind
+	if hero_mode:
+		txt(Vector2(r.position.x + r.size.x / 2, H - 46), "🦸 Hero Mode: Seed Bombs only", 13, Color("fde68a"), HORIZONTAL_ALIGNMENT_CENTER, -1, 4)
 	if r.has_point(get_local_mouse_position()):
 		var def: Dictionary = GameData.GADGETS[hovered if hovered != "" else selected_gadget]
 		var tip := "%s %s (%d acorns): %s" % [def.icon, def.name, int(def.cost), def.desc]
@@ -418,6 +451,10 @@ func _draw_cards(h: Dictionary, W: float, H: float) -> void:
 	var y0 := H - 104 - ch - 12
 	txt(Vector2(W / 2, y0 - 12), "⭐ LEVEL UP! Pick one (1, 2, 3 or click)", 20, Color("fde047"), HORIZONTAL_ALIGNMENT_CENTER, -1, 5)
 	button(Rect2(x0 + n * cw + (n - 1) * 14 - 70, y0 - 34, 70, 24), "▾ hide (C)", {"t": "hide_cards"}, Color("334155"), 11)
+	var free := int(h.get("rerolls", 0))
+	var rl := ("🎲 New cards (R) · %d free" % free) if free > 0 else ("🎲 New cards (R) · %d🌰" % GameData.REROLL_COST)
+	var can := free > 0 or int(my_player().get("acorns", 0)) >= GameData.REROLL_COST
+	button(Rect2(x0, y0 - 34, 168, 24), rl, {"t": "reroll"}, Color("6d28d9") if can else Color("3f3f46"), 11)
 	for i in n:
 		var c: Dictionary = h.offer[i]
 		var r := Rect2(x0 + i * (cw + 14), y0, cw, ch)
@@ -442,6 +479,9 @@ func _draw_cards(h: Dictionary, W: float, H: float) -> void:
 			icon = sc.get("icon", "⭐")
 			head = "Card %d/%d" % [int(GameData.gnum(h.cards, c.id)) + 1, int(sc.get("max", 1))]
 			col = Color("a78bfa")
+			if sc.get("capstone", false):
+				head = "✨ Rare card"
+				col = Color("fbbf24")
 		var lift := -6.0 if hover else 0.0
 		r.position.y += lift
 		draw_style_box(UiKit.box(Color(0.06, 0.13, 0.09, 0.97), col if hover else Color(col.r, col.g, col.b, 0.7), 16, 3, 0), r)
@@ -567,6 +607,19 @@ func _draw_tree_panel(lives_k: float, me: Dictionary) -> void:
 	_block_rects.append(tl)
 	UiKit.icon_tree(self, Vector2(36, 34), 24)
 	txt(Vector2(56, 38), "Bloom Tree", 13, Color("bbf7d0"))
+	var rules := ""
+	for m in snap.get("mutators", []):
+		rules += String(GameData.MUTATORS.get(m, {}).get("icon", ""))
+	if rules != "":
+		# Garden Rules in play: a little pill to the right of this panel
+		var rr := Rect2(tl.end.x + 6, 12, _font.get_string_size(rules, HORIZONTAL_ALIGNMENT_LEFT, -1, 14).x + 20, 28)
+		panel(rr, Color(0.2, 0.1, 0.3, 0.85), Color("c084fc"), 10)
+		txt(Vector2(rr.position.x + 10, 32), rules, 14)
+		if rr.has_point(get_local_mouse_position()):
+			var names: Array = snap.get("mutators", []).map(func(m): return String(GameData.MUTATORS.get(m, {}).get("name", m)))
+			var tip := "Garden Rules: " + ", ".join(names)
+			panel(Rect2(rr.position.x, rr.end.y + 4, _font.get_string_size(tip, HORIZONTAL_ALIGNMENT_LEFT, -1, 12).x + 20, 26), Color(0.05, 0.1, 0.07, 0.95))
+			txt(Vector2(rr.position.x + 10, rr.end.y + 22), tip, 12)
 	meter(Rect2(56, 44, 120, 14), lives_k, Color("4ade80") if lives_k > 0.5 else (Color("facc15") if lives_k > 0.25 else Color("fb7185")))
 	txt(Vector2(182, 57), "%d/%d" % [snap.lives, snap.maxLives], 14)
 	var wave_label := ("Wave %d" % snap.wave) if snap.endless else ("Wave %d/%d" % [snap.wave, snap.maxWave])
@@ -579,6 +632,15 @@ func _draw_tree_panel(lives_k: float, me: Dictionary) -> void:
 	elif float(snap.get("autoIn", 0)) > 0:
 		txt(Vector2(345, 38), "Next wave", 11, Color("bbf7d0"))
 		txt(Vector2(345, 60), "⏱ %ds" % ceili(float(snap.autoIn)), 16, Color("fde047"))
+	if not practice.is_empty():
+		# Practice Garden: the step to do now
+		var pl := String(practice.text)
+		var pw := maxf(360.0, _font.get_string_size(pl, HORIZONTAL_ALIGNMENT_LEFT, -1, 16).x + 34)
+		var pr := Rect2(12, 84, pw, 58)
+		var glow := 0.6 + 0.4 * sin(_time * 4.0)
+		panel(pr, Color(0.06, 0.2, 0.1, 0.94), Color(0.53, 0.94, 0.67, glow))
+		txt(Vector2(26, 104), "🌱 Practice · step %d of %d" % [int(practice.step), int(practice.of)], 12, Color("86efac"))
+		txt(Vector2(26, 129), pl, 16, Color.WHITE)
 	if snap.get("twist", "") != "":
 		var tw: Dictionary = GameData.TWISTS.get(snap.twist, {})
 		var line := "🌀 %s: %s" % [tw.get("name", snap.twist), tw.get("desc", "")]
@@ -600,10 +662,17 @@ func _draw_team(W: float, _h: Dictionary) -> void:
 		var col: Color = GameData.player_color(hh.slot)
 		draw_circle(Vector2(W - 214, y - 5), 7, col)
 		var nm: String = String(pl.get("name", "?"))
-		if pl.get("bot", false):
+		if pl.get("away", false):
+			nm = "📶 " + nm
+		elif pl.get("bot", false):
 			nm = "🤖 " + nm
-		txt(Vector2(W - 200, y), nm.substr(0, 16), 14, Color.WHITE if hh.owner != my_owner else Color("fde047"))
+		var giftable: bool = hh.owner != my_owner and not pl.get("bot", false) and snap.phase == "playing"
+		txt(Vector2(W - 200, y), nm.substr(0, 9 if giftable else 16), 14, Color.WHITE if hh.owner != my_owner else Color("fde047"))
 		txt(Vector2(W - 24, y), "Lv %d" % hh.level, 13, Color("bbf7d0"), HORIZONTAL_ALIGNMENT_RIGHT)
+		if giftable:
+			# send this friend 25 acorns
+			var can: bool = int(my_player().get("acorns", 0)) >= 25
+			button(Rect2(W - 112, y - 16, 52, 21), "🎁 25", {"t": "gift", "to": hh.owner}, Color("a16207") if can else Color("3f3f46"), 11)
 		if clash:
 			if hh.get("dead", false):
 				txt(Vector2(W - 200, y + 14), "💫 back in %ds" % ceili(float(hh.respawnT)), 11, Color("fca5a5"))
@@ -611,8 +680,10 @@ func _draw_team(W: float, _h: Dictionary) -> void:
 				var k: float = float(hh.hp) / maxf(1.0, float(hh.maxHp))
 				meter(Rect2(W - 200, y + 5, 176, 6), k, Color("4ade80") if k > 0.5 else (Color("facc15") if k > 0.25 else Color("ef4444")))
 		y += row
-	# battle feed under the team list
+	# battle feed under the team list (and under the minimap when it's showing)
 	var fy := tr.end.y + 22
+	if not clash and minimap_on and snap.phase == "playing":
+		fy += 132.0 + 10
 	for f in _feed:
 		var a: float = clampf(f.t / 0.6, 0, 1)
 		var w := _font.get_string_size(f.text, HORIZONTAL_ALIGNMENT_LEFT, -1, 13).x + 20
@@ -881,7 +952,10 @@ func _draw_wave_preview(W: float, H: float) -> void:
 	var key := "%d|%d|%s|%s" % [next, n, snap.difficulty, twist]
 	if _wave_cache.key != key:
 		var plan: Dictionary = GameData.plan_wave(next, GameData.DIFFICULTIES.get(snap.difficulty, {}), n, bool(snap.endless), twist)
-		_wave_cache = {"key": key, "groups": plan.groups}
+		var groups: Array = plan.groups.duplicate()
+		if GameData.mini_boss_wave(next, bool(snap.endless)) and not snap.get("practice", false):
+			groups.append({"type": "thorntoad", "count": 1, "boss": true, "resist": ""})
+		_wave_cache = {"key": key, "groups": groups}
 	var groups: Array = _wave_cache.groups
 	var slot := 62.0
 	var w := maxf(230.0, groups.size() * slot + 20)
@@ -939,7 +1013,7 @@ func _draw_pest_card(W: float) -> void:
 
 
 func _draw_buffs(h: Dictionary, W: float, H: float) -> void:
-	var r := Rect2(W / 2 - 250, H - 92, 500, 80)
+	var r := _hero_bar_rect(W, H)
 	var y := r.position.y - (56.0 if h.has("maxHp") else 30.0)
 	var x := r.position.x
 	var chips: Array = []

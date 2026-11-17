@@ -50,6 +50,14 @@ This document compiles a deep technical, UX, balance, and feature audit of **Blo
 * 9.2 LAN smoothness: friends see everyone ~2 snapshots in the past, glided between time-stamped snapshots. In a real 2-process LAN game, frame-to-frame pest motion went from ~73% to ~7% off even (`tests/test_smooth.gd`, and the `smooth` field of `--netcheck`).
 * Smooth animation: your own dash zips over 0.14 s instead of blinking; pests fade and grow in, pop with a bright flash of their picture when defeated, and no longer flicker left/right when walking up or down; towers spring up when built and bounce when upgraded.
 * Stability: 8-game soak test (`tests/test_soak.gd`) with flat memory; closing the window or Quit stops every sound first, so exit is leak-free (10 of 10 windowed runs clean); removed the 2D MSAA setting the Compatibility renderer ignores (its startup warning is gone).
+* 9.2 Graceful rejoin: a dropped friend's client reconnects on its own for about a minute; the host keeps their hero (a Bot Buddy walks and fights, but leaves cards and acorns alone) and hands it back, matched by a per-computer key + name. Tested in a real 2-process LAN game (`--dropat`) and `tests/test_rejoin.gd`.
+* 6.3 Save & resume: solo Adventure/Endless games save after every cleared wave; ⏯ Continue on the title screen (`tests/test_save.gd`). Garden Rules: Oops! All Twists, Hero Mode, Reaction Chaos, Turbo Garden.
+* 5.8 Towers follow the mouse after picking (within 170 px of the hero) and a click builds there; right-click a pest to mark it for every hero and tower for 6 s.
+* 5.6 Card rerolls (1 free, +1 per boss chest, then 30 acorns; R) and four rare capstone cards from level 12.
+* 5.7 Bloom Pot, Sap Pitcher and Gust Blossom (with art in the same style, `tools/gen_gadget_art.py`); the Thornback Toad mini-boss on wave 13 (wave 15 already has two Spore Zeppelins).
+* 7.2 Gift 25 acorns from the team list; "Great Team Combo!" line in the LAN lobby.
+* 8.3 Practice Garden (guided checklist game); 8.2 Garden Guide (heroes, towers, reactions, and a pest book that fills in as you meet pests).
+* 11.3 Mac/Windows/Linux export presets (`tools/export_all.sh`), app icon, bundled Nunito font for Windows/Linux. 11.2 `tools/run_tests.sh` and a GitHub Actions workflow that runs every suite.
 
 **Left alone on purpose:** the 1.6 Sun Blossom share/Solar Beam and Mega-Pea knockback items are the browser original's own behavior and tuning, so changing them is a design choice. The same goes for the §6 balance items (Courtyard, chests).
 

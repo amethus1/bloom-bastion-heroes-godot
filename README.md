@@ -12,6 +12,21 @@ godot -e --path .              # open the project in the Godot editor
 
 If the scripts show "unknown class" errors after you pull new files, run `godot --headless --path . --import` once.
 
+New players: press **🌱 Practice Garden** on the title screen. It is a short, easy game with a step-by-step checklist (walk, grab Sun, leap, build, start a wave, pick a card, special, upgrade). The **📖** button opens the Garden Guide: every hero, tower and reaction, plus a pest book that fills in as you meet pests.
+
+## Builds for other computers
+
+```bash
+tools/export_all.sh     # Mac (.zip with the .app), Windows (one .exe) and Linux, into build/
+```
+
+It needs Godot 4.7.2's export templates (in Godot: Editor > Manage Export Templates > Download). The builds are not signed by Apple or Microsoft, so the first time:
+
+* **Mac:** unzip, then right-click **Bloom Bastion Heroes.app** and choose **Open** (double-clicking says it can't check the developer).
+* **Windows:** if SmartScreen warns, click **More info**, then **Run anyway**.
+
+On Windows and Linux the game uses the bundled Nunito font (`fonts/`, SIL Open Font License). Macs use their built-in Arial Rounded.
+
 ## Controls
 
 | Key | What it does |
@@ -20,8 +35,10 @@ If the scripts show "unknown class" errors after you pull new files, run `godot 
 | Shift | Leaf Leap (dash) |
 | Q / E | Hero special |
 | 1 2 3 | Pick a level-up card |
-| 1 – 6 (no cards waiting), or G | Pick a tower or trap. Its outline shows where it will go |
-| F | Build the picked tower where you stand |
+| R (cards showing) | New cards: one free at the start and one more per boss chest, then 30 acorns |
+| 1 – 9 (no cards waiting), or G | Pick a tower or trap. Its outline shows where it will go |
+| F, or click | Build the picked tower. Move the mouse after picking and the outline follows it (up to a short walk from your hero), so a click builds right there; F without moving the mouse builds where you stand. Right-click cancels |
+| Right-click a pest | Mark it: every hero and tower in range shoots it first for 6 seconds |
 | U / Y | Upgrade the tower you stand next to; at level 2, U or Y picks its special version. Its cost and sell price float above it |
 | X | Sell the tower you stand next to |
 | T | Targeting: First, Strongest, Closest or Last pest |
@@ -71,6 +88,12 @@ On the title screen, **Controllers: Controller 1 = me** lets one kid play solo o
 * **Endless acorn shop** (wave 5+, above the build bar): 🌳 +1 Tree life (once every 5 waves), ⚡ Overclock (towers 25% faster for a minute), 🎁 Mystery power-up.
 * **Level-up cards** show path progress (●●○○) and the exact change ("Damage 39 → 51"). C tucks them away during a busy fight.
 * **Kid assist** (⚙ Settings): the Bloom Tree regrows 2 lives after every wave and Sun is easier to grab.
+* **Rare cards** from hero level 12 (gold edge): ⚗️ Catalyst Mastery (your reactions +30%), 🔁 Echo Shot (15% of hits echo onto a nearby pest), 🌰 Acorn Magnet (+50% acorns from pops), 🌳 Guardian Roots (your towers near you fire 15% faster).
+* **More towers:** 🪴 Bloom Pot (helper: grows acorns and Sun during waves, nearby towers fire 15% faster), 🍯 Sap Pitcher (trap: slows, washes off Camo, fire and blast hit 20% harder), 🌬️ Gust Blossom (blows pests back along the trail every 4 seconds). Each has two level-3 paths like the others.
+* **Thornback Toad:** a wave-13 mini-boss, between the first Spore Zeppelin and the double one (in Endless also every 10 waves after). Pests near it take 40% less damage, and its stomp puts towers to sleep: walk past them to wake them.
+* **Gifts:** the 🎁 25 button next to a friend's name in the team list sends them 25 acorns.
+* **Save and Continue:** solo Adventure and Endless games save after every cleared wave. The title screen shows **⏯ Continue (wave N)**; right-click it to forget the save.
+* **🎲 Garden Rules** (title screen, Adventure and Endless): 🌀 Oops! All Twists, 🦸 Hero Mode (no towers but stronger heroes), ⚗️ Reaction Chaos (reactions +50%), ⏩ Turbo Garden. Their icons show next to the Bloom Tree panel during the game.
 
 ### Settings and unlocks
 
@@ -93,6 +116,8 @@ Stand right next to a knocked-out friend to revive them.
 2. The other computers press **Join LAN Game**. Games on the same Wi-Fi appear in the list automatically (UDP beacon on port 24681). You can also type the address.
 3. The host presses **Start Game**. Friends can still join a game that has already started.
 
+If a friend's Wi-Fi drops, their game keeps trying to reconnect for a minute or so ("📶 Lost the host. Reconnecting…"). Meanwhile their hero stays in the game with 📶 by their name, and a Bot Buddy walks it and fights but leaves their cards and acorns alone. When they get back (or join again later from the same computer with the same name) they get the same hero back: level, cards, acorns and towers. In the lobby, a ✨ **Great Team Combo!** line shows when the heroes picked can make reactions together.
+
 The game uses UDP ports **24680** (ENet game traffic) and **24681** (discovery). The first time you host, macOS may ask whether Godot can accept incoming connections. Say Allow.
 
 ## How it is built
@@ -108,9 +133,14 @@ The game uses UDP ports **24680** (ENet game traffic) and **24681** (discovery).
 | `net/net_host.gd`, `net_client.gd` | ENet LAN play. Channel 0 is reliable (lobby, actions); channel 1 is unreliable-ordered (walking, snapshots at 20 Hz, zstd-compressed, about 5 KB in a big wave) |
 | `net/lan_finder.gd` | Listens for host beacons |
 | `render/world_view.gd` | Draws a snapshot: map, depth-sorted sprites, hats and pets, effects, damage numbers, camera with smoothing and shake. Dots, shadows, rings, bars and trails all come from one small generated texture, and pests draw in layers (ground, bodies, overlay), so a 260-pest fight stays near 100 fps. Things off screen are skipped. A LAN friend sees everyone ~2 snapshots in the past, glided between time-stamped snapshots, so uneven Wi-Fi doesn't stutter |
-| `ui/` | HUD, menus and lobby, save profile (`user://profile.cfg`), shared theme |
+| `sim/save_game.gd` | Save and Continue for solo games (`user://autosave.save`) |
+| `sim/map_features.gd` | One gimmick per Adventure map |
+| `ui/` | HUD, menus (title, Garden Rules, Garden Guide, settings) and lobby, save profile (`user://profile.cfg`), shared theme |
 | `main.gd` | Game flow and local input. Your walking is predicted locally so it feels instant |
-| `art/` | Every sprite drawn by the real browser renderer and exported as PNG strips |
+| `art/` | Every sprite drawn by the real browser renderer and exported as PNG strips. The Bloom Pot, Sap Pitcher and Gust Blossom pictures and the app icon are drawn by `tools/gen_gadget_art.py` and `tools/gen_icon.py` |
+| `fonts/` | Nunito (SIL Open Font License), used on Windows and Linux |
+| `tools/` | `run_tests.sh`, `export_all.sh`, and the art/audio generators |
+| `.github/workflows/tests.yml` | GitHub runs every test suite on each push |
 
 ### Re-exporting the art or data after changing the browser game
 
@@ -119,7 +149,15 @@ cd ../bloom-bastion-heroes && npm run export-data && cp export/data/*.json ../bl
 cd ../bloom-bastion-heroes && node tools/sprite-server.js   # then open http://localhost:3011 and press "Export all"
 ```
 
+Careful: some things exist only in this Godot version and are not in the browser game's export: the Thornback Toad (`thorntoad` in `data/enemies.json`), the Bloom Pot, Sap Pitcher and Gust Blossom (`pot`, `sap`, `gust` in `data/gadgets.json`, including `order` and `costs`), and their `atlas.json` entries (run `python3 tools/gen_gadget_art.py` again). Copy those back in after re-exporting.
+
 ## Tests (all headless)
+
+```bash
+tools/run_tests.sh            # every suite below, one line each (about 4 minutes); "quick" skips the whole-game ones
+```
+
+Or one at a time:
 
 ```bash
 godot --headless --path . -s tests/test_data.gd    # hero stats, XP curve and waves match the JS game exactly
@@ -130,6 +168,9 @@ godot --headless --path . -s tests/test_clash.gd -- hard boomshroom,bubblelily 3
 godot --headless --path . -s tests/test_net.gd     # snapshot packets round-trip and stay small
 godot --headless --path . -s tests/test_smooth.gd  # LAN friends see even motion through Wi-Fi jitter; pause holds; dash slides; facing doesn't flicker
 godot --headless --path . -s tests/test_soak.gd    # 8 games across every map and mode: no script errors, memory flat (add `-- soak repeat` for 8x the same game)
+godot --headless --path . -s tests/test_save.gd    # save after a wave, Continue on the title screen, everything put back
+godot --headless --path . -s tests/test_rejoin.gd  # a dropped LAN friend's hero is kept and handed back
+godot --headless --path . -s tests/test_features.gd # aiming, marks, rerolls, rare cards, new towers, Thornback Toad, Garden Rules, gifts, Practice, Guide
 ```
 
 LAN test: run a host and a client on one computer.
@@ -139,7 +180,7 @@ godot --headless --path . -- --host --bind=127.0.0.1 --autostart=1 --netcheck=11
 godot --headless --path . -- --join=127.0.0.1 --hero=sunblossom --netcheck=8
 ```
 
-Each prints a `NETCHECK {...}` line: players, wave, how far the client's hero walked on the host, and packets received. Add `--mode=clash` to the host to test Garden Clash, where the client also buys an item. Run the client in a window with `--max-fps 60` and its line also has `smooth`: how evenly pests move from frame to frame (`avg_off_pct` about 7 now; add `--nointerp` to see the old blending, about 70).
+Each prints a `NETCHECK {...}` line: players, wave, how far the client's hero walked on the host, and packets received. Add `--dropat=7` to the client to pretend its Wi-Fi drops 7 seconds in: its line then has `drop` with the hero's level before and after reconnecting. Add `--mode=clash` to the host to test Garden Clash, where the client also buys an item. Run the client in a window with `--max-fps 60` and its line also has `smooth`: how evenly pests move from frame to frame (`avg_off_pct` about 7 now; add `--nointerp` to see the old blending, about 70).
 
 ### Garden Clash balance check
 
@@ -155,5 +196,5 @@ Other test flags: `--demo` (you are a bot too), `--warp=SECONDS` (fast-forward),
 
 ## Not ported yet
 
-- Touch controls and the pet unlock rules.
-- Shaders and lights, and exported macOS/Windows app builds (an export preset plus export templates).
+- Touch controls.
+- Shaders and lights.

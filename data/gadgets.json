@@ -5,7 +5,10 @@
     "fern",
     "zap",
     "thorns",
-    "bomb"
+    "bomb",
+    "pot",
+    "sap",
+    "gust"
   ],
   "limitPerPlayer": 5,
   "levelMult": [
@@ -197,6 +200,113 @@
       "dmg": 110,
       "color": "#a16207",
       "desc": "Trap on the path: one big BOOM when a pest steps on it."
+    },
+    "pot": {
+      "id": "pot",
+      "name": "Bloom Pot",
+      "icon": "🪴",
+      "type": "support",
+      "element": "",
+      "cost": 75,
+      "range": 160,
+      "rate": 0.16,
+      "acorns": 4,
+      "sun": 12,
+      "boost": 0.15,
+      "color": "#f472b6",
+      "desc": "Helper: during waves it grows acorns and Sun orbs, and towers near it fire 15% faster.",
+      "branches": [
+        {
+          "id": "harvest",
+          "name": "Golden Harvest",
+          "icon": "🌰",
+          "desc": "Grows twice as many acorns, and a bigger Sun orb.",
+          "acornMult": 2.2,
+          "sunMult": 1.6
+        },
+        {
+          "id": "sunny",
+          "name": "Sunshine Pot",
+          "icon": "☀️",
+          "desc": "Towers near it fire 35% faster, and heroes standing by it 15% faster.",
+          "boost": 0.35,
+          "heroBoost": 0.15,
+          "range": 200
+        }
+      ]
+    },
+    "sap": {
+      "id": "sap",
+      "name": "Sap Pitcher",
+      "icon": "🍯",
+      "type": "trap",
+      "onPath": true,
+      "element": "",
+      "cost": 55,
+      "range": 72,
+      "sapTime": 4,
+      "sapSlow": 0.25,
+      "sapBonus": 0.2,
+      "color": "#f59e0b",
+      "desc": "Trap on the path: sticky sap slows pests, washes off Camo, and fire & blast hurt them 20% more.",
+      "branches": [
+        {
+          "id": "sticky",
+          "name": "Super Sticky",
+          "icon": "🫠",
+          "desc": "Much stickier: a big slow that lasts 6 seconds.",
+          "sapSlow": 0.45,
+          "sapTime": 6
+        },
+        {
+          "id": "fuel",
+          "name": "Fire Sap",
+          "icon": "🔥",
+          "desc": "Fire and blast hurt sapped pests 45% more.",
+          "sapBonus": 0.45,
+          "range": 90
+        }
+      ]
+    },
+    "gust": {
+      "id": "gust",
+      "name": "Gust Blossom",
+      "icon": "🌬️",
+      "type": "tower",
+      "element": "",
+      "cost": 95,
+      "range": 170,
+      "rate": 0.25,
+      "push": 60,
+      "targets": [
+        3,
+        4,
+        5
+      ],
+      "color": "#7dd3fc",
+      "desc": "Every 4 seconds a big puff of wind blows pests back along the trail. A great last guard by the tree!",
+      "branches": [
+        {
+          "id": "whirl",
+          "name": "Whirlwind",
+          "icon": "🌪️",
+          "desc": "Blows back every pest in range, farther.",
+          "push": 85,
+          "targets": [
+            99,
+            99,
+            99
+          ]
+        },
+        {
+          "id": "dizzy",
+          "name": "Dizzy Gust",
+          "icon": "💫",
+          "desc": "Puffs more often and leaves pests dizzy (stunned) for a moment.",
+          "rate": 0.36,
+          "stun": 0.8
+        }
+      ]
     }
   },
   "costs": {
@@ -229,6 +339,21 @@
       "build": 25,
       "toLevel2": 25,
       "toLevel3": 55
+    },
+    "pot": {
+      "build": 75,
+      "toLevel2": 75,
+      "toLevel3": 165
+    },
+    "sap": {
+      "build": 55,
+      "toLevel2": 55,
+      "toLevel3": 121
+    },
+    "gust": {
+      "build": 95,
+      "toLevel2": 95,
+      "toLevel3": 209
     }
   }
 }

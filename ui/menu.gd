@@ -243,32 +243,63 @@ func show_title() -> void:
 		pets.append([pet.id, ("%s %s" % [pet.icon, pet.name]) if ok else ("🔒 %s: %s" % [pet.name, pet.how]), not ok])
 	_option(pinfo, "Pet", pets, profile.pet, func(id): profile.pet = id; Profile.save_profile(profile); _update_hero_info())
 	right.add_child(_label("Games %d · Wins %d · Best Endless wave %d" % [int(profile.games), int(profile.wins), int(profile.bestEndless)], 13, Color("86efac")))
+	var xrow := HBoxContainer.new()
+	xrow.add_theme_constant_override("separation", 10)
+	right.add_child(xrow)
+	var rules := _button(_rules_text(), 15, 200)
+	rules.custom_minimum_size.y = 40
+	rules.tooltip_text = "Optional fun rules for Adventure and Endless games"
+	rules.pressed.connect(show_rules)
+	xrow.add_child(rules)
+	var practice := _button("🌱 Practice Garden", 15, 170)
+	practice.custom_minimum_size.y = 40
+	practice.tooltip_text = "New here? A short, gentle game that shows you everything step by step."
+	practice.pressed.connect(func(): _go("practice"))
+	xrow.add_child(practice)
 
 	# buttons
 	var row := HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
-	row.add_theme_constant_override("separation", 14)
+	row.add_theme_constant_override("separation", 12)
 	v.add_child(row)
-	var solo := _button("▶  Play Solo", 22, 220)
+	# a saved solo game to carry on
+	var cont: Button = null
+	var saved := SaveGame.info()
+	if not saved.is_empty():
+		cont = _button("⏯  Continue (wave %d)" % int(saved.state.wave), 19, 200)
+		cont.tooltip_text = "%s\nSaved %s. Your hero, cards, acorns and towers are just as you left them.\nRight-click to forget this saved game." % [SaveGame.describe(saved, GameData), String(saved.get("when", ""))]
+		cont.pressed.connect(func(): _go("continue"))
+		cont.gui_input.connect(func(ev): if ev is InputEventMouseButton and ev.pressed and ev.button_index == MOUSE_BUTTON_RIGHT: SaveGame.clear(); show_title())
+		row.add_child(cont)
+	var solo := _button("▶  Play Solo", 21, 190)
 	solo.pressed.connect(func(): _go("solo"))
 	row.add_child(solo)
-	var hostb := _button("🏠  Host LAN Game", 20, 230)
+	var hostb := _button("🏠  Host LAN Game", 19, 210)
 	hostb.pressed.connect(func(): _go("host"))
 	row.add_child(hostb)
-	var joinb := _button("🔍  Join LAN Game", 20, 230)
+	var joinb := _button("🔍  Join LAN Game", 19, 210)
 	joinb.pressed.connect(show_join)
 	row.add_child(joinb)
-	var settings := _button("⚙", 20, 60)
+	var guide := _button("📖", 20, 56)
+	guide.tooltip_text = "Garden Guide: every hero, tower and pest"
+	guide.pressed.connect(show_guide)
+	row.add_child(guide)
+	var settings := _button("⚙", 20, 56)
 	settings.tooltip_text = "Settings"
 	settings.pressed.connect(show_settings)
 	row.add_child(settings)
-	var quit := _button("Quit", 18, 100)
+	var quit := _button("Quit", 18, 84)
 	quit.pressed.connect(func(): get_parent().get_parent().quit_game())
 	row.add_child(quit)
 	if _error != "":
 		v.add_child(_label("⚠️ " + _error, 15, Color("fca5a5"), HORIZONTAL_ALIGNMENT_CENTER))
 		_error = ""
-	solo.grab_focus()
+	if cont:
+		cont.grab_focus()
+	elif int(profile.games) == 0 and not profile.get("practiceDone", false):
+		practice.grab_focus()  # first time here: Practice Garden first
+	else:
+		solo.grab_focus()
 
 
 var _mode_info: Label
@@ -328,6 +359,171 @@ func _go(kind: String) -> void:
 	cfg.kind = kind
 	cfg.name = NetCommon.clean_name(String(cfg.name))
 	play.emit(cfg)
+
+
+func _rules_text() -> String:
+	var on: Array = profile.get("mutators", [])
+	if on.is_empty():
+		return "🎲 Garden Rules: off"
+	var icons := ""
+	for m in on:
+		icons += String(GameData.MUTATORS.get(m, {}).get("icon", ""))
+	return "🎲 Garden Rules: %s" % icons
+
+
+# ---------------------------------------------------------------------------
+# Garden Guide: heroes, towers and a pest book that fills in as you meet pests
+# ---------------------------------------------------------------------------
+var _guide_tab := "heroes"
+
+
+func show_guide(tab := "") -> void:
+	if tab != "":
+		_guide_tab = tab
+	_clear()
+	profile = Profile.load_profile()
+	var v := _frame(1000)
+	_title(v, "📖 Garden Guide", "")
+	var seen: Array = profile.get("guideSeen", [])
+	var met := GameData.GUIDE_PESTS.filter(func(t): return seen.has(t)).size()
+	var tabs := HBoxContainer.new()
+	tabs.alignment = BoxContainer.ALIGNMENT_CENTER
+	tabs.add_theme_constant_override("separation", 10)
+	v.add_child(tabs)
+	for t in [["heroes", "🌱 Heroes"], ["towers", "🏗️ Towers & Traps"], ["pests", "🐛 Pests (%d/%d met)" % [met, GameData.GUIDE_PESTS.size()]], ["reactions", "⚗️ Reactions"]]:
+		var b := _button(t[1], 17, 190)
+		b.custom_minimum_size.y = 42
+		b.toggle_mode = true
+		b.button_pressed = t[0] == _guide_tab
+		b.pressed.connect(func(): show_guide(t[0]))
+		tabs.add_child(b)
+	var scroll := ScrollContainer.new()
+	scroll.custom_minimum_size = Vector2(960, 470)
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	v.add_child(scroll)
+	var list := VBoxContainer.new()
+	list.add_theme_constant_override("separation", 12)
+	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(list)
+	match _guide_tab:
+		"heroes":
+			for type in GameData.HERO_ORDER:
+				var t: Dictionary = GameData.TOWERS[type]
+				var info: Dictionary = GameData.HERO_INFO[type]
+				var el: Dictionary = GameData.elements.elements.get(String(GameData.HERO_ELEMENT.get(type, "")), {})
+				var lines := "%s · %s %s element\n%s\nSpecial (Q): %s %s: %s" % [t.role, el.get("icon", ""), el.get("name", ""), info.style,
+					info.special.icon, info.special.name, info.special.desc]
+				for path in ["A", "B"]:
+					var pd: Dictionary = t.paths[path]
+					lines += "\nPath %s, %s: %s" % [path, pd.name, " → ".join(pd.tiers.map(func(x): return String(x.name)))]
+				_guide_entry(list, UiKit.hero_icon(type), String(t.name), lines)
+		"towers":
+			_guide_note(list, "Pick a tower with 1-9 or the build bar, then press F (or click a spot near your hero). U upgrades, X sells. At level 3 you choose one of two paths.")
+			for kind in GameData.GADGET_ORDER:
+				var g: Dictionary = GameData.GADGETS[kind]
+				var lines := "%d acorns · %s\n%s" % [int(g.cost), {"trap": "trap on the path", "support": "helper"}.get(String(g.get("type", "")), "tower"), g.desc]
+				for b in g.get("branches", []):
+					lines += "\nLevel 3 %s %s: %s" % [b.icon, b.name, b.desc]
+				_guide_entry(list, Sprites.gadget_tex(kind, 1, -1, 0), "%s %s" % [g.icon, g.name], lines)
+		"pests":
+			_guide_note(list, "Pests fill in here the first time you meet them in a game.")
+			for type in GameData.GUIDE_PESTS:
+				var e: Dictionary = GameData.ENEMIES.get(type, {})
+				if not seen.has(type):
+					_guide_entry(list, null, "❓ ???", "You haven't met this pest yet. Keep playing!")
+					continue
+				var traits: Array = []
+				for k in [["boss", "👑 Boss"], ["armored", "🛡️ Armored"], ["shielded", "🔰 Shield"], ["lead", "🔩 Lead shell"], ["camo", "👻 Camo"], ["burrows", "🕳️ Digs"], ["treasure", "🎁 Treasure"]]:
+					if e.get(k[0], false):
+						traits.append(k[1])
+				var lines := "Health %d · Speed %d · Costs %d %s if it reaches the tree%s\n%s" % [int(e.hp), int(e.speed), int(e.get("lives", 1)),
+					"life" if int(e.get("lives", 1)) == 1 else "lives", ("  ·  " + "  ".join(traits)) if not traits.is_empty() else "",
+					String(e.get("desc", GameData.PEST_TIPS.get(type, "")))]
+				_guide_entry(list, _pest_texture(type), String(e.name), lines)
+		"reactions":
+			_guide_note(list, "Two elements on the same pest make a reaction: a big bonus hit. Mix heroes and towers to set them off!")
+			var how := {"shatter": "Blast hits a chilled or frozen pest", "melt": "Fire hits a chilled or frozen pest", "electrocute": "Shock hits a soaked pest (and zaps its neighbours)",
+				"flashfreeze": "Ice hits a soaked pest: it freezes solid", "overload": "Shock hits a burning pest (and zaps its neighbours)", "knockout": "Leaf hits a stunned pest",
+				"sunlit": "Sun light makes pests take more damage from everything (and washes off Camo)"}
+			for id in how:
+				var r: Dictionary = GameData.REACTIONS.get(id, {})
+				_guide_entry(list, null, "%s  ×%.2f" % [String(r.get("name", id)), float(r.get("mult", 1.0))], String(how[id]))
+	var back := _button("◀ Back", 18, 140)
+	back.pressed.connect(show_title)
+	v.add_child(back)
+
+
+func _guide_note(list: VBoxContainer, text: String) -> void:
+	var l := _label(text, 14, Color("bbf7d0"))
+	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	l.custom_minimum_size = Vector2(900, 0)
+	list.add_child(l)
+
+
+func _guide_entry(list: VBoxContainer, tex: Texture2D, title: String, body: String) -> void:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 14)
+	var icon := TextureRect.new()
+	icon.texture = tex
+	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	icon.custom_minimum_size = Vector2(72, 72)
+	row.add_child(icon)
+	var col := VBoxContainer.new()
+	col.add_theme_constant_override("separation", 2)
+	col.add_child(_label(title, 18, Color("fde047")))
+	var b := _label(body, 13, Color("ecfdf5"))
+	b.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	b.custom_minimum_size = Vector2(830, 0)
+	col.add_child(b)
+	row.add_child(col)
+	list.add_child(row)
+
+
+## The first frame of a pest's picture
+func _pest_texture(type: String) -> Texture2D:
+	var e := Sprites.pest_entry(type)
+	if e.is_empty():
+		return null
+	var at := AtlasTexture.new()
+	at.atlas = Sprites.tex(e.file)
+	at.region = Rect2(0, 0, float(e.cell[0]) * Sprites.scale, float(e.cell[1]) * Sprites.scale)
+	return at
+
+
+# ---------------------------------------------------------------------------
+# Garden Rules (mutators)
+# ---------------------------------------------------------------------------
+func show_rules() -> void:
+	_clear()
+	var v := _frame(620)
+	_title(v, "🎲 Garden Rules", "Mix things up! These work in Adventure and Endless (not Garden Clash).")
+	var on: Array = Array(profile.get("mutators", [])).duplicate()
+	for id in GameData.MUTATOR_ORDER:
+		var m: Dictionary = GameData.MUTATORS[id]
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 12)
+		var cb := CheckButton.new()
+		cb.text = "%s %s" % [m.icon, m.name]
+		cb.add_theme_font_size_override("font_size", 18)
+		cb.custom_minimum_size = Vector2(250, 44)
+		cb.button_pressed = on.has(id)
+		cb.toggled.connect(func(yes):
+			var cur: Array = Array(profile.get("mutators", [])).duplicate()
+			cur.erase(id)
+			if yes:
+				cur.append(id)
+			profile.mutators = cur
+			Profile.save_profile(profile))
+		row.add_child(cb)
+		var d := _label(String(m.desc), 14, Color("d1fae5"))
+		d.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		d.custom_minimum_size = Vector2(330, 0)
+		row.add_child(d)
+		v.add_child(row)
+	var back := _button("◀ Back", 18, 140)
+	back.pressed.connect(show_title)
+	v.add_child(back)
 
 
 # ---------------------------------------------------------------------------
@@ -578,7 +774,15 @@ func _refresh_lobby() -> void:
 		var mode_name: String = {"endless": "Endless", "clash": "Garden Clash"}.get(String(c.get("gameMode", "")), "Adventure")
 		if c.get("gameMode", "") == "clash":
 			map_name = "Three-Lane Valley"
-		_players_box.add_child(_label("%s · %s · %s · %s" % [map_name, dname, mode_name, _bots_text(int(c.get("bots", 0)))], 15, Color("86efac")))
+		var rule_names: Array = Array(c.get("mutators", [])).map(func(m): return "%s %s" % [GameData.MUTATORS.get(m, {}).get("icon", ""), GameData.MUTATORS.get(m, {}).get("name", m)])
+		_players_box.add_child(_label("%s · %s · %s · %s%s" % [map_name, dname, mode_name, _bots_text(int(c.get("bots", 0))),
+			("  ·  " + ", ".join(rule_names)) if not rule_names.is_empty() and c.get("gameMode", "") != "clash" else ""], 15, Color("86efac")))
+	# heroes whose elements react together: a "Great Team Combo!" badge
+	var combos: Array = GameData.team_reactions(players.map(func(p): return String(p.get("hero", ""))))
+	if players.size() >= 2 and not combos.is_empty():
+		var badge := _label("✨ Great Team Combo! Your heroes can make %s together." % " and ".join(combos.slice(0, 3)), 15, Color("f0abfc"), HORIZONTAL_ALIGNMENT_CENTER)
+		badge.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		_players_box.add_child(badge)
 
 
 func _bots_text(n: int) -> String:

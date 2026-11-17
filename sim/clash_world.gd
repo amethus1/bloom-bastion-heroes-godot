@@ -98,7 +98,7 @@ func start(_map: String, difficulty: String, _game_mode: String) -> void:
 	max_wave = 0
 	lives = 100
 	max_lives = 100
-	heroes.clear(); enemies.clear(); projectiles.clear(); suns.clear(); gadgets.clear(); spikes.clear()
+	heroes.clear(); enemies.clear(); projectiles.clear(); suns.clear(); gadgets.clear(); spikes.clear(); marked.clear()
 	wisps.clear(); chests.clear(); powerups.clear(); pending_fx.clear(); spawn_queue.clear(); events.clear()
 	current_twist = ""
 	game_time = 0.0
@@ -369,6 +369,7 @@ func tick(dt: float, real_dt: float) -> void:
 	update_chests(dt)
 	update_powerups(dt)
 	clash_update(dt)
+	update_marks(dt)
 	update_enemies(dt)
 	update_pending(dt)
 	var auras := compute_auras()
@@ -961,7 +962,7 @@ func teleport_home(pid: int) -> void:
 	ev({"type": "recall_start", "owner": h.owner, "slot": h.slot, "x": h.x, "y": h.y, "dur": h.recall_t})
 
 
-func plant(pid: int, _kind: String) -> void:
+func plant(pid: int, _kind: String, _at := Vector2.INF) -> void:
 	gadget_fail(pid, "In Garden Clash you buy items at your Bloom Tree instead of building towers!")
 
 
@@ -1104,6 +1105,10 @@ func damage_mult(e: Dictionary, tower: int) -> float:
 ## then buildings. Jungle monsters only when you walk right up to them.
 func pick_target(t: Dictionary, st: Dictionary, _aura: Dictionary, custom_range := 0.0):
 	var r: float = custom_range if custom_range > 0 else st.range
+	if not marked.is_empty():
+		var m = marked_target(t.x, t.y, r, func(_e): return true)
+		if m != null:
+			return m
 	var best = null
 	var best_score := INF
 	for e in enemies:
@@ -1693,7 +1698,7 @@ func update_bots(dt: float) -> void:
 		var b: Dictionary = p.brain
 		b.index = k
 		k += 1
-		if h.pending > 0 and h.offer.size() > 0:
+		if h.pending > 0 and h.offer.size() > 0 and not p.has("away"):
 			b.card_t -= dt
 			if b.card_t <= 0:
 				b.card_t = 1.0 + randf()
@@ -1737,7 +1742,7 @@ func _bot_clash(p: Dictionary, h: Dictionary, b: Dictionary, dt: float) -> void:
 	var at_base := dist(h.x, h.y, tree.x, tree.y) < float(C.shopRadius) - 30
 	var hp_k: float = h.hp / maxf(1.0, st.maxHp)
 	var step_len: float = st.moveSpeed * dt
-	if at_base:
+	if at_base and not p.has("away"):  # a dropped LAN friend's acorns wait for them
 		_bot_shop(p, h)
 	if hp_k < 0.45 and h.potions > 0 and D.gnum(h.buffs, "juice") <= 0:
 		potion(p.id)

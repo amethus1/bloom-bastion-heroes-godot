@@ -14,15 +14,27 @@ const PANEL_EDGE := Color(0.53, 0.94, 0.67, 0.35)
 
 static func font() -> Font:
 	if _font == null:
-		var f := SystemFont.new()
-		f.font_names = PackedStringArray(["Arial Rounded MT Bold", "Avenir Next", "Nunito", "Segoe UI", "Helvetica Neue", "sans-serif"])
-		f.font_weight = 700
-		f.antialiasing = TextServer.FONT_ANTIALIASING_GRAY
 		# colour emoji first, so icons like the sword and shield aren't grey text glyphs
 		var emoji := SystemFont.new()
 		emoji.font_names = PackedStringArray(["Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji"])
-		f.fallbacks = [emoji]
-		_font = f
+		if OS.get_name() == "macOS" and not OS.get_cmdline_user_args().has("--bundled-font"):
+			# Macs have a rounded bold font built in
+			var f := SystemFont.new()
+			f.font_names = PackedStringArray(["Arial Rounded MT Bold", "Avenir Next", "Nunito", "Helvetica Neue", "sans-serif"])
+			f.font_weight = 700
+			f.antialiasing = TextServer.FONT_ANTIALIASING_GRAY
+			f.fallbacks = [emoji]
+			_font = f
+		else:
+			# Windows and Linux: the rounded font that comes with the game
+			# (Nunito, SIL Open Font License: fonts/OFL.txt)
+			var nf: FontFile = load("res://fonts/Nunito.ttf")
+			nf.fallbacks = [emoji]
+			var fv := FontVariation.new()
+			fv.base_font = nf
+			fv.variation_opentype = {TextServerManager.get_primary_interface().name_to_tag("wght"): 800}
+			fv.fallbacks = [emoji]
+			_font = fv
 	return _font
 
 

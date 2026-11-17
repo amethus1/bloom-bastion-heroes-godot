@@ -502,6 +502,29 @@
       "firstAt": 25,
       "color": "#A3E635",
       "outline": "#3F6212"
+    },
+    "thorntoad": {
+      "id": "thorntoad",
+      "name": "Thornback Toad",
+      "art": "rumbletoad",
+      "hp": 2600,
+      "speed": 30,
+      "reward": 300,
+      "lives": 10,
+      "radius": 40,
+      "boss": true,
+      "miniBoss": true,
+      "armored": true,
+      "guardRadius": 170,
+      "stompRadius": 175,
+      "spawnOnDeath": [
+        "beetle",
+        "beetle",
+        "nutknight"
+      ],
+      "color": "#65a30d",
+      "outline": "#365314",
+      "desc": "Wave 13 mini-boss. Its thorny back shields pests near it (they take less damage), and its stomp sends nearby towers to sleep: walk by to wake them!"
     }
   },
   "newPestIntro": {

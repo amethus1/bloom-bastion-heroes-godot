@@ -26,6 +26,13 @@ func start(map: String, difficulty: String, mode: String) -> void:
 	_emit()
 
 
+## Carry on a game that was put back from a save (SaveGame.restore)
+func resume() -> void:
+	acc = 0.0
+	running = true
+	_emit()
+
+
 ## Every action a player can send (from this computer or over the LAN)
 func apply(pid: int, a: Dictionary) -> void:
 	if not sim.players.has(pid):
@@ -36,8 +43,11 @@ func apply(pid: int, a: Dictionary) -> void:
 		"home": sim.teleport_home(pid)
 		"wave": sim.start_wave()
 		"card": sim.pick_card(pid, int(a.i))
+		"reroll": sim.reroll(pid)
+		"gift": sim.gift(pid, int(a.get("to", -1)))
 		"special": sim.use_special(pid)
-		"plant": sim.plant(pid, String(a.kind))
+		"plant": sim.plant(pid, String(a.kind), Vector2(float(a.x), float(a.y)) if a.has("x") else Vector2.INF)
+		"mark": sim.mark(pid, float(a.get("x", 0)), float(a.get("y", 0)))
 		"upgrade": sim.upgrade_gadget(pid, int(a.get("id", -1)), int(a.get("branch", -1)))
 		"sell": sim.sell_gadget(pid)
 		"pause": sim.paused = not sim.paused

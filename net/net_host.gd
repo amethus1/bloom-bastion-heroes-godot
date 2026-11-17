@@ -19,7 +19,7 @@ const RELIABLE_EVENTS := ["game_started", "wave_start", "wave_clear", "milestone
 	"gadget_fail", "powerup_get", "combo", "special", "teleport", "dash", "hero_spawn", "boss_enrage", "spring_life",
 	"clash_start", "struct_down", "hero_down", "revive", "hero_respawn", "rival_spawn", "rival_down", "camp_up",
 	"camp_down", "gate_regrow", "tower_alert", "item_bought", "item_sold", "potion", "recall_start", "recall_cancel",
-	"emote", "ping", "eshop"]
+	"emote", "ping", "eshop", "player_away", "player_back", "mark", "reroll", "gift"]
 
 var main: Node
 var peer: ENetMultiplayerPeer
@@ -35,6 +35,7 @@ var _beacon_t := 0.0
 var _snap_t := 0.0
 var _events: Array = []
 var _last: Dictionary = {}
+var _keys := {}  # connection id -> rejoin key (that computer's id + name), so a dropped friend gets their hero back
 
 
 func open(c: Dictionary) -> bool:
@@ -163,7 +164,7 @@ func _send_all(d: Dictionary, compress := false, mode := MultiplayerPeer.TRANSFE
 
 
 func _send_lobby() -> void:
-	_send_all({"m": "lobby", "players": players_for_menu(), "cfg": {"map": cfg.map, "diff": cfg.diff, "gameMode": cfg.gameMode, "bots": cfg.bots}, "inGame": in_game})
+	_send_all({"m": "lobby", "players": players_for_menu(), "cfg": {"map": cfg.map, "diff": cfg.diff, "gameMode": cfg.gameMode, "bots": cfg.bots, "mutators": cfg.get("mutators", [])}, "inGame": in_game})
 	lobby_changed.emit()
 
 
@@ -177,9 +178,14 @@ func _on_disconnected(id: int) -> void:
 		if p.id == id:
 			lobby.erase(p)
 			if host:
-				host.sim.remove_player(id)
-				main.hud.toast("%s left the game" % p.name, Color("fca5a5"))
+				var key: String = _keys.get(id, "")
+				host.sim.set_away(id, key)
+				if host.sim.is_away(key):
+					main.hud.toast("📶 %s lost connection. A Bot Buddy plays their hero until they're back." % p.name, Color("fcd34d"), 5.0)
+				else:
+					main.hud.toast("%s left the game" % p.name, Color("fca5a5"))
 			break
+	_keys.erase(id)
 	_send_lobby()
 
 
@@ -197,17 +203,38 @@ func _on_packet(id: int, bytes: PackedByteArray) -> void:
 			if not GameData.HERO_ORDER.has(hero):
 				hero = "peashooter"
 			var p := {"id": id, "name": NetCommon.clean_name(String(d.get("name", ""))), "hero": hero, "hat": String(d.get("hat", "none")), "pet": String(d.get("pet", "none")), "ready": false}
+			var key := String(d.get("key", "")).left(40)
+			if key != "":
+				_keys[id] = "%s:%s" % [key, p.name]
 			lobby.append(p)
 			_send(id, {"m": "welcome", "id": id})
 			status = "%s joined!" % p.name
 			if in_game and host and host.sim.phase == "playing":
+				var rk: String = _keys.get(id, "")
+				for old in _keys.keys():
+					if old != id and rk != "" and _keys[old] == rk:
+						# the same computer reconnected before we noticed it had dropped
+						_on_disconnected(old)
+						peer.disconnect_peer(old, true)
+						break
+				if host.sim.rejoin(id, rk):
+					# a friend whose Wi-Fi dropped is back: same hero, level, cards, acorns and towers
+					p.ready = true
+					p.hero = host.sim.players[id].hero_type
+					_send(id, {"m": "start"})
+					main.hud.toast("📶 %s is back!" % p.name, Color("86efac"))
+					_send_lobby()
+					return
 				if host.sim.players.size() >= 4:
 					# the game is full: the new friend takes over from a Bot Buddy
+					# (a real one first, before a dropped friend's hero)
+					var take := -1
 					for pid in host.sim.players.keys():
-						if host.sim.players[pid].is_bot:
-							main.hud.toast("%s takes over from %s" % [p.name, host.sim.players[pid].name], Color("86efac"))
-							host.sim.remove_player(pid)
-							break
+						if host.sim.players[pid].is_bot and (take < 0 or host.sim.players[take].has("away")):
+							take = pid
+					if take >= 0:
+						main.hud.toast("%s takes over from %s" % [p.name, host.sim.players[take].name], Color("86efac"))
+						host.sim.remove_player(take)
 				if host.sim.players.size() >= 4:
 					lobby.erase(p)
 					_send(id, {"m": "refuse", "why": "This game is full (4 players)."})

@@ -4,3 +4,7 @@
 # OS / editor noise
 .DS_Store
 *.tmp
+
+# test logs and exported builds
+.test-logs/
+build/

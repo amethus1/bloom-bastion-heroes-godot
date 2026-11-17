@@ -25,10 +25,29 @@ var clock := 0.0
 var selected_gadget := "sentry"
 var branch_arm_until := 0.0
 var ghost_until := 0.0  # show where the selected tower would go until this time
+var _picked_at := -10.0  # when a tower was last picked from the build bar / keys
+var _mouse_moved_at := -10.0  # the mouse moved after picking: the preview follows it and a click builds there
 const TARGET_MODES := ["first", "strong", "close", "last"]
 var last_cfg: Dictionary = {}
 var snap_at := 0.0
 var snap_gap := 1.0 / 30.0
+var run_id := 0  # this solo game, for its save file
+## Practice Garden: a short guided game. Each step ticks off when you do it.
+const PRACTICE_STEPS := [
+	["walk", "🚶 Walk around: WASD, arrow keys, or click the ground"],
+	["sun", "☀️ Grab the glowing Sun orb near you (Sun gives XP)"],
+	["dash", "💨 Leaf Leap: press Shift"],
+	["build", "🌻 Build a tower: press 1, then F (or click a spot near you)"],
+	["wave", "▶ Start the wave: press Space"],
+	["card", "⭐ Level up! Pick a card: 1, 2 or 3"],
+	["special", "✨ Use your special near pests: press Q"],
+	["upgrade", "⬆ Stand next to your tower and press U to upgrade it"],
+	["finish", "🏁 Clear wave 3 to finish!"],
+]
+var practice_done := {}  # step id -> true
+var practicing := false
+var _practice_from = null
+var _seen_pests := {}  # pest types met (for the Garden Guide)
 
 # command-line options for testing: --solo --demo --hero=x --map=x --diff=x --mode=x
 # --bots=N --warp=SECONDS --shot=FILE.png --shot-after=SECONDS --quit
@@ -44,6 +63,8 @@ func _ready() -> void:
 	get_tree().auto_accept_quit = false  # closing the window goes through quit_game()
 	if args.has("netcheck") or args.has("shot") or args.has("demo") or args.has("warp"):
 		Profile.path = "user://test_profile.cfg"  # test runs never change your real profile
+	if Profile.path != "user://profile.cfg":
+		SaveGame.path = "user://test_autosave.save"  # ...or your saved game
 	world = WorldView.new()
 	add_child(world)
 	# a soft vignette frames the garden (under the HUD)
@@ -154,11 +175,20 @@ func start_attract() -> void:
 	world.zoom = 0.85
 
 
+## Stop a game host for good: it must not send one more snapshot while it's being freed
+func _drop_host() -> void:
+	host.running = false
+	host.set_process(false)
+	if host.snapshot_ready.is_connected(_on_snapshot):
+		host.snapshot_ready.disconnect(_on_snapshot)
+	host.queue_free()
+
+
 func _leave_game() -> void:
 	playing = false
 	attract = false
 	if host:
-		host.queue_free()
+		_drop_host()
 		host = null
 	if net:
 		net.close()
@@ -166,6 +196,7 @@ func _leave_game() -> void:
 		net = null
 	snap = {}
 	hud.snap = {}
+	hud.net_trouble = ""
 	my_pos = null
 	world.my_pos = null
 
@@ -174,6 +205,10 @@ func _on_menu_play(cfg: Dictionary) -> void:
 	match String(cfg.kind):
 		"solo":
 			start_local(cfg, false)
+		"continue":
+			resume_saved()
+		"practice":
+			start_practice(cfg)
 		"host":
 			_leave_game()
 			net = NetHost.new()
@@ -205,7 +240,7 @@ func start_local(cfg: Dictionary, demo := false, lan_players: Array = []) -> voi
 		playing = false
 		attract = false
 		if host:
-			host.queue_free()
+			_drop_host()
 			host = null
 	world.zoom = 1.0
 	world.reset()
@@ -214,6 +249,7 @@ func start_local(cfg: Dictionary, demo := false, lan_players: Array = []) -> voi
 	add_child(host)
 	host.snapshot_ready.connect(_on_snapshot)
 	my_id = 1
+	run_id = randi()
 	host.add_player(my_id, String(cfg.get("name", "Player")), String(cfg.hero), demo, String(cfg.get("hat", "none")), String(cfg.get("pet", "none")))
 	for p in lan_players:
 		host.add_player(int(p.id), String(p.name), String(p.hero), false, String(p.get("hat", "none")), String(p.get("pet", "none")))
@@ -238,6 +274,11 @@ func start_local(cfg: Dictionary, demo := false, lan_players: Array = []) -> voi
 	if net:
 		net.attach_host(host)
 	_begin_play()
+	host.sim.mutators = {}
+	if String(cfg.get("gameMode", "")) != "clash" and not demo:
+		for m in cfg.get("mutators", []):
+			if GameData.MUTATORS.has(String(m)):
+				host.sim.mutators[String(m)] = true
 	host.start(String(cfg.map), String(cfg.diff), String(cfg.gameMode))
 	host.sim.kid_assist = bool(Profile.load_profile().get("kidAssist", false))
 	if demo:
@@ -261,7 +302,7 @@ func start_local(cfg: Dictionary, demo := false, lan_players: Array = []) -> voi
 ## Called when a LAN client's game starts
 func start_remote(id: int) -> void:
 	if host:
-		host.queue_free()
+		_drop_host()
 		host = null
 	attract = false
 	world.reset()
@@ -272,6 +313,11 @@ func start_remote(id: int) -> void:
 
 
 func _begin_play() -> void:
+	practicing = false
+	hud.practice = {}
+	_seen_pests = {}
+	for t in Profile.load_profile().get("guideSeen", []):
+		_seen_pests[String(t)] = true
 	hud.menu_open = false
 	hud.new_unlocks = []
 	hud.next_challenge = ""
@@ -305,6 +351,8 @@ func _on_snapshot(s: Dictionary) -> void:
 	hud.snap = s
 	_sync_my_hero()
 	_unlock_from_snapshot(s)
+	if playing and not attract:
+		_note_pests(s)
 	if playing and not attract:
 		_update_music_from_snap(s)
 	for e in s.get("events", []):
@@ -352,8 +400,112 @@ func handle_events(list: Array) -> void:
 
 
 ## New pests and bosses get a warning card the first time they show up
+## Practice Garden: Easy Sunny Meadow, no bots, 3 short waves, a checklist on screen
+func start_practice(cfg: Dictionary) -> void:
+	var c := cfg.duplicate()
+	c.merge({"map": "meadow", "diff": "easy", "gameMode": "adventure", "bots": 0, "mutators": []}, true)
+	start_local(c, false)
+	practicing = true
+	practice_done = {}
+	_practice_from = null
+	var sim: SimWorld = host.sim
+	sim.practice = true
+	sim.max_wave = 3
+	sim.players[my_id].acorns = 300
+	var h = sim.hero_of(my_id)
+	if h:
+		var spot := Vector2(h.x + 130, h.y - 40)
+		if not GameData.is_walkable(sim.map_id, spot.x, spot.y):
+			spot = Vector2(h.x - 130, h.y - 40)
+		sim.add_sun(spot.x, spot.y, 25)
+	hud.banner("🌱 Practice Garden", "Follow the steps in the top-left corner", Color("86efac"), 4.0)
+	_update_practice()
+
+
+func _practice_step(id: String) -> void:
+	if not practicing or practice_done.has(id):
+		return
+	practice_done[id] = true
+	Audio.play_sfx("ui_click", -2.0)
+	_update_practice()
+
+
+func _update_practice() -> void:
+	if not practicing:
+		hud.practice = {}
+		return
+	var n := 0
+	for st in PRACTICE_STEPS:
+		if practice_done.has(st[0]):
+			n += 1
+	for st in PRACTICE_STEPS:
+		if not practice_done.has(st[0]):
+			hud.practice = {"text": st[1], "step": n + 1, "of": PRACTICE_STEPS.size()}
+			return
+	hud.practice = {}
+
+
+## Pests you meet fill in the Garden Guide's pest book
+func _note_pests(s: Dictionary) -> void:
+	var fresh: Array = []
+	for e in s.get("enemies", []):
+		var t := String(e.type)
+		if not _seen_pests.has(t):
+			_seen_pests[t] = true
+			if GameData.GUIDE_PESTS.has(t):
+				fresh.append(t)
+	if fresh.is_empty():
+		return
+	var d := Profile.load_profile()
+	var have: Array = Array(d.get("guideSeen", []))
+	var added := false
+	for t in fresh:
+		if not have.has(t):
+			have.append(t)
+			added = true
+			hud.feed("📖 New Garden Guide page: %s" % String(GameData.ENEMIES.get(t, {}).get("name", t)), Color("bbf7d0"))
+	if added:
+		Profile.set_value("guideSeen", have)
+
+
+## Solo games save after every cleared wave (Continue on the title screen)
+func _autosave() -> void:
+	if attract or not playing or host == null or net != null or args.has("warp") or args.has("demo"):
+		return
+	if SaveGame.save(host.sim, last_cfg, run_id):
+		hud.feed("💾 Saved. Continue from the title screen any time.", Color("bbf7d0"))
+
+
+## Continue the saved solo game
+func resume_saved() -> void:
+	var d := SaveGame.info()
+	if d.is_empty():
+		show_menu()
+		menu.show_error("That saved game could not be loaded.")
+		return
+	_leave_game()
+	world.zoom = 1.0
+	world.reset()
+	last_cfg = Profile.load_profile()
+	last_cfg.merge(d.cfg, true)
+	last_cfg.kind = "solo"
+	run_id = int(d.get("run", 0))
+	host = GameHost.new(false)
+	add_child(host)
+	host.snapshot_ready.connect(_on_snapshot)
+	my_id = 1
+	_begin_play()
+	SaveGame.restore(host.sim, d)
+	host.sim.kid_assist = bool(Profile.load_profile().get("kidAssist", false))
+	host.resume()
+	hud.banner("Welcome back!", "%s · press Space when you're ready" % SaveGame.describe(d, GameData), Color("86efac"), 4.0)
+
+
 func _pest_intro(w: int) -> void:
 	if snap.has("clash") or attract:
+		return
+	if GameData.mini_boss_wave(w, bool(snap.get("endless", false))):
+		hud.pest_card("thorntoad")
 		return
 	var intro: Dictionary = GameData.enemies.get("newPestIntro", {})
 	for type in intro:
@@ -490,7 +642,9 @@ func _sync_my_hero() -> void:
 		my_pos = null
 		world.my_pos = null
 		return
-	my_speed = GameData.compute_hero_stats(h.type, h.tierA, h.tierB, h.cards, h.level, h.buffs).moveSpeed
+	var mst := GameData.compute_hero_stats(h.type, h.tierA, h.tierB, h.cards, h.level, h.buffs)
+	SimWorld.apply_mutators(mst, snap.get("mutators", []))
+	my_speed = mst.moveSpeed
 	var hp := Vector2(h.x, h.y)
 	if my_hero_id != h.id or my_pos == null:
 		my_hero_id = h.id
@@ -514,6 +668,32 @@ func _my_event(e: Dictionary) -> void:
 	couch.on_event(e)
 	_unlock_from_event(e)
 	var mine: bool = int(e.get("owner", -999)) == my_id
+	if practicing:
+		match String(e.type):
+			"sun_collected":
+				if int(e.get("slot", -1)) == int(_my_hero().get("slot", -2)):
+					_practice_step("sun")
+			"dash":
+				if mine:
+					_practice_step("dash")
+			"gadget_placed":
+				if mine:
+					_practice_step("build")
+			"wave_start":
+				_practice_step("wave")
+			"hero_upgraded":
+				if mine:
+					_practice_step("card")
+			"special":
+				if mine:
+					_practice_step("special")
+			"gadget_upgraded":
+				if mine:
+					_practice_step("upgrade")
+			"victory":
+				_practice_step("finish")
+				Profile.set_value("practiceDone", true)
+				hud.banner("🎉 Practice complete!", "You're ready for a real game. Have fun!", Color("fde047"), 5.0)
 	match String(e.type):
 		"dash", "teleport":
 			if mine and my_pos != null:
@@ -522,6 +702,23 @@ func _my_event(e: Dictionary) -> void:
 				my_pos = Vector2(e.x, e.y)
 				move_path = []
 				last_sent = {"p": my_pos, "at": clock}
+		"gift":
+			if not attract:
+				var to_me: bool = int(e.get("to", -1)) == my_id
+				hud.feed("🎁 %s sent %s %d acorns!" % [String(e.name), "you" if to_me else String(e.toName), int(e.amount)], Color("fde68a"))
+				if to_me:
+					Audio.play_sfx("chest_open", -6.0)
+		"mark":
+			if not attract:
+				Audio.play_sfx("ui_click", -6.0)
+				if not mine:
+					hud.feed("🎯 %s marked a %s" % [String(e.get("name", "")), String(e.get("pest", "pest"))], Color("fde68a"))
+		"player_away":
+			if not attract:
+				hud.feed("📶 %s lost connection" % String(e.get("name", "")), Color("fcd34d"))
+		"player_back":
+			if not attract:
+				hud.feed("📶 %s is back!" % String(e.get("name", "")), Color("86efac"))
 		"wave_start":
 			var tw := ""
 			if String(e.get("twist", "")) != "":
@@ -556,6 +753,7 @@ func _my_event(e: Dictionary) -> void:
 				Audio.play_sfx("wave_clear")
 				if int(e.wave) % 5 == 0:
 					Audio.say("ann_clear", -1, true)
+			_autosave()
 		"milestone":
 			hud.banner("Milestone!", "+5 lives and a bonus card for everyone", Color("f0abfc"))
 			if not attract:
@@ -608,7 +806,9 @@ func _my_event(e: Dictionary) -> void:
 				if not nc.is_empty():
 					var label := "Next: %s →" % String(GameData.maps.maps.get(nc.map, {}).get("name", nc.map)) if nc.get("map", "") != last_cfg.get("map", "") else "Next: %s →" % String(GameData.DIFFICULTIES.get(nc.diff, {}).get("short", nc.diff))
 					hud.next_challenge = label
-			if playing and not attract:
+			if host and not attract:
+				SaveGame.clear(run_id)  # this run is over: nothing to continue
+			if playing and not attract and not bool(snap.get("practice", false)):
 				Profile.record_game(e.type == "victory", bool(snap.endless), int(snap.wave), String(snap.get("map", "")), String(snap.get("difficulty", "")), String(snap.get("mode", "")))
 				Audio.play_sfx("victory" if e.type == "victory" else "game_over", 0.0, 0.0, 500)
 				Audio.say("ann_victory" if e.type == "victory" else "ann_gameover", -1, true)
@@ -694,7 +894,7 @@ func _process(delta: float) -> void:
 func _process_inner(delta: float) -> void:
 	clock += delta
 	if attract and host and host.sim.phase != "playing":
-		host.queue_free()
+		_drop_host()
 		host = null
 		start_attract()
 	if host:
@@ -702,7 +902,12 @@ func _process_inner(delta: float) -> void:
 	else:
 		world.tick_alpha = clampf((clock - snap_at) / maxf(snap_gap, 0.016), 0, 1.5)
 	_update_movement(delta)
-	if playing and int(clock * 2) != int((clock - delta) * 2):
+	if practicing and my_pos != null and not practice_done.has("walk"):
+		if _practice_from == null:
+			_practice_from = my_pos
+		elif my_pos.distance_to(_practice_from) > 120:
+			_practice_step("walk")
+	if playing and int(clock * 2) != int((clock - delta) * 2) and not practicing:
 		_check_tips()
 	if net and net is NetClient and playing:
 		world.snap_dt = snap_gap
@@ -712,6 +917,7 @@ func _process_inner(delta: float) -> void:
 		hud.net_note = ""
 	var preview := playing and not snap.is_empty() and not snap.has("clash") and (clock < ghost_until or hud.over_build_bar())
 	world.ghost = selected_gadget if preview else ""
+	world.ghost_at = aim_point()
 	hud.selected_gadget = selected_gadget
 	# frame every local hero (couch co-op) with the camera
 	var follow: Array = []
@@ -854,11 +1060,12 @@ func do_hud_action(a: Dictionary) -> void:
 				Audio.play_sfx("ui_click")
 		"select_gadget":
 			Audio.play_sfx("ui_click", -3.0)
-			if selected_gadget == a.kind:
-				send({"t": "plant", "kind": selected_gadget})
+			if selected_gadget == a.kind and clock < ghost_until:
+				send({"t": "plant", "kind": selected_gadget})  # clicked twice: build at my feet
 				ghost_until = clock + 1.2
 			else:
-				ghost_until = clock + 3.0
+				ghost_until = clock + 6.0
+				_picked_at = clock
 			selected_gadget = a.kind
 		"target":
 			Audio.play_sfx("ui_click", -3.0)
@@ -872,6 +1079,12 @@ func do_hud_action(a: Dictionary) -> void:
 		"eshop":
 			Audio.play_sfx("ui_click", -3.0)
 			send(a)
+		"reroll":
+			Audio.play_sfx("card_pick", -4.0)
+			send({"t": "reroll"})
+		"gift":
+			Audio.play_sfx("ui_click", -3.0)
+			send({"t": "gift", "to": int(a.to)})
 		"hide_cards":
 			hud.cards_hidden = true
 		"show_cards":
@@ -890,7 +1103,9 @@ func do_hud_action(a: Dictionary) -> void:
 			dash()
 		"again":
 			Audio.play_sfx("ui_click")
-			if host and not net:
+			if host and not net and practicing:
+				start_practice(last_cfg)
+			elif host and not net:
 				start_local(last_cfg)
 			elif net and net.has_method("restart"):
 				net.restart()
@@ -935,7 +1150,15 @@ func _unhandled_input(event: InputEvent) -> void:
 			if not a.is_empty():
 				do_hud_action(a)
 			elif not hud.over_ui(hud.get_local_mouse_position()) and not snap.is_empty() and snap.phase == "playing" and not snap.paused:
-				walk_to(world.get_global_mouse_position())
+				var wp: Vector2 = world.get_global_mouse_position()
+				if mb.button_index == MOUSE_BUTTON_RIGHT and _mark_at(wp):
+					pass  # right-click a pest: everyone's heroes and towers shoot it first
+				elif mb.button_index == MOUSE_BUTTON_RIGHT and aim_point() != null:
+					ghost_until = clock  # right-click cancels aiming a tower
+				elif mb.button_index == MOUSE_BUTTON_LEFT and aim_point() != null:
+					plant_selected()
+				else:
+					walk_to(wp)
 		get_viewport().set_input_as_handled()
 		return
 	if not (event is InputEventKey) or not event.pressed or event.echo:
@@ -997,8 +1220,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		KEY_R:
 			if snap.has("clash"):
 				send({"t": "potion"})
-		KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6:
-			# 1-3 pick a level-up card; with no cards waiting, 1-6 pick a tower
+			elif int(_my_hero().get("pending", 0)) > 0 and not hud.cards_hidden:
+				do_hud_action({"t": "reroll"})
+		KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_9:
+			# 1-3 pick a level-up card; with no cards waiting, 1-9 pick a tower
 			var cards: bool = int(_my_hero().get("pending", 0)) > 0 and _my_hero().get("offer", []).size() > 0
 			if cards and k <= KEY_3:
 				Audio.play_sfx("card_pick")
@@ -1006,8 +1231,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			elif not cards and not snap.has("clash") and k - KEY_1 < GameData.GADGET_ORDER.size():
 				pick_gadget(GameData.GADGET_ORDER[k - KEY_1])
 		KEY_F:
-			send({"t": "plant", "kind": selected_gadget})
-			ghost_until = clock + 1.2
+			plant_selected()
 		KEY_G when not snap.has("clash"):
 			var i := GameData.GADGET_ORDER.find(selected_gadget)
 			pick_gadget(GameData.GADGET_ORDER[(i + 1) % GameData.GADGET_ORDER.size()])
@@ -1043,6 +1267,8 @@ func toggle_fullscreen() -> void:
 
 ## F11 works everywhere, even on the title screen
 func _input(event: InputEvent) -> void:
+	if event is InputEventMouseMotion:
+		_mouse_moved_at = clock
 	if event is InputEventKey and event.pressed and not event.echo and (event as InputEventKey).physical_keycode == KEY_F11:
 		toggle_fullscreen()
 		get_viewport().set_input_as_handled()
@@ -1088,9 +1314,48 @@ func _check_tips() -> void:
 func pick_gadget(kind: String) -> void:
 	Audio.play_sfx("ui_click", -3.0)
 	selected_gadget = kind
-	ghost_until = clock + 3.0
+	ghost_until = clock + 6.0
+	_picked_at = clock
 	var d: Dictionary = GameData.GADGETS[kind]
-	hud.toast("%s %s selected (%d acorns). Press F to build it here." % [d.icon, d.name, int(d.cost)], Color("bbf7d0"), 2.5)
+	hud.toast("%s %s selected (%d acorns). Press F to build it, or click a spot near your hero." % [d.icon, d.name, int(d.cost)], Color("bbf7d0"), 2.5)
+
+
+## Where the mouse is aiming the selected tower (near my hero), or null to build at my feet
+func aim_point():
+	if not playing or my_pos == null or snap.is_empty() or snap.has("clash") or clock >= ghost_until or _mouse_moved_at <= _picked_at:
+		return null
+	if hud.over_ui(hud.get_local_mouse_position()):
+		return null
+	var wp: Vector2 = world.get_global_mouse_position()
+	return my_pos + (wp - my_pos).limit_length(SimWorld.AIM_REACH)
+
+
+## F, or a click while aiming: build the selected tower
+func plant_selected() -> void:
+	var at = aim_point()
+	if at != null:
+		send({"t": "plant", "kind": selected_gadget, "x": roundf(at.x), "y": roundf(at.y)})
+		ghost_until = clock + 0.6
+		_picked_at = clock  # done aiming until the next pick
+	else:
+		send({"t": "plant", "kind": selected_gadget})
+		ghost_until = clock + 1.2
+
+
+## Right-click near a pest marks it. Returns false if no pest is there.
+func _mark_at(wp: Vector2) -> bool:
+	var best := -1
+	var bd := 55.0
+	for e in snap.get("enemies", []):
+		var d: float = world.pos_of(e.id, Vector2(e.x, e.y)).distance_to(wp + Vector2(0, 14))
+		if d < bd:
+			bd = d
+			best = int(e.id)
+	if best < 0:
+		return false
+	var e_pos: Vector2 = world.pos_of(best, wp)
+	send({"t": "mark", "x": e_pos.x, "y": e_pos.y})
+	return true
 
 
 ## T: which pest does my hero shoot first?
@@ -1192,8 +1457,17 @@ func _netcheck(secs: float) -> void:
 	var start_x := 0.0
 	var last_at := {}  # smoothness on a LAN friend's screen: how evenly do pests move frame to frame?
 	var steps: Array = []
+	var drop_at := float(args.get("dropat", "-1"))  # test-only: pretend the Wi-Fi drops at this time
+	var before_drop := {}
+	var first_id := -1
 	while clock - t0 < secs:
 		await get_tree().process_frame
+		if net is NetClient and playing and first_id < 0:
+			first_id = my_id
+		if net is NetClient and drop_at > 0 and clock - t0 >= drop_at and playing and before_drop.is_empty():
+			var mh := _my_hero()
+			before_drop = {"level": mh.get("level", 0), "id": mh.get("id", -1), "acorns": hud.my_player().get("acorns", 0)}
+			net.simulate_drop()
 		if net is NetClient and playing and not snap.is_empty():
 			if args.has("nointerp"):
 				world.remote_interp = false  # test-only: the old way, to compare
@@ -1230,6 +1504,7 @@ func _netcheck(secs: float) -> void:
 			out.players.append({"owner": h.owner, "type": h.type, "x": roundf(h.x), "y": roundf(h.y)})
 		out.wave = host.sim.wave
 		out.readyFriends = readies
+		out.away = host.sim.players.values().filter(func(p): return p.has("away")).size()
 	elif net is NetClient:
 		out.packets = net.packets
 		out.kb_per_snap = 0
@@ -1238,6 +1513,9 @@ func _netcheck(secs: float) -> void:
 		out.moved = roundf(float(h.get("x", 0)) - start_x) if walked else 0
 		out.enemies = snap.get("enemies", []).size()
 		out.wave = snap.get("wave", -1)
+		if not before_drop.is_empty():
+			out.drop = {"before": before_drop, "after": {"level": h.get("level", 0), "id": h.get("id", -1)}, "reconnecting": net.reconnecting,
+				"new_conn": my_id != first_id}
 		out.heroes = snap.get("heroes", []).size()
 		if steps.size() > 100:
 			steps.sort()
