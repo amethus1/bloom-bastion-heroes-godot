@@ -1,0 +1,234 @@
+{
+  "order": [
+    "sentry",
+    "mortar",
+    "fern",
+    "zap",
+    "thorns",
+    "bomb"
+  ],
+  "limitPerPlayer": 5,
+  "levelMult": [
+    1,
+    1.75,
+    2.7
+  ],
+  "gadgets": {
+    "sentry": {
+      "id": "sentry",
+      "name": "Sprout Sentry",
+      "icon": "🌻",
+      "type": "tower",
+      "element": "leaf",
+      "cost": 60,
+      "range": 200,
+      "rate": 1.4,
+      "dmg": 16,
+      "color": "#facc15",
+      "desc": "Shoots peas at the closest pest. Cheap and steady (leaf).",
+      "branches": [
+        {
+          "id": "triple",
+          "name": "Triple Sunflower",
+          "icon": "🌼",
+          "desc": "Three heads: shoots 3 peas at once at 3 different pests. Great against crowds.",
+          "shots": 3,
+          "dmgMult": 0.75
+        },
+        {
+          "id": "sniper",
+          "name": "Sniper Sunflower",
+          "icon": "🎯",
+          "desc": "Huge range and giant shots that pierce armor and spot Camo pests anywhere.",
+          "range": 340,
+          "rate": 0.55,
+          "dmgMult": 4.5,
+          "armorPierce": true,
+          "seeCamo": true
+        }
+      ]
+    },
+    "mortar": {
+      "id": "mortar",
+      "name": "Puffball Mortar",
+      "icon": "💥",
+      "type": "tower",
+      "element": "blast",
+      "cost": 100,
+      "range": 250,
+      "rate": 0.45,
+      "dmg": 40,
+      "splash": 85,
+      "color": "#fb923c",
+      "desc": "Lobs exploding puffballs at crowds. Blast SHATTERs chilled pests!",
+      "branches": [
+        {
+          "id": "cluster",
+          "name": "Cluster Puffball",
+          "icon": "🎆",
+          "desc": "Every puffball bursts into 4 mini bombs. Wipes out swarms!",
+          "cluster": 4
+        },
+        {
+          "id": "stun",
+          "name": "Stun Shroom",
+          "icon": "💫",
+          "desc": "Bigger booms that stun pests for a moment.",
+          "splash": 115,
+          "stun": 0.7
+        }
+      ]
+    },
+    "fern": {
+      "id": "fern",
+      "name": "Frost Fern",
+      "icon": "❄️",
+      "type": "tower",
+      "element": "ice",
+      "cost": 80,
+      "range": 150,
+      "rate": 0.8,
+      "dmg": 6,
+      "slow": [
+        0.3,
+        0.38,
+        0.46
+      ],
+      "color": "#7dd3fc",
+      "desc": "Chills and slows every pest around it. Sets up SHATTER and MELT.",
+      "branches": [
+        {
+          "id": "blizzard",
+          "name": "Blizzard Fern",
+          "icon": "🌨️",
+          "desc": "A giant snowstorm: much bigger area and the strongest slow.",
+          "range": 215,
+          "slowL3": 0.52,
+          "chill": 2.2
+        },
+        {
+          "id": "frostbite",
+          "name": "Frostbite Fern",
+          "icon": "🧊",
+          "desc": "Bites 3x harder, and every 4th pulse freezes pests solid.",
+          "dmgMult": 3,
+          "freezeEvery": 4,
+          "freeze": 1.1
+        }
+      ]
+    },
+    "zap": {
+      "id": "zap",
+      "name": "Zap Thistle",
+      "icon": "⚡",
+      "type": "tower",
+      "element": "shock",
+      "cost": 90,
+      "range": 185,
+      "rate": 0.8,
+      "dmg": 20,
+      "chains": [
+        3,
+        4,
+        5
+      ],
+      "color": "#c084fc",
+      "desc": "Lightning that jumps between pests. OVERLOADs burning pests.",
+      "branches": [
+        {
+          "id": "storm",
+          "name": "Storm Thistle",
+          "icon": "🌩️",
+          "desc": "Lightning jumps to 9 pests and reaches further.",
+          "range": 230,
+          "chainsL3": 9
+        },
+        {
+          "id": "thunder",
+          "name": "Thunder Thistle",
+          "icon": "🔱",
+          "desc": "One mighty bolt: triple damage and a short stun.",
+          "dmgMult": 3,
+          "chainsL3": 2,
+          "stun": 0.45
+        }
+      ]
+    },
+    "thorns": {
+      "id": "thorns",
+      "name": "Thorn Patch",
+      "icon": "🌵",
+      "type": "trap",
+      "onPath": true,
+      "element": "leaf",
+      "cost": 45,
+      "range": 72,
+      "dps": 14,
+      "color": "#65a30d",
+      "desc": "Trap on the path: hurts every pest walking through it.",
+      "branches": [
+        {
+          "id": "snare",
+          "name": "Bramble Snare",
+          "icon": "🕸️",
+          "desc": "Sticky vines slow every pest walking through.",
+          "snare": 0.4
+        },
+        {
+          "id": "ivy",
+          "name": "Poison Ivy",
+          "icon": "☠️",
+          "desc": "Bigger patch, and pests stay poisoned for 4 seconds after they leave it.",
+          "range": 92,
+          "poison": 4
+        }
+      ]
+    },
+    "bomb": {
+      "id": "bomb",
+      "name": "Seed Bomb",
+      "icon": "💣",
+      "type": "trap",
+      "onPath": true,
+      "once": true,
+      "element": "blast",
+      "cost": 25,
+      "range": 110,
+      "dmg": 110,
+      "color": "#a16207",
+      "desc": "Trap on the path: one big BOOM when a pest steps on it."
+    }
+  },
+  "costs": {
+    "sentry": {
+      "build": 60,
+      "toLevel2": 60,
+      "toLevel3": 132
+    },
+    "mortar": {
+      "build": 100,
+      "toLevel2": 100,
+      "toLevel3": 220
+    },
+    "fern": {
+      "build": 80,
+      "toLevel2": 80,
+      "toLevel3": 176
+    },
+    "zap": {
+      "build": 90,
+      "toLevel2": 90,
+      "toLevel3": 198
+    },
+    "thorns": {
+      "build": 45,
+      "toLevel2": 45,
+      "toLevel3": 99
+    },
+    "bomb": {
+      "build": 25,
+      "toLevel2": 25,
+      "toLevel3": 55
+    }
+  }
+}

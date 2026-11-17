@@ -1,0 +1,260 @@
+{
+  "hats": [
+    {
+      "id": "none",
+      "name": "No Hat",
+      "icon": "🙂",
+      "free": true,
+      "how": ""
+    },
+    {
+      "id": "flower",
+      "name": "Flower Crown",
+      "icon": "🌼",
+      "free": true,
+      "how": ""
+    },
+    {
+      "id": "cap",
+      "name": "Garden Cap",
+      "icon": "🧢",
+      "free": true,
+      "how": ""
+    },
+    {
+      "id": "party",
+      "name": "Party Hat",
+      "icon": "🎉",
+      "how": "Pop 250 pests in one game"
+    },
+    {
+      "id": "pirate",
+      "name": "Pirate Hat",
+      "icon": "🏴‍☠️",
+      "how": "Pop a boss (Spore Zeppelin or Dread Monarch)"
+    },
+    {
+      "id": "wizard",
+      "name": "Wizard Hat",
+      "icon": "🧙",
+      "how": "Reach hero level 20"
+    },
+    {
+      "id": "crown",
+      "name": "Royal Crown",
+      "icon": "👑",
+      "how": "Win any map"
+    },
+    {
+      "id": "goldcrown",
+      "name": "Golden Crown",
+      "icon": "🌟",
+      "how": "Win on Hard"
+    },
+    {
+      "id": "firecrown",
+      "name": "Flame Crown",
+      "icon": "🔥",
+      "how": "Win on Nightmare"
+    },
+    {
+      "id": "propeller",
+      "name": "Propeller Cap",
+      "icon": "🚁",
+      "how": "Clear wave 30 in Endless mode"
+    },
+    {
+      "id": "helmet",
+      "name": "Knight Helmet",
+      "icon": "⚔️",
+      "how": "Win a Garden Clash"
+    },
+    {
+      "id": "thorncrown",
+      "name": "Thorn Crown",
+      "icon": "🌵",
+      "how": "Win a Garden Clash on Hard or Nightmare"
+    }
+  ],
+  "pets": [
+    {
+      "id": "none",
+      "name": "No Pet",
+      "icon": "🚫",
+      "free": true,
+      "how": ""
+    },
+    {
+      "id": "ladybug",
+      "name": "Ladybug",
+      "icon": "🐞",
+      "free": true,
+      "how": ""
+    },
+    {
+      "id": "bee",
+      "name": "Bumble Bee",
+      "icon": "🐝",
+      "free": true,
+      "how": ""
+    },
+    {
+      "id": "bunny",
+      "name": "Bunny",
+      "icon": "🐰",
+      "how": "Win any game"
+    },
+    {
+      "id": "butterfly",
+      "name": "Butterfly",
+      "icon": "🦋",
+      "how": "Make 30 team reactions in one game"
+    },
+    {
+      "id": "snail",
+      "name": "Snail Pal",
+      "icon": "🐌",
+      "how": "Reach wave 15 in Endless mode"
+    },
+    {
+      "id": "froggy",
+      "name": "Froggy",
+      "icon": "🐸",
+      "how": "Beat the Rumble Toad in Garden Clash"
+    },
+    {
+      "id": "hedgehog",
+      "name": "Hedgehog",
+      "icon": "🦔",
+      "how": "Break 5 Thorn buildings in one Garden Clash"
+    },
+    {
+      "id": "dragon",
+      "name": "Baby Dragon",
+      "icon": "🐉",
+      "how": "Win on Hard or Nightmare"
+    }
+  ],
+  "emotes": [
+    {
+      "id": "hi",
+      "icon": "👋",
+      "text": "Hi!"
+    },
+    {
+      "id": "love",
+      "icon": "❤️",
+      "text": ""
+    },
+    {
+      "id": "help",
+      "icon": "🆘",
+      "text": "Help!"
+    },
+    {
+      "id": "nice",
+      "icon": "⭐",
+      "text": "Nice!"
+    },
+    {
+      "id": "follow",
+      "icon": "➡️",
+      "text": "Follow me!"
+    }
+  ],
+  "powerups": {
+    "giant": {
+      "id": "giant",
+      "name": "Giant Mode",
+      "icon": "🍄",
+      "color": "#ef4444",
+      "dur": 12,
+      "desc": "Grow BIG! +60% damage and +20% range"
+    },
+    "zoom": {
+      "id": "zoom",
+      "name": "Zoom Boots",
+      "icon": "👟",
+      "color": "#38bdf8",
+      "dur": 14,
+      "desc": "+70% walking speed"
+    },
+    "frenzy": {
+      "id": "frenzy",
+      "name": "Petal Frenzy",
+      "icon": "🔥",
+      "color": "#f97316",
+      "dur": 10,
+      "desc": "Attack almost twice as fast"
+    },
+    "magnet": {
+      "id": "magnet",
+      "name": "Mega Magnet",
+      "icon": "🧲",
+      "color": "#a855f7",
+      "instant": true,
+      "desc": "Grabs every Sun on the map + XP for the team"
+    },
+    "heart": {
+      "id": "heart",
+      "name": "Tree Hug",
+      "icon": "💖",
+      "color": "#ec4899",
+      "instant": true,
+      "desc": "+3 lives for the tree"
+    },
+    "ember": {
+      "id": "ember",
+      "name": "Ember Power",
+      "icon": "🔴",
+      "color": "#ef4444",
+      "dur": 75,
+      "desc": "+25% damage, and your hits set foes on fire",
+      "clash": true
+    },
+    "dew": {
+      "id": "dew",
+      "name": "Dewdrop Focus",
+      "icon": "🔵",
+      "color": "#3b82f6",
+      "dur": 75,
+      "desc": "Special recharges twice as fast, +15% attack speed",
+      "clash": true
+    },
+    "toad": {
+      "id": "toad",
+      "name": "Toad Power",
+      "icon": "🐸",
+      "color": "#22c55e",
+      "dur": 90,
+      "desc": "Whole team: +20% damage, and your Sproutlings grow big and strong",
+      "clash": true
+    },
+    "elder": {
+      "id": "elder",
+      "name": "Elder Toad Power",
+      "icon": "👑",
+      "color": "#facc15",
+      "dur": 120,
+      "desc": "Whole team: +20% damage, DOUBLE damage to pest buildings, and giant Sproutlings",
+      "clash": true
+    },
+    "juice": {
+      "id": "juice",
+      "name": "Berry Juice",
+      "icon": "🧃",
+      "color": "#f472b6",
+      "dur": 6,
+      "desc": "Healing...",
+      "clash": true
+    }
+  },
+  "powerupOrder": [
+    "giant",
+    "zoom",
+    "frenzy",
+    "magnet",
+    "heart"
+  ],
+  "powerupShareRadius": 260
+}

@@ -1,0 +1,2583 @@
+{
+  "order": [
+    "peashooter",
+    "sunblossom",
+    "frostlotus",
+    "boomshroom",
+    "voltcactus",
+    "snapdragon",
+    "bubblelily"
+  ],
+  "heroes": {
+    "peashooter": {
+      "id": "peashooter",
+      "name": "Pea Blaster",
+      "role": "Marksman",
+      "cost": 100,
+      "hotkey": "1",
+      "color": "#4ADE80",
+      "accent": "#15803D",
+      "description": "Reliable rapid shooter. Upgrade into a Gatling Barrage or Piercing Railgun.",
+      "baseStats": {
+        "range": 175,
+        "fireRate": 1.25,
+        "damage": 14,
+        "pierce": 1,
+        "projSpeed": 540,
+        "burst": 1,
+        "critChance": 0,
+        "knockback": 0,
+        "detectCamo": false,
+        "armorPierce": false,
+        "beamMode": false
+      },
+      "paths": {
+        "A": {
+          "name": "Gatling Sprout",
+          "tiers": [
+            {
+              "name": "Double Pods",
+              "cost": 80,
+              "desc": "Fires 2 peas per volley.",
+              "effects": {
+                "burst": 2
+              }
+            },
+            {
+              "name": "Hyper Leaves",
+              "cost": 140,
+              "desc": "+35% fire rate & faster peas.",
+              "effects": {
+                "fireRateMult": 1.35,
+                "projSpeedMult": 1.25
+              }
+            },
+            {
+              "name": "Gatling Cannon",
+              "cost": 290,
+              "desc": "Sprays 4 peas rapidly with +4 damage.",
+              "effects": {
+                "burst": 4,
+                "damageAdd": 4,
+                "fireRateMult": 1.2
+              }
+            },
+            {
+              "name": "Emerald Hurricane",
+              "cost": 620,
+              "desc": "Blistering barrage! Every 5th shot blasts a Mega-Pea with knockback.",
+              "effects": {
+                "fireRateMult": 1.55,
+                "damageAdd": 8,
+                "megaPeaEvery": 5,
+                "knockback": 28
+              }
+            }
+          ]
+        },
+        "B": {
+          "name": "Solar Rail-Vine",
+          "tiers": [
+            {
+              "name": "Long Stalk",
+              "cost": 75,
+              "desc": "+35% range & reveals Camo pests!",
+              "effects": {
+                "rangeMult": 1.35,
+                "detectCamo": true
+              }
+            },
+            {
+              "name": "Thorn Darts",
+              "cost": 150,
+              "desc": "Shots pierce 3 pests & deal +10 damage.",
+              "effects": {
+                "pierceAdd": 2,
+                "damageAdd": 10
+              }
+            },
+            {
+              "name": "Vine Marksman",
+              "cost": 320,
+              "desc": "High-velocity bolts with +35 dmg, 30% crit & armor-crack.",
+              "effects": {
+                "damageAdd": 35,
+                "critChance": 0.3,
+                "projSpeedMult": 1.5,
+                "armorPierce": true,
+                "rangeMult": 1.2
+              }
+            },
+            {
+              "name": "Solar Railgun",
+              "cost": 700,
+              "desc": "Instant hyper-beam across huge range shredding bosses (+110 dmg, 6 pierce)!",
+              "effects": {
+                "damageAdd": 110,
+                "pierceAdd": 4,
+                "beamMode": true,
+                "critChance": 0.45,
+                "rangeMult": 1.25
+              }
+            }
+          ]
+        }
+      }
+    },
+    "sunblossom": {
+      "id": "sunblossom",
+      "name": "Sun Blossom",
+      "role": "Support & Buff",
+      "cost": 120,
+      "hotkey": "2",
+      "color": "#FACC15",
+      "accent": "#CA8A04",
+      "description": "Support hero! Grows Sun orbs (XP for the team) and powers up nearby heroes.",
+      "baseStats": {
+        "range": 140,
+        "fireRate": 1.35,
+        "damage": 12,
+        "projSpeed": 470,
+        "sunInterval": 6.5,
+        "sunAmount": 25,
+        "autoCollect": false,
+        "shareRatio": 0,
+        "buffSpeed": 0.08,
+        "buffDamage": 0,
+        "buffPierce": 0,
+        "revealCamo": false,
+        "pulseDamage": 0,
+        "pulseInterval": 0
+      },
+      "paths": {
+        "A": {
+          "name": "Golden Harvest",
+          "tiers": [
+            {
+              "name": "Twin Petals",
+              "cost": 90,
+              "desc": "Produces Sun 35% faster.",
+              "effects": {
+                "sunIntervalMult": 0.74
+              }
+            },
+            {
+              "name": "Sun Magnet",
+              "cost": 160,
+              "desc": "Her Sun goes straight to her & +10 per orb.",
+              "effects": {
+                "autoCollect": true,
+                "sunAmountAdd": 10
+              }
+            },
+            {
+              "name": "Radiant Orchard",
+              "cost": 340,
+              "desc": "Drops Giant Suns (+60) & shares 30% with all teammates!",
+              "effects": {
+                "sunAmountAdd": 25,
+                "shareRatio": 0.3
+              }
+            },
+            {
+              "name": "Solar Nexus",
+              "cost": 680,
+              "desc": "Massive Sun fountain (+95) & triggers healing Sunbeams!",
+              "effects": {
+                "sunAmountAdd": 35,
+                "sunIntervalMult": 0.7,
+                "shareRatio": 0.4,
+                "solarBeam": true
+              }
+            }
+          ]
+        },
+        "B": {
+          "name": "Starlight Aura",
+          "tiers": [
+            {
+              "name": "Fertilizer Mist",
+              "cost": 85,
+              "desc": "Aura grants +16% attack speed & +25% radius.",
+              "effects": {
+                "buffSpeedAdd": 0.08,
+                "rangeMult": 1.25
+              }
+            },
+            {
+              "name": "Camo Lantern",
+              "cost": 155,
+              "desc": "Reveals Camo pests inside aura for ALL towers!",
+              "effects": {
+                "revealCamo": true,
+                "rangeMult": 1.15
+              }
+            },
+            {
+              "name": "War-Bloom Drum",
+              "cost": 310,
+              "desc": "Allies gain +26% speed, +1 pierce & shockwave pulses.",
+              "effects": {
+                "buffSpeedAdd": 0.1,
+                "buffPierceAdd": 1,
+                "pulseDamage": 18,
+                "pulseInterval": 2.2
+              }
+            },
+            {
+              "name": "Starlight Beacon",
+              "cost": 650,
+              "desc": "Huge aura: +42% speed, +30% damage & heavy light pulses!",
+              "effects": {
+                "buffSpeedAdd": 0.16,
+                "buffDamageAdd": 0.3,
+                "pulseDamage": 45,
+                "rangeMult": 1.3
+              }
+            }
+          ]
+        }
+      }
+    },
+    "frostlotus": {
+      "id": "frostlotus",
+      "name": "Frost Lotus",
+      "role": "Crowd Control",
+      "cost": 130,
+      "hotkey": "3",
+      "color": "#67E8F9",
+      "accent": "#0284C7",
+      "description": "Chills and slows swarms; upgrades freeze solid or weaken armor for teammates.",
+      "baseStats": {
+        "range": 145,
+        "fireRate": 0.75,
+        "damage": 10,
+        "slowAmount": 0.35,
+        "slowDuration": 2.4,
+        "freezeChance": 0,
+        "freezeDuration": 0,
+        "brittleBonus": 0,
+        "shardCount": 0,
+        "aoeNova": true,
+        "detectCamo": false,
+        "splashSnowball": false
+      },
+      "paths": {
+        "A": {
+          "name": "Glacier Spire",
+          "tiers": [
+            {
+              "name": "Permafrost",
+              "cost": 85,
+              "desc": "Slows by 50% and chills for 3.5s.",
+              "effects": {
+                "slowAdd": 0.15,
+                "slowDurationAdd": 1.1
+              }
+            },
+            {
+              "name": "Brittle Ice",
+              "cost": 165,
+              "desc": "Chilled pests take +25% damage from ALL players!",
+              "effects": {
+                "brittleBonus": 0.25
+              }
+            },
+            {
+              "name": "Glacier Nova",
+              "cost": 320,
+              "desc": "Freezes nearby pests solid for 1.3s + big nova!",
+              "effects": {
+                "freezeChance": 0.65,
+                "freezeDuration": 1.3,
+                "rangeMult": 1.2,
+                "damageAdd": 14
+              }
+            },
+            {
+              "name": "Absolute Zero",
+              "cost": 660,
+              "desc": "Huge blizzard vortex: 68% slow, +45% brittle vuln, freezes bosses briefly!",
+              "effects": {
+                "slowAdd": 0.18,
+                "brittleBonus": 0.45,
+                "freezeChance": 1,
+                "freezeDuration": 1.8,
+                "damageAdd": 28,
+                "rangeMult": 1.25
+              }
+            }
+          ]
+        },
+        "B": {
+          "name": "Cryo Barrage",
+          "tiers": [
+            {
+              "name": "Sharp Hail",
+              "cost": 90,
+              "desc": "Also launches 3 homing ice splinters.",
+              "effects": {
+                "shardCount": 3,
+                "damageAdd": 4
+              }
+            },
+            {
+              "name": "Frostbite Mist",
+              "cost": 155,
+              "desc": "Spots Camo & applies chilling frostbite DoT.",
+              "effects": {
+                "detectCamo": true,
+                "frostDot": 12
+              }
+            },
+            {
+              "name": "Cryo Mortar",
+              "cost": 310,
+              "desc": "Hurls exploding snowballs that chill at long range.",
+              "effects": {
+                "splashSnowball": true,
+                "rangeMult": 1.45,
+                "shardCount": 5,
+                "damageAdd": 16
+              }
+            },
+            {
+              "name": "Aurora Storm",
+              "cost": 640,
+              "desc": "Rapid cryo-lances + massive hailstorm across huge range!",
+              "effects": {
+                "fireRateMult": 1.65,
+                "shardCount": 7,
+                "damageAdd": 30,
+                "frostDot": 28
+              }
+            }
+          ]
+        }
+      }
+    },
+    "boomshroom": {
+      "id": "boomshroom",
+      "name": "Boom Shroom",
+      "role": "Heavy Splash",
+      "cost": 160,
+      "hotkey": "4",
+      "color": "#FB7185",
+      "accent": "#BE123C",
+      "description": "Lobs explosive spore-bombs that shatter shields, metal armor, and clustered swarms.",
+      "baseStats": {
+        "range": 195,
+        "fireRate": 0.58,
+        "damage": 34,
+        "splashRadius": 72,
+        "projSpeed": 360,
+        "stunDuration": 0,
+        "shrapnel": 0,
+        "clusterCount": 0,
+        "armorMult": 1.5,
+        "bossMult": 1,
+        "burnDps": 0,
+        "armorPierce": true
+      },
+      "paths": {
+        "A": {
+          "name": "Doom Volcano",
+          "tiers": [
+            {
+              "name": "Bigger Caps",
+              "cost": 100,
+              "desc": "+38% blast radius and +12 damage.",
+              "effects": {
+                "splashMult": 1.38,
+                "damageAdd": 12
+              }
+            },
+            {
+              "name": "Shrapnel Spores",
+              "cost": 185,
+              "desc": "Blasts spray 6 piercing spore needles.",
+              "effects": {
+                "shrapnel": 6
+              }
+            },
+            {
+              "name": "Cluster Mortar",
+              "cost": 360,
+              "desc": "Shells split into 3 secondary mini-bombs!",
+              "effects": {
+                "clusterCount": 3,
+                "damageAdd": 24,
+                "splashMult": 1.15
+              }
+            },
+            {
+              "name": "Doom Eruption",
+              "cost": 740,
+              "desc": "Colossal spore nukes leaving burning craters!",
+              "effects": {
+                "damageAdd": 68,
+                "splashMult": 1.3,
+                "clusterCount": 5,
+                "burnDps": 35
+              }
+            }
+          ]
+        },
+        "B": {
+          "name": "Titan Buster",
+          "tiers": [
+            {
+              "name": "Concussion Blast",
+              "cost": 95,
+              "desc": "Stuns pests for 0.6s on hit.",
+              "effects": {
+                "stunDuration": 0.6
+              }
+            },
+            {
+              "name": "Armor Melter",
+              "cost": 175,
+              "desc": "Deals 2.5x damage to Armored & Shielded pests.",
+              "effects": {
+                "armorMult": 2.5,
+                "damageAdd": 16
+              }
+            },
+            {
+              "name": "Bunker Rockets",
+              "cost": 350,
+              "desc": "Fast homing rockets dealing 2x damage to Bosses!",
+              "effects": {
+                "bossMult": 2,
+                "projSpeedMult": 1.65,
+                "fireRateMult": 1.35,
+                "damageAdd": 35
+              }
+            },
+            {
+              "name": "Titan Obliterator",
+              "cost": 720,
+              "desc": "Twin plasma rockets shredding Zeppelins & Bosses (3.2x Boss dmg)!",
+              "effects": {
+                "bossMult": 3.2,
+                "damageAdd": 85,
+                "fireRateMult": 1.3,
+                "stunDuration": 1.1
+              }
+            }
+          ]
+        }
+      }
+    },
+    "voltcactus": {
+      "id": "voltcactus",
+      "name": "Volt Cactus",
+      "role": "Chain & Traps",
+      "cost": 145,
+      "hotkey": "5",
+      "color": "#A78BFA",
+      "accent": "#6D28D9",
+      "description": "Zaps clusters with chaining lightning or scatters razor spikes on the trail.",
+      "baseStats": {
+        "range": 165,
+        "fireRate": 0.95,
+        "damage": 18,
+        "chainCount": 3,
+        "chainRange": 115,
+        "overloadSplash": 0,
+        "thunderEvery": 0,
+        "needleRing": 0,
+        "homingNeedles": false,
+        "dropSpikes": 0,
+        "detectCamo": false
+      },
+      "paths": {
+        "A": {
+          "name": "Tempest Spire",
+          "tiers": [
+            {
+              "name": "High Voltage",
+              "cost": 95,
+              "desc": "Lightning jumps to 5 pests with +30% damage.",
+              "effects": {
+                "chainCountAdd": 2,
+                "damageMult": 1.3
+              }
+            },
+            {
+              "name": "Arc Overload",
+              "cost": 180,
+              "desc": "Final lightning target erupts in an electric AoE.",
+              "effects": {
+                "overloadSplash": 22
+              }
+            },
+            {
+              "name": "Storm Caller",
+              "cost": 340,
+              "desc": "Every 4th attack calls a heavy sky thunderbolt!",
+              "effects": {
+                "thunderEvery": 4,
+                "chainCountAdd": 2,
+                "damageAdd": 14
+              }
+            },
+            {
+              "name": "Tempest God",
+              "cost": 700,
+              "desc": "Relentless 9-chain mega-arcs + frequent sky thunder!",
+              "effects": {
+                "chainCountAdd": 3,
+                "fireRateMult": 1.45,
+                "damageAdd": 26,
+                "thunderEvery": 2,
+                "overloadSplash": 48
+              }
+            }
+          ]
+        },
+        "B": {
+          "name": "Razor Briar",
+          "tiers": [
+            {
+              "name": "Briar Volley",
+              "cost": 90,
+              "desc": "Fires 8 radial thorns whenever pests approach.",
+              "effects": {
+                "needleRing": 8
+              }
+            },
+            {
+              "name": "Seeking Needles",
+              "cost": 165,
+              "desc": "Thorns seek targets & detect Camo!",
+              "effects": {
+                "homingNeedles": true,
+                "detectCamo": true,
+                "damageAdd": 8
+              }
+            },
+            {
+              "name": "Spike Carpet",
+              "cost": 325,
+              "desc": "Plants glowing road spikes on nearby trail tiles!",
+              "effects": {
+                "dropSpikes": 1,
+                "spikeDamage": 28,
+                "needleRing": 12
+              }
+            },
+            {
+              "name": "Razor Citadel",
+              "cost": 660,
+              "desc": "Electrified super-spikes + 16 homing plasma thorns!",
+              "effects": {
+                "needleRing": 16,
+                "dropSpikes": 2,
+                "spikeDamage": 55,
+                "fireRateMult": 1.35,
+                "damageAdd": 18
+              }
+            }
+          ]
+        }
+      }
+    },
+    "snapdragon": {
+      "id": "snapdragon",
+      "name": "Snapdragon",
+      "role": "Flame & Wisps",
+      "cost": 150,
+      "hotkey": "6",
+      "color": "#FB923C",
+      "accent": "#C2410C",
+      "description": "Roasts crowds with wide flame cones & burn DoT, or summons seeking fire wisps.",
+      "baseStats": {
+        "range": 135,
+        "fireRate": 1.05,
+        "damage": 19,
+        "coneAngle": 1.05,
+        "burnDps": 9,
+        "burnDuration": 2.5,
+        "ringOfFire": false,
+        "armorPierce": false,
+        "emberRange": 0,
+        "wispCount": 0,
+        "stripCamo": false
+      },
+      "paths": {
+        "A": {
+          "name": "Phoenix Inferno",
+          "tiers": [
+            {
+              "name": "Hot Coals",
+              "cost": 90,
+              "desc": "Burn DoT deals double damage for 4s.",
+              "effects": {
+                "burnDpsAdd": 10,
+                "burnDurationAdd": 1.5
+              }
+            },
+            {
+              "name": "Meltdown Breath",
+              "cost": 170,
+              "desc": "Wider flame cone melts Lead & Armored shells!",
+              "effects": {
+                "coneAngleAdd": 0.45,
+                "armorPierce": true,
+                "damageAdd": 8
+              }
+            },
+            {
+              "name": "Ring of Fire",
+              "cost": 350,
+              "desc": "360° blazing rings scorch everything around it!",
+              "effects": {
+                "ringOfFire": true,
+                "damageAdd": 20,
+                "rangeMult": 1.2
+              }
+            },
+            {
+              "name": "Phoenix Lord",
+              "cost": 710,
+              "desc": "Colossal solar inferno + meteoric burn (+55 dmg, 55 DPS)!",
+              "effects": {
+                "damageAdd": 55,
+                "burnDpsAdd": 36,
+                "fireRateMult": 1.4,
+                "rangeMult": 1.25
+              }
+            }
+          ]
+        },
+        "B": {
+          "name": "Arcane Dragon",
+          "tiers": [
+            {
+              "name": "Mystic Embers",
+              "cost": 95,
+              "desc": "Spits homing fireballs at distant pests too.",
+              "effects": {
+                "emberRange": 250,
+                "damageAdd": 6
+              }
+            },
+            {
+              "name": "Spirit Sight",
+              "cost": 160,
+              "desc": "Sees Camo & strips Camo off any pest hit!",
+              "effects": {
+                "detectCamo": true,
+                "stripCamo": true
+              }
+            },
+            {
+              "name": "Twin Fire Wisps",
+              "cost": 330,
+              "desc": "Summons 2 orbiting wisps that hunt down leaks!",
+              "effects": {
+                "wispCount": 2,
+                "emberRange": 300,
+                "damageAdd": 18
+              }
+            },
+            {
+              "name": "Dragon Ascendant",
+              "cost": 680,
+              "desc": "4 ferocious Phoenix Wisps + rapid arcane dragon-bolts!",
+              "effects": {
+                "wispCount": 4,
+                "fireRateMult": 1.45,
+                "damageAdd": 32,
+                "armorPierce": true
+              }
+            }
+          ]
+        }
+      }
+    },
+    "bubblelily": {
+      "id": "bubblelily",
+      "name": "Bubble Lily",
+      "role": "Water & Support",
+      "cost": 140,
+      "hotkey": "7",
+      "color": "#60A5FA",
+      "accent": "#1D4ED8",
+      "description": "Blows bubbles that soak pests. Evolves into a wave-making bubble trapper or a healing spring.",
+      "baseStats": {
+        "range": 170,
+        "fireRate": 1.2,
+        "damage": 19,
+        "projSpeed": 420,
+        "soakDuration": 3,
+        "bubbleSlow": 0.15,
+        "popSplash": 0,
+        "waveEvery": 0,
+        "pushback": 0,
+        "trapChance": 0,
+        "trapDuration": 0,
+        "bounce": 0,
+        "mistAura": 0,
+        "healAura": 0,
+        "springLife": false,
+        "detectCamo": false
+      },
+      "paths": {
+        "A": {
+          "name": "Tidal Queen",
+          "tiers": [
+            {
+              "name": "Big Bubbles",
+              "cost": 90,
+              "desc": "Bubbles pop in a splash that soaks every pest nearby.",
+              "effects": {
+                "popSplash": 60,
+                "damageAdd": 7
+              }
+            },
+            {
+              "name": "Wave Maker",
+              "cost": 170,
+              "desc": "Every 4th shot is a wave that pushes pests back down the trail.",
+              "effects": {
+                "waveEvery": 4,
+                "pushback": 70
+              }
+            },
+            {
+              "name": "Bubble Trap",
+              "cost": 330,
+              "desc": "15% chance to trap a pest in a floating bubble for 2s (it takes +25% damage).",
+              "effects": {
+                "trapChance": 0.15,
+                "trapDuration": 2,
+                "damageAdd": 20,
+                "popSplash": 75
+              }
+            },
+            {
+              "name": "Tsunami Queen",
+              "cost": 680,
+              "desc": "A crashing wave every 2nd shot, bigger splashes, and traps 25% of the time!",
+              "effects": {
+                "waveEvery": 2,
+                "pushback": 90,
+                "trapChance": 0.25,
+                "damageAdd": 42,
+                "fireRateMult": 1.3,
+                "popSplash": 95
+              }
+            }
+          ]
+        },
+        "B": {
+          "name": "Healing Spring",
+          "tiers": [
+            {
+              "name": "Dew Drops",
+              "cost": 85,
+              "desc": "+20% range & spots Camo pests.",
+              "effects": {
+                "rangeMult": 1.2,
+                "detectCamo": true
+              }
+            },
+            {
+              "name": "Refreshing Mist",
+              "cost": 160,
+              "desc": "Heroes near her attack 15% faster (and heal in Garden Clash).",
+              "effects": {
+                "mistAura": 0.15,
+                "healAura": 0.012
+              }
+            },
+            {
+              "name": "Bouncing Bubbles",
+              "cost": 320,
+              "desc": "Bubbles bounce to 2 more pests, and the mist gets stronger.",
+              "effects": {
+                "bounce": 2,
+                "healAura": 0.02,
+                "mistAura": 0.22,
+                "damageAdd": 20
+              }
+            },
+            {
+              "name": "Spring of Life",
+              "cost": 660,
+              "desc": "Big healing mist, and grows back 1 tree life every 40s during waves!",
+              "effects": {
+                "springLife": true,
+                "healAura": 0.03,
+                "mistAura": 0.3,
+                "damageAdd": 38,
+                "bounce": 3
+              }
+            }
+          ]
+        }
+      }
+    }
+  },
+  "info": {
+    "peashooter": {
+      "style": "Fast single-target shooter. Great all-rounder!",
+      "special": {
+        "name": "Pea Storm",
+        "icon": "🌪️",
+        "cooldown": 16,
+        "desc": "Blasts a ring of 24 piercing peas all around you."
+      }
+    },
+    "sunblossom": {
+      "style": "Support: grows Sun (XP) for the team and powers up heroes near her.",
+      "special": {
+        "name": "Sunburst",
+        "icon": "🌞",
+        "cooldown": 20,
+        "desc": "Golden blast + nearby heroes attack 50% faster for 6s. Drops XP suns!"
+      }
+    },
+    "frostlotus": {
+      "style": "Chills every pest around you. Slow them down for your team!",
+      "special": {
+        "name": "Blizzard",
+        "icon": "❄️",
+        "cooldown": 20,
+        "desc": "Freezes every pest near you solid for 2.5 seconds."
+      }
+    },
+    "boomshroom": {
+      "style": "Big splashy bombs. Smashes crowds and armored pests.",
+      "special": {
+        "name": "Mega Mushroom",
+        "icon": "🍄",
+        "cooldown": 18,
+        "desc": "Drops a HUGE spore bomb on the toughest pest nearby."
+      }
+    },
+    "voltcactus": {
+      "style": "Lightning that bounces between pests. Loves crowds!",
+      "special": {
+        "name": "Thunderstorm",
+        "icon": "⛈️",
+        "cooldown": 18,
+        "desc": "Calls 8 thunderbolts on the toughest pests nearby."
+      }
+    },
+    "snapdragon": {
+      "style": "Up-close flamethrower that sets pests on fire.",
+      "special": {
+        "name": "Inferno Nova",
+        "icon": "🔥",
+        "cooldown": 18,
+        "desc": "Explodes in a ring of fire that burns everything near you."
+      }
+    },
+    "bubblelily": {
+      "style": "Soaks pests with bubbles. Soaked pests get ELECTROCUTED by Volt Cactus and FLASH-FROZEN by Frost Lotus!",
+      "special": {
+        "name": "Tidal Wave",
+        "icon": "🌊",
+        "cooldown": 18,
+        "desc": "A huge wave pushes every pest near you back down the trail and soaks them."
+      }
+    }
+  },
+  "element": {
+    "peashooter": "leaf",
+    "sunblossom": "sun",
+    "frostlotus": "ice",
+    "boomshroom": "blast",
+    "voltcactus": "shock",
+    "snapdragon": "fire",
+    "bubblelily": "water"
+  },
+  "power": {
+    "damage": 1.8,
+    "range": 1.05,
+    "moveSpeed": 195,
+    "pickup": 62,
+    "growth": 0.045
+  },
+  "tierLevels": [
+    2,
+    4,
+    7,
+    11
+  ],
+  "statCards": {
+    "power": {
+      "id": "power",
+      "name": "Power Bloom",
+      "icon": "💪",
+      "desc": "+15% damage",
+      "max": 8
+    },
+    "haste": {
+      "id": "haste",
+      "name": "Quick Leaves",
+      "icon": "⚡",
+      "desc": "+12% attack speed",
+      "max": 6
+    },
+    "reach": {
+      "id": "reach",
+      "name": "Long Reach",
+      "icon": "🔭",
+      "desc": "+10% attack range",
+      "max": 4
+    },
+    "feet": {
+      "id": "feet",
+      "name": "Speedy Roots",
+      "icon": "👟",
+      "desc": "+12% walking speed",
+      "max": 4
+    },
+    "magnet": {
+      "id": "magnet",
+      "name": "Sun Magnet",
+      "icon": "🧲",
+      "desc": "Grab Sun orbs from 40% farther away",
+      "max": 3
+    },
+    "crit": {
+      "id": "crit",
+      "name": "Lucky Clover",
+      "icon": "🍀",
+      "desc": "+8% chance for double damage",
+      "max": 4
+    },
+    "charge": {
+      "id": "charge",
+      "name": "Super Charge",
+      "icon": "✨",
+      "desc": "Special ability recharges 15% faster",
+      "max": 3
+    },
+    "spirit": {
+      "id": "spirit",
+      "name": "Team Spirit",
+      "icon": "💞",
+      "desc": "Teammates near you deal +10% damage",
+      "max": 3
+    },
+    "wisdom": {
+      "id": "wisdom",
+      "name": "Wise Sprout",
+      "icon": "📖",
+      "desc": "+20% XP from everything",
+      "max": 3
+    },
+    "camo": {
+      "id": "camo",
+      "name": "Keen Eyes",
+      "icon": "👁️",
+      "desc": "See and hit Camo (Mist Puff) pests!",
+      "max": 1
+    },
+    "pierce": {
+      "id": "pierce",
+      "name": "Armor Breaker",
+      "icon": "🛡️",
+      "desc": "Your hits crack Armor & Lead shells",
+      "max": 1
+    }
+  },
+  "statCardOrder": [
+    "power",
+    "haste",
+    "reach",
+    "feet",
+    "magnet",
+    "crit",
+    "charge",
+    "spirit",
+    "wisdom",
+    "camo",
+    "pierce"
+  ],
+  "dash": {
+    "name": "Leaf Leap",
+    "icon": "💨",
+    "dist": 170,
+    "cooldown": 9
+  },
+  "xpCurve": [
+    {
+      "level": 1,
+      "xpToNext": 54
+    },
+    {
+      "level": 2,
+      "xpToNext": 100
+    },
+    {
+      "level": 3,
+      "xpToNext": 162
+    },
+    {
+      "level": 4,
+      "xpToNext": 236
+    },
+    {
+      "level": 5,
+      "xpToNext": 321
+    },
+    {
+      "level": 6,
+      "xpToNext": 416
+    },
+    {
+      "level": 7,
+      "xpToNext": 520
+    },
+    {
+      "level": 8,
+      "xpToNext": 633
+    },
+    {
+      "level": 9,
+      "xpToNext": 753
+    },
+    {
+      "level": 10,
+      "xpToNext": 882
+    },
+    {
+      "level": 11,
+      "xpToNext": 1017
+    },
+    {
+      "level": 12,
+      "xpToNext": 1160
+    },
+    {
+      "level": 13,
+      "xpToNext": 1309
+    },
+    {
+      "level": 14,
+      "xpToNext": 1465
+    },
+    {
+      "level": 15,
+      "xpToNext": 1626
+    },
+    {
+      "level": 16,
+      "xpToNext": 1794
+    },
+    {
+      "level": 17,
+      "xpToNext": 1968
+    },
+    {
+      "level": 18,
+      "xpToNext": 2148
+    },
+    {
+      "level": 19,
+      "xpToNext": 2333
+    },
+    {
+      "level": 20,
+      "xpToNext": 2523
+    },
+    {
+      "level": 21,
+      "xpToNext": 2719
+    },
+    {
+      "level": 22,
+      "xpToNext": 2920
+    },
+    {
+      "level": 23,
+      "xpToNext": 3127
+    },
+    {
+      "level": 24,
+      "xpToNext": 3338
+    },
+    {
+      "level": 25,
+      "xpToNext": 3554
+    },
+    {
+      "level": 26,
+      "xpToNext": 3775
+    },
+    {
+      "level": 27,
+      "xpToNext": 4000
+    },
+    {
+      "level": 28,
+      "xpToNext": 4231
+    },
+    {
+      "level": 29,
+      "xpToNext": 4465
+    },
+    {
+      "level": 30,
+      "xpToNext": 4705
+    },
+    {
+      "level": 31,
+      "xpToNext": 4948
+    },
+    {
+      "level": 32,
+      "xpToNext": 5196
+    },
+    {
+      "level": 33,
+      "xpToNext": 5449
+    },
+    {
+      "level": 34,
+      "xpToNext": 5705
+    },
+    {
+      "level": 35,
+      "xpToNext": 5966
+    },
+    {
+      "level": 36,
+      "xpToNext": 6231
+    },
+    {
+      "level": 37,
+      "xpToNext": 6500
+    },
+    {
+      "level": 38,
+      "xpToNext": 6773
+    },
+    {
+      "level": 39,
+      "xpToNext": 7050
+    },
+    {
+      "level": 40,
+      "xpToNext": 7331
+    },
+    {
+      "level": 41,
+      "xpToNext": 7616
+    },
+    {
+      "level": 42,
+      "xpToNext": 7905
+    },
+    {
+      "level": 43,
+      "xpToNext": 8197
+    },
+    {
+      "level": 44,
+      "xpToNext": 8494
+    },
+    {
+      "level": 45,
+      "xpToNext": 8794
+    },
+    {
+      "level": 46,
+      "xpToNext": 9097
+    },
+    {
+      "level": 47,
+      "xpToNext": 9405
+    },
+    {
+      "level": 48,
+      "xpToNext": 9716
+    },
+    {
+      "level": 49,
+      "xpToNext": 10030
+    },
+    {
+      "level": 50,
+      "xpToNext": 10348
+    },
+    {
+      "level": 51,
+      "xpToNext": 10670
+    },
+    {
+      "level": 52,
+      "xpToNext": 10995
+    },
+    {
+      "level": 53,
+      "xpToNext": 11324
+    },
+    {
+      "level": 54,
+      "xpToNext": 11656
+    },
+    {
+      "level": 55,
+      "xpToNext": 11991
+    },
+    {
+      "level": 56,
+      "xpToNext": 12330
+    },
+    {
+      "level": 57,
+      "xpToNext": 12672
+    },
+    {
+      "level": 58,
+      "xpToNext": 13017
+    },
+    {
+      "level": 59,
+      "xpToNext": 13366
+    },
+    {
+      "level": 60,
+      "xpToNext": 13718
+    }
+  ],
+  "computedStats": {
+    "peashooter": {
+      "L1_base": {
+        "range": 184,
+        "fireRate": 1.25,
+        "damage": 25,
+        "pierce": 1,
+        "projSpeed": 540,
+        "burst": 1,
+        "critChance": 0,
+        "knockback": 0,
+        "detectCamo": false,
+        "armorPierce": false,
+        "beamMode": false,
+        "moveSpeed": 195,
+        "pickup": 62,
+        "specialMult": 1,
+        "maxHp": 520,
+        "lifeSteal": 0,
+        "regen": 0,
+        "spiritAura": 0,
+        "xpMult": 1
+      },
+      "L5_base": {
+        "range": 184,
+        "fireRate": 1.25,
+        "damage": 30,
+        "pierce": 1,
+        "projSpeed": 540,
+        "burst": 1,
+        "critChance": 0,
+        "knockback": 0,
+        "detectCamo": false,
+        "armorPierce": false,
+        "beamMode": false,
+        "moveSpeed": 195,
+        "pickup": 62,
+        "specialMult": 1,
+        "maxHp": 752,
+        "lifeSteal": 0,
+        "regen": 0,
+        "spiritAura": 0,
+        "xpMult": 1
+      },
+      "L10_base": {
+        "range": 184,
+        "fireRate": 1.25,
+        "damage": 35,
+        "pierce": 1,
+        "projSpeed": 540,
+        "burst": 1,
+        "critChance": 0,
+        "knockback": 0,
+        "detectCamo": false,
+        "armorPierce": false,
+        "beamMode": false,
+        "moveSpeed": 195,
+        "pickup": 62,
+        "specialMult": 1,
+        "maxHp": 1042,
+        "lifeSteal": 0,
+        "regen": 0,
+        "spiritAura": 0,
+        "xpMult": 1
+      },
+      "L15_base": {
+        "range": 184,
+        "fireRate": 1.25,
+        "damage": 41,
+        "pierce": 1,
+        "projSpeed": 540,
+        "burst": 1,
+        "critChance": 0,
+        "knockback": 0,
+        "detectCamo": false,
+        "armorPierce": false,
+        "beamMode": false,
+        "moveSpeed": 195,
+        "pickup": 62,
+        "specialMult": 1,
+        "maxHp": 1332,
+        "lifeSteal": 0,
+        "regen": 0,
+        "spiritAura": 0,
+        "xpMult": 1
+      },
+      "L18_base": {
+        "range": 184,
+        "fireRate": 1.25,
+        "damage": 44,
+        "pierce": 1,
+        "projSpeed": 540,
+        "burst": 1,
+        "critChance": 0,
+        "knockback": 0,
+        "detectCamo": false,
+        "armorPierce": false,
+        "beamMode": false,
+        "moveSpeed": 195,
+        "pickup": 62,
+        "specialMult": 1,
+        "maxHp": 1506,
+        "lifeSteal": 0,
+        "regen": 0,
+        "spiritAura": 0,
+        "xpMult": 1
+      },
+      "L25_base": {
+        "range": 184,
+        "fireRate": 1.25,
+        "damage": 52,
+        "pierce": 1,
+        "projSpeed": 540,
+        "burst": 1,
+        "critChance": 0,
+        "knockback": 0,
+        "detectCamo": false,
+        "armorPierce": false,
+        "beamMode": false,
+        "moveSpeed": 195,
+        "pickup": 62,
+        "specialMult": 1,
+        "maxHp": 1912,
+        "lifeSteal": 0,
+        "regen": 0,
+        "spiritAura": 0,
+        "xpMult": 1
+      },
+      "L11_A4B2": {
+        "range": 248,
+        "fireRate": 3.13875,
+        "damage": 94,
+        "pierce": 3,
+        "projSpeed": 675,
+        "burst": 4,
+        "critChance": 0,
+        "knockback": 28,
+        "detectCamo": true,
+        "armorPierce": false,
+        "beamMode": false,
+        "megaPeaEvery": 5,
+        "moveSpeed": 195,
+        "pickup": 62,
+        "specialMult": 1,
+        "maxHp": 1100,
+        "lifeSteal": 0,
+        "regen": 0,
+        "spiritAura": 0,
+        "xpMult": 1
+      },
+      "L11_A2B4": {
+        "range": 372,
+        "fireRate": 1.6875,
+        "damage": 441,
+        "pierce": 7,
+        "projSpeed": 1012.5,
+        "burst": 2,
+        "critChance": 0.45,
+        "knockback": 0,
+        "detectCamo": true,
+        "armorPierce": true,
+        "beamMode": true,
+        "moveSpeed": 195,
+        "pickup": 62,
+        "specialMult": 1,
+        "maxHp": 1100,
+        "lifeSteal": 0,
+        "regen": 0,
+        "spiritAura": 0,
+        "xpMult": 1
+      }
+    },
+    "sunblossom": {
+      "L1_base": {
+        "range": 147,
+        "fireRate": 1.35,
+        "damage": 22,
+        "projSpeed": 470,
+        "sunInterval": 6.5,
+        "sunAmount": 25,
+        "autoCollect": false,
+        "shareRatio": 0,
+        "buffSpeed": 0.08,
+        "buffDamage": 0,
+        "buffPierce": 0,
+        "revealCamo": false,
+        "pulseDamage": 0,
+        "pulseInterval": 0,
+        "moveSpeed": 195,
+        "pickup": 62,
+        "critChance": 0,
+        "specialMult": 1,
+        "maxHp": 494,
+        "lifeSteal": 0,
+        "regen": 0,
+        "spiritAura": 0,
+        "xpMult": 1
+      },
+      "L5_base": {
+        "range": 147,
+        "fireRate": 1.35,
+        "damage": 25,
+        "projSpeed": 470,
+        "sunInterval": 6.5,
+        "sunAmount": 25,
+        "autoCollect": false,
+        "shareRatio": 0,
+        "buffSpeed": 0.08,
+        "buffDamage": 0,
+        "buffPierce": 0,
+        "revealCamo": false,
+        "pulseDamage": 0,
+        "pulseInterval": 0,
+        "moveSpeed": 195,
+        "pickup": 62,
+        "critChance": 0,
+        "specialMult": 1,
+        "maxHp": 714,
+        "lifeSteal": 0,
+        "regen": 0,
+        "spiritAura": 0,
+        "xpMult": 1
+      },
+      "L10_base": {
+        "range": 147,
+        "fireRate": 1.35,
+        "damage": 30,
+        "projSpeed": 470,
+        "sunInterval": 6.5,
+        "sunAmount": 25,
+        "autoCollect": false,
+        "shareRatio": 0,
+        "buffSpeed": 0.08,
+        "buffDamage": 0,
+        "buffPierce": 0,
+        "revealCamo": false,
+        "pulseDamage": 0,
+        "pulseInterval": 0,
+        "moveSpeed": 195,
+        "pickup": 62,
+        "critChance": 0,
+        "specialMult": 1,
+        "maxHp": 990,
+        "lifeSteal": 0,
+        "regen": 0,
+        "spiritAura": 0,
+        "xpMult": 1
+      },
+      "L15_base": {
+        "range": 147,
+        "fireRate": 1.35,
+        "damage": 35,
+        "projSpeed": 470,
+        "sunInterval": 6.5,
+        "sunAmount": 25,
+        "autoCollect": false,
+        "shareRatio": 0,
+        "buffSpeed": 0.08,
+        "buffDamage": 0,
+        "buffPierce": 0,
+        "revealCamo": false,
+        "pulseDamage": 0,
+        "pulseInterval": 0,
+        "moveSpeed": 195,
+        "pickup": 62,
+        "critChance": 0,
+        "specialMult": 1,
+        "maxHp": 1265,
+        "lifeSteal": 0,
+        "regen": 0,
+        "spiritAura": 0,
+        "xpMult": 1
+      },
+      "L18_base": {
+        "range": 147,
+        "fireRate": 1.35,
+        "damage": 38,
+        "projSpeed": 470,
+        "sunInterval": 6.5,
+        "sunAmount": 25,
+        "autoCollect": false,
+        "shareRatio": 0,
+        "buffSpeed": 0.08,
+        "buffDamage": 0,
+        "buffPierce": 0,
+        "revealCamo": false,
+        "pulseDamage": 0,
+        "pulseInterval": 0,
+        "moveSpeed": 195,
+        "pickup": 62,
+        "critChance": 0,
+        "specialMult": 1,
+        "maxHp": 1431,
+        "lifeSteal": 0,
+        "regen": 0,
+        "spiritAura": 0,
+        "xpMult": 1
+      },
+      "L25_base": {
+        "range": 147,
+        "fireRate": 1.35,
+        "damage": 45,
+        "projSpeed": 470,
+        "sunInterval": 6.5,
+        "sunAmount": 25,
+        "autoCollect": false,
+        "shareRatio": 0,
+        "buffSpeed": 0.08,
+        "buffDamage": 0,
+        "buffPierce": 0,
+        "revealCamo": false,
+        "pulseDamage": 0,
+        "pulseInterval": 0,
+        "moveSpeed": 195,
+        "pickup": 62,
+        "critChance": 0,
+        "specialMult": 1,
+        "maxHp": 1816,
+        "lifeSteal": 0,
+        "regen": 0,
+        "spiritAura": 0,
+        "xpMult": 1
+      },
+      "L11_A4B2": {
+        "range": 211,
+        "fireRate": 1.35,
+        "damage": 31,
+        "projSpeed": 470,
+        "sunInterval": 3.3669999999999995,
+        "sunAmount": 95,
+        "autoCollect": true,
+        "shareRatio": 0.4,
+        "buffSpeed": 0.16,
+        "buffDamage": 0,
+        "buffPierce": 0,
+        "revealCamo": true,
+        "pulseDamage": 0,
+        "pulseInterval": 0,
+        "solarBeam": true,
+        "moveSpeed": 195,
+        "pickup": 62,
+        "critChance": 0,
+        "specialMult": 1,
+        "maxHp": 1045,
+        "lifeSteal": 0,
+        "regen": 0,
+        "spiritAura": 0,
+        "xpMult": 1
+      },
+      "L11_A2B4": {
+        "range": 275,
+        "fireRate": 1.35,
+        "damage": 31,
+        "projSpeed": 470,
+        "sunInterval": 4.81,
+        "sunAmount": 35,
+        "autoCollect": true,
+        "shareRatio": 0,
+        "buffSpeed": 0.42000000000000004,
+        "buffDamage": 0.3,
+        "buffPierce": 1,
+        "revealCamo": true,
+        "pulseDamage": 117,
+        "pulseInterval": 2.2,
+        "moveSpeed": 195,
+        "pickup": 62,
+        "critChance": 0,
+        "specialMult": 1,
+        "maxHp": 1045,
+        "lifeSteal": 0,
+        "regen": 0,
+        "spiritAura": 0,
+        "xpMult": 1
+      }
+    },
+    "frostlotus": {
+      "L1_base": {
+        "range": 152,
+        "fireRate": 0.75,
+        "damage": 18,
+        "slowAmount": 0.35,
+        "slowDuration": 2.4,
+        "freezeChance": 0,
+        "freezeDuration": 0,
+        "brittleBonus": 0,
+        "shardCount": 0,
+        "aoeNova": true,
+        "detectCamo": false,
+        "splashSnowball": false,
+        "moveSpeed": 195,
+        "pickup": 62,
+        "critChance": 0,
+        "specialMult": 1,
+        "maxHp": 546,
+        "lifeSteal": 0,
+        "regen": 0,
+        "spiritAura": 0,
+        "xpMult": 1
+      },
+      "L5_base": {
+        "range": 152,
+        "fireRate": 0.75,
+        "damage": 21,
+        "slowAmount": 0.35,
+        "slowDuration": 2.4,
+        "freezeChance": 0,
+        "freezeDuration": 0,
+        "brittleBonus": 0,
+        "shardCount": 0,
+        "aoeNova": true,
+        "detectCamo": false,
+        "splashSnowball": false,
+        "moveSpeed": 195,
+        "pickup": 62,
+        "critChance": 0,
+        "specialMult": 1,
+        "maxHp": 790,
+        "lifeSteal": 0,
+        "regen": 0,
+        "spiritAura": 0,
+        "xpMult": 1
+      },
+      "L10_base": {
+        "range": 152,
+        "fireRate": 0.75,
+        "damage": 25,
+        "slowAmount": 0.35,
+        "slowDuration": 2.4,
+        "freezeChance": 0,
+        "freezeDuration": 0,
+        "brittleBonus": 0,
+        "shardCount": 0,
+        "aoeNova": true,
+        "detectCamo": false,
+        "splashSnowball": false,
+        "moveSpeed": 195,
+        "pickup": 62,
+        "critChance": 0,
+        "specialMult": 1,
+        "maxHp": 1094,
+        "lifeSteal": 0,
+        "regen": 0,
+        "spiritAura": 0,
+        "xpMult": 1
+      },
+      "L15_base": {
+        "range": 152,
+        "fireRate": 0.75,
+        "damage": 29,
+        "slowAmount": 0.35,
+        "slowDuration": 2.4,
+        "freezeChance": 0,
+        "freezeDuration": 0,
+        "brittleBonus": 0,
+        "shardCount": 0,
+        "aoeNova": true,
+        "detectCamo": false,
+        "splashSnowball": false,
+        "moveSpeed": 195,
+        "pickup": 62,
+        "critChance": 0,
+        "specialMult": 1,
+        "maxHp": 1399,
+        "lifeSteal": 0,
+        "regen": 0,
+        "spiritAura": 0,
+        "xpMult": 1
+      },
+      "L18_base": {
+        "range": 152,
+        "fireRate": 0.75,
+        "damage": 32,
+        "slowAmount": 0.35,
+        "slowDuration": 2.4,
+        "freezeChance": 0,
+        "freezeDuration": 0,
+        "brittleBonus": 0,
+        "shardCount": 0,
+        "aoeNova": true,
+        "detectCamo": false,
+        "splashSnowball": false,
+        "moveSpeed": 195,
+        "pickup": 62,
+        "critChance": 0,
+        "specialMult": 1,
+        "maxHp": 1581,
+        "lifeSteal": 0,
+        "regen": 0,
+        "spiritAura": 0,
+        "xpMult": 1
+      },
+      "L25_base": {
+        "range": 152,
+        "fireRate": 0.75,
+        "damage": 37,
+        "slowAmount": 0.35,
+        "slowDuration": 2.4,
+        "freezeChance": 0,
+        "freezeDuration": 0,
+        "brittleBonus": 0,
+        "shardCount": 0,
+        "aoeNova": true,
+        "detectCamo": false,
+        "splashSnowball": false,
+        "moveSpeed": 195,
+        "pickup": 62,
+        "critChance": 0,
+        "specialMult": 1,
+        "maxHp": 2008,
+        "lifeSteal": 0,
+        "regen": 0,
+        "spiritAura": 0,
+        "xpMult": 1
+      },
+      "L11_A4B2": {
+        "range": 229,
+        "fireRate": 0.75,
+        "damage": 146,
+        "slowAmount": 0.6799999999999999,
+        "slowDuration": 3.5,
+        "freezeChance": 1,
+        "freezeDuration": 1.8,
+        "brittleBonus": 0.45,
+        "shardCount": 3,
+        "aoeNova": true,
+        "detectCamo": true,
+        "splashSnowball": false,
+        "frostDot": 31.32,
+        "moveSpeed": 195,
+        "pickup": 62,
+        "critChance": 0,
+        "specialMult": 1,
+        "maxHp": 1155,
+        "lifeSteal": 0,
+        "regen": 0,
+        "spiritAura": 0,
+        "xpMult": 1
+      },
+      "L11_A2B4": {
+        "range": 221,
+        "fireRate": 1.2374999999999998,
+        "damage": 157,
+        "slowAmount": 0.5,
+        "slowDuration": 3.5,
+        "freezeChance": 0,
+        "freezeDuration": 0,
+        "brittleBonus": 0.25,
+        "shardCount": 7,
+        "aoeNova": true,
+        "detectCamo": true,
+        "splashSnowball": true,
+        "frostDot": 73.08,
+        "moveSpeed": 195,
+        "pickup": 62,
+        "critChance": 0,
+        "specialMult": 1,
+        "maxHp": 1155,
+        "lifeSteal": 0,
+        "regen": 0,
+        "spiritAura": 0,
+        "xpMult": 1
+      }
+    },
+    "boomshroom": {
+      "L1_base": {
+        "range": 205,
+        "fireRate": 0.58,
+        "damage": 61,
+        "splashRadius": 72,
+        "projSpeed": 360,
+        "stunDuration": 0,
+        "shrapnel": 0,
+        "clusterCount": 0,
+        "armorMult": 1.5,
+        "bossMult": 1,
+        "burnDps": 0,
+        "armorPierce": true,
+        "moveSpeed": 195,
+        "pickup": 62,
+        "critChance": 0,
+        "specialMult": 1,
+        "maxHp": 546,
+        "lifeSteal": 0,
+        "regen": 0,
+        "spiritAura": 0,
+        "xpMult": 1
+      },
+      "L5_base": {
+        "range": 205,
+        "fireRate": 0.58,
+        "damage": 72,
+        "splashRadius": 72,
+        "projSpeed": 360,
+        "stunDuration": 0,
+        "shrapnel": 0,
+        "clusterCount": 0,
+        "armorMult": 1.5,
+        "bossMult": 1,
+        "burnDps": 0,
+        "armorPierce": true,
+        "moveSpeed": 195,
+        "pickup": 62,
+        "critChance": 0,
+        "specialMult": 1,
+        "maxHp": 790,
+        "lifeSteal": 0,
+        "regen": 0,
+        "spiritAura": 0,
+        "xpMult": 1
+      },
+      "L10_base": {
+        "range": 205,
+        "fireRate": 0.58,
+        "damage": 86,
+        "splashRadius": 72,
+        "projSpeed": 360,
+        "stunDuration": 0,
+        "shrapnel": 0,
+        "clusterCount": 0,
+        "armorMult": 1.5,
+        "bossMult": 1,
+        "burnDps": 0,
+        "armorPierce": true,
+        "moveSpeed": 195,
+        "pickup": 62,
+        "critChance": 0,
+        "specialMult": 1,
+        "maxHp": 1094,
+        "lifeSteal": 0,
+        "regen": 0,
+        "spiritAura": 0,
+        "xpMult": 1
+      },
+      "L15_base": {
+        "range": 205,
+        "fireRate": 0.58,
+        "damage": 100,
+        "splashRadius": 72,
+        "projSpeed": 360,
+        "stunDuration": 0,
+        "shrapnel": 0,
+        "clusterCount": 0,
+        "armorMult": 1.5,
+        "bossMult": 1,
+        "burnDps": 0,
+        "armorPierce": true,
+        "moveSpeed": 195,
+        "pickup": 62,
+        "critChance": 0,
+        "specialMult": 1,
+        "maxHp": 1399,
+        "lifeSteal": 0,
+        "regen": 0,
+        "spiritAura": 0,
+        "xpMult": 1
+      },
+      "L18_base": {
+        "range": 205,
+        "fireRate": 0.58,
+        "damage": 108,
+        "splashRadius": 72,
+        "projSpeed": 360,
+        "stunDuration": 0,
+        "shrapnel": 0,
+        "clusterCount": 0,
+        "armorMult": 1.5,
+        "bossMult": 1,
+        "burnDps": 0,
+        "armorPierce": true,
+        "moveSpeed": 195,
+        "pickup": 62,
+        "critChance": 0,
+        "specialMult": 1,
+        "maxHp": 1581,
+        "lifeSteal": 0,
+        "regen": 0,
+        "spiritAura": 0,
+        "xpMult": 1
+      },
+      "L25_base": {
+        "range": 205,
+        "fireRate": 0.58,
+        "damage": 127,
+        "splashRadius": 72,
+        "projSpeed": 360,
+        "stunDuration": 0,
+        "shrapnel": 0,
+        "clusterCount": 0,
+        "armorMult": 1.5,
+        "bossMult": 1,
+        "burnDps": 0,
+        "armorPierce": true,
+        "moveSpeed": 195,
+        "pickup": 62,
+        "critChance": 0,
+        "specialMult": 1,
+        "maxHp": 2008,
+        "lifeSteal": 0,
+        "regen": 0,
+        "spiritAura": 0,
+        "xpMult": 1
+      },
+      "L11_A4B2": {
+        "range": 205,
+        "fireRate": 0.58,
+        "damage": 402,
+        "splashRadius": 148.54319999999996,
+        "projSpeed": 360,
+        "stunDuration": 0.6,
+        "shrapnel": 6,
+        "clusterCount": 5,
+        "armorMult": 2.5,
+        "bossMult": 1,
+        "burnDps": 91.35,
+        "armorPierce": true,
+        "moveSpeed": 195,
+        "pickup": 62,
+        "critChance": 0,
+        "specialMult": 1,
+        "maxHp": 1155,
+        "lifeSteal": 0,
+        "regen": 0,
+        "spiritAura": 0,
+        "xpMult": 1
+      },
+      "L11_A2B4": {
+        "range": 205,
+        "fireRate": 1.0179,
+        "damage": 475,
+        "splashRadius": 99.35999999999999,
+        "projSpeed": 594,
+        "stunDuration": 1.1,
+        "shrapnel": 6,
+        "clusterCount": 0,
+        "armorMult": 2.5,
+        "bossMult": 3.2,
+        "burnDps": 0,
+        "armorPierce": true,
+        "moveSpeed": 195,
+        "pickup": 62,
+        "critChance": 0,
+        "specialMult": 1,
+        "maxHp": 1155,
+        "lifeSteal": 0,
+        "regen": 0,
+        "spiritAura": 0,
+        "xpMult": 1
+      }
+    },
+    "voltcactus": {
+      "L1_base": {
+        "range": 173,
+        "fireRate": 0.95,
+        "damage": 32,
+        "chainCount": 3,
+        "chainRange": 115,
+        "overloadSplash": 0,
+        "thunderEvery": 0,
+        "needleRing": 0,
+        "homingNeedles": false,
+        "dropSpikes": 0,
+        "detectCamo": false,
+        "moveSpeed": 195,
+        "pickup": 62,
+        "critChance": 0,
+        "specialMult": 1,
+        "maxHp": 520,
+        "lifeSteal": 0,
+        "regen": 0,
+        "spiritAura": 0,
+        "xpMult": 1
+      },
+      "L5_base": {
+        "range": 173,
+        "fireRate": 0.95,
+        "damage": 38,
+        "chainCount": 3,
+        "chainRange": 115,
+        "overloadSplash": 0,
+        "thunderEvery": 0,
+        "needleRing": 0,
+        "homingNeedles": false,
+        "dropSpikes": 0,
+        "detectCamo": false,
+        "moveSpeed": 195,
+        "pickup": 62,
+        "critChance": 0,
+        "specialMult": 1,
+        "maxHp": 752,
+        "lifeSteal": 0,
+        "regen": 0,
+        "spiritAura": 0,
+        "xpMult": 1
+      },
+      "L10_base": {
+        "range": 173,
+        "fireRate": 0.95,
+        "damage": 46,
+        "chainCount": 3,
+        "chainRange": 115,
+        "overloadSplash": 0,
+        "thunderEvery": 0,
+        "needleRing": 0,
+        "homingNeedles": false,
+        "dropSpikes": 0,
+        "detectCamo": false,
+        "moveSpeed": 195,
+        "pickup": 62,
+        "critChance": 0,
+        "specialMult": 1,
+        "maxHp": 1042,
+        "lifeSteal": 0,
+        "regen": 0,
+        "spiritAura": 0,
+        "xpMult": 1
+      },
+      "L15_base": {
+        "range": 173,
+        "fireRate": 0.95,
+        "damage": 53,
+        "chainCount": 3,
+        "chainRange": 115,
+        "overloadSplash": 0,
+        "thunderEvery": 0,
+        "needleRing": 0,
+        "homingNeedles": false,
+        "dropSpikes": 0,
+        "detectCamo": false,
+        "moveSpeed": 195,
+        "pickup": 62,
+        "critChance": 0,
+        "specialMult": 1,
+        "maxHp": 1332,
+        "lifeSteal": 0,
+        "regen": 0,
+        "spiritAura": 0,
+        "xpMult": 1
+      },
+      "L18_base": {
+        "range": 173,
+        "fireRate": 0.95,
+        "damage": 57,
+        "chainCount": 3,
+        "chainRange": 115,
+        "overloadSplash": 0,
+        "thunderEvery": 0,
+        "needleRing": 0,
+        "homingNeedles": false,
+        "dropSpikes": 0,
+        "detectCamo": false,
+        "moveSpeed": 195,
+        "pickup": 62,
+        "critChance": 0,
+        "specialMult": 1,
+        "maxHp": 1506,
+        "lifeSteal": 0,
+        "regen": 0,
+        "spiritAura": 0,
+        "xpMult": 1
+      },
+      "L25_base": {
+        "range": 173,
+        "fireRate": 0.95,
+        "damage": 67,
+        "chainCount": 3,
+        "chainRange": 115,
+        "overloadSplash": 0,
+        "thunderEvery": 0,
+        "needleRing": 0,
+        "homingNeedles": false,
+        "dropSpikes": 0,
+        "detectCamo": false,
+        "moveSpeed": 195,
+        "pickup": 62,
+        "critChance": 0,
+        "specialMult": 1,
+        "maxHp": 1912,
+        "lifeSteal": 0,
+        "regen": 0,
+        "spiritAura": 0,
+        "xpMult": 1
+      },
+      "L11_A4B2": {
+        "range": 173,
+        "fireRate": 1.3775,
+        "damage": 185,
+        "chainCount": 10,
+        "chainRange": 115,
+        "overloadSplash": 125,
+        "thunderEvery": 2,
+        "needleRing": 8,
+        "homingNeedles": true,
+        "dropSpikes": 0,
+        "detectCamo": true,
+        "moveSpeed": 195,
+        "pickup": 62,
+        "critChance": 0,
+        "specialMult": 1,
+        "maxHp": 1100,
+        "lifeSteal": 0,
+        "regen": 0,
+        "spiritAura": 0,
+        "xpMult": 1
+      },
+      "L11_A2B4": {
+        "range": 173,
+        "fireRate": 1.2825,
+        "damage": 128,
+        "chainCount": 5,
+        "chainRange": 115,
+        "overloadSplash": 57,
+        "thunderEvery": 0,
+        "needleRing": 16,
+        "homingNeedles": true,
+        "dropSpikes": 2,
+        "detectCamo": true,
+        "spikeDamage": 144,
+        "moveSpeed": 195,
+        "pickup": 62,
+        "critChance": 0,
+        "specialMult": 1,
+        "maxHp": 1100,
+        "lifeSteal": 0,
+        "regen": 0,
+        "spiritAura": 0,
+        "xpMult": 1
+      }
+    },
+    "snapdragon": {
+      "L1_base": {
+        "range": 142,
+        "fireRate": 1.05,
+        "damage": 34,
+        "coneAngle": 1.05,
+        "burnDps": 16.2,
+        "burnDuration": 2.5,
+        "ringOfFire": false,
+        "armorPierce": false,
+        "emberRange": 0,
+        "wispCount": 0,
+        "stripCamo": false,
+        "moveSpeed": 195,
+        "pickup": 62,
+        "critChance": 0,
+        "specialMult": 1,
+        "maxHp": 650,
+        "lifeSteal": 0,
+        "regen": 0,
+        "spiritAura": 0,
+        "xpMult": 1
+      },
+      "L5_base": {
+        "range": 142,
+        "fireRate": 1.05,
+        "damage": 40,
+        "coneAngle": 1.05,
+        "burnDps": 19.116,
+        "burnDuration": 2.5,
+        "ringOfFire": false,
+        "armorPierce": false,
+        "emberRange": 0,
+        "wispCount": 0,
+        "stripCamo": false,
+        "moveSpeed": 195,
+        "pickup": 62,
+        "critChance": 0,
+        "specialMult": 1,
+        "maxHp": 940,
+        "lifeSteal": 0,
+        "regen": 0,
+        "spiritAura": 0,
+        "xpMult": 1
+      },
+      "L10_base": {
+        "range": 142,
+        "fireRate": 1.05,
+        "damage": 48,
+        "coneAngle": 1.05,
+        "burnDps": 22.761,
+        "burnDuration": 2.5,
+        "ringOfFire": false,
+        "armorPierce": false,
+        "emberRange": 0,
+        "wispCount": 0,
+        "stripCamo": false,
+        "moveSpeed": 195,
+        "pickup": 62,
+        "critChance": 0,
+        "specialMult": 1,
+        "maxHp": 1303,
+        "lifeSteal": 0,
+        "regen": 0,
+        "spiritAura": 0,
+        "xpMult": 1
+      },
+      "L15_base": {
+        "range": 142,
+        "fireRate": 1.05,
+        "damage": 56,
+        "coneAngle": 1.05,
+        "burnDps": 26.406,
+        "burnDuration": 2.5,
+        "ringOfFire": false,
+        "armorPierce": false,
+        "emberRange": 0,
+        "wispCount": 0,
+        "stripCamo": false,
+        "moveSpeed": 195,
+        "pickup": 62,
+        "critChance": 0,
+        "specialMult": 1,
+        "maxHp": 1665,
+        "lifeSteal": 0,
+        "regen": 0,
+        "spiritAura": 0,
+        "xpMult": 1
+      },
+      "L18_base": {
+        "range": 142,
+        "fireRate": 1.05,
+        "damage": 60,
+        "coneAngle": 1.05,
+        "burnDps": 28.593,
+        "burnDuration": 2.5,
+        "ringOfFire": false,
+        "armorPierce": false,
+        "emberRange": 0,
+        "wispCount": 0,
+        "stripCamo": false,
+        "moveSpeed": 195,
+        "pickup": 62,
+        "critChance": 0,
+        "specialMult": 1,
+        "maxHp": 1883,
+        "lifeSteal": 0,
+        "regen": 0,
+        "spiritAura": 0,
+        "xpMult": 1
+      },
+      "L25_base": {
+        "range": 142,
+        "fireRate": 1.05,
+        "damage": 71,
+        "coneAngle": 1.05,
+        "burnDps": 33.696,
+        "burnDuration": 2.5,
+        "ringOfFire": false,
+        "armorPierce": false,
+        "emberRange": 0,
+        "wispCount": 0,
+        "stripCamo": false,
+        "moveSpeed": 195,
+        "pickup": 62,
+        "critChance": 0,
+        "specialMult": 1,
+        "maxHp": 2390,
+        "lifeSteal": 0,
+        "regen": 0,
+        "spiritAura": 0,
+        "xpMult": 1
+      },
+      "L11_A4B2": {
+        "range": 213,
+        "fireRate": 1.47,
+        "damage": 282,
+        "coneAngle": 1.5,
+        "burnDps": 143.54999999999998,
+        "burnDuration": 4,
+        "ringOfFire": true,
+        "armorPierce": true,
+        "emberRange": 250,
+        "wispCount": 0,
+        "stripCamo": true,
+        "detectCamo": true,
+        "moveSpeed": 195,
+        "pickup": 62,
+        "critChance": 0,
+        "specialMult": 1,
+        "maxHp": 1375,
+        "lifeSteal": 0,
+        "regen": 0,
+        "spiritAura": 0,
+        "xpMult": 1
+      },
+      "L11_A2B4": {
+        "range": 142,
+        "fireRate": 1.5225,
+        "damage": 217,
+        "coneAngle": 1.5,
+        "burnDps": 49.59,
+        "burnDuration": 4,
+        "ringOfFire": false,
+        "armorPierce": true,
+        "emberRange": 300,
+        "wispCount": 4,
+        "stripCamo": true,
+        "detectCamo": true,
+        "moveSpeed": 195,
+        "pickup": 62,
+        "critChance": 0,
+        "specialMult": 1,
+        "maxHp": 1375,
+        "lifeSteal": 0,
+        "regen": 0,
+        "spiritAura": 0,
+        "xpMult": 1
+      }
+    },
+    "bubblelily": {
+      "L1_base": {
+        "range": 179,
+        "fireRate": 1.2,
+        "damage": 34,
+        "projSpeed": 420,
+        "soakDuration": 3,
+        "bubbleSlow": 0.15,
+        "popSplash": 0,
+        "waveEvery": 0,
+        "pushback": 0,
+        "trapChance": 0,
+        "trapDuration": 0,
+        "bounce": 0,
+        "mistAura": 0,
+        "healAura": 0,
+        "springLife": false,
+        "detectCamo": false,
+        "moveSpeed": 195,
+        "pickup": 62,
+        "critChance": 0,
+        "specialMult": 1,
+        "maxHp": 494,
+        "lifeSteal": 0,
+        "regen": 0,
+        "spiritAura": 0,
+        "xpMult": 1
+      },
+      "L5_base": {
+        "range": 179,
+        "fireRate": 1.2,
+        "damage": 40,
+        "projSpeed": 420,
+        "soakDuration": 3,
+        "bubbleSlow": 0.15,
+        "popSplash": 0,
+        "waveEvery": 0,
+        "pushback": 0,
+        "trapChance": 0,
+        "trapDuration": 0,
+        "bounce": 0,
+        "mistAura": 0,
+        "healAura": 0,
+        "springLife": false,
+        "detectCamo": false,
+        "moveSpeed": 195,
+        "pickup": 62,
+        "critChance": 0,
+        "specialMult": 1,
+        "maxHp": 714,
+        "lifeSteal": 0,
+        "regen": 0,
+        "spiritAura": 0,
+        "xpMult": 1
+      },
+      "L10_base": {
+        "range": 179,
+        "fireRate": 1.2,
+        "damage": 48,
+        "projSpeed": 420,
+        "soakDuration": 3,
+        "bubbleSlow": 0.15,
+        "popSplash": 0,
+        "waveEvery": 0,
+        "pushback": 0,
+        "trapChance": 0,
+        "trapDuration": 0,
+        "bounce": 0,
+        "mistAura": 0,
+        "healAura": 0,
+        "springLife": false,
+        "detectCamo": false,
+        "moveSpeed": 195,
+        "pickup": 62,
+        "critChance": 0,
+        "specialMult": 1,
+        "maxHp": 990,
+        "lifeSteal": 0,
+        "regen": 0,
+        "spiritAura": 0,
+        "xpMult": 1
+      },
+      "L15_base": {
+        "range": 179,
+        "fireRate": 1.2,
+        "damage": 56,
+        "projSpeed": 420,
+        "soakDuration": 3,
+        "bubbleSlow": 0.15,
+        "popSplash": 0,
+        "waveEvery": 0,
+        "pushback": 0,
+        "trapChance": 0,
+        "trapDuration": 0,
+        "bounce": 0,
+        "mistAura": 0,
+        "healAura": 0,
+        "springLife": false,
+        "detectCamo": false,
+        "moveSpeed": 195,
+        "pickup": 62,
+        "critChance": 0,
+        "specialMult": 1,
+        "maxHp": 1265,
+        "lifeSteal": 0,
+        "regen": 0,
+        "spiritAura": 0,
+        "xpMult": 1
+      },
+      "L18_base": {
+        "range": 179,
+        "fireRate": 1.2,
+        "damage": 60,
+        "projSpeed": 420,
+        "soakDuration": 3,
+        "bubbleSlow": 0.15,
+        "popSplash": 0,
+        "waveEvery": 0,
+        "pushback": 0,
+        "trapChance": 0,
+        "trapDuration": 0,
+        "bounce": 0,
+        "mistAura": 0,
+        "healAura": 0,
+        "springLife": false,
+        "detectCamo": false,
+        "moveSpeed": 195,
+        "pickup": 62,
+        "critChance": 0,
+        "specialMult": 1,
+        "maxHp": 1431,
+        "lifeSteal": 0,
+        "regen": 0,
+        "spiritAura": 0,
+        "xpMult": 1
+      },
+      "L25_base": {
+        "range": 179,
+        "fireRate": 1.2,
+        "damage": 71,
+        "projSpeed": 420,
+        "soakDuration": 3,
+        "bubbleSlow": 0.15,
+        "popSplash": 0,
+        "waveEvery": 0,
+        "pushback": 0,
+        "trapChance": 0,
+        "trapDuration": 0,
+        "bounce": 0,
+        "mistAura": 0,
+        "healAura": 0,
+        "springLife": false,
+        "detectCamo": false,
+        "moveSpeed": 195,
+        "pickup": 62,
+        "critChance": 0,
+        "specialMult": 1,
+        "maxHp": 1816,
+        "lifeSteal": 0,
+        "regen": 0,
+        "spiritAura": 0,
+        "xpMult": 1
+      },
+      "L11_A4B2": {
+        "range": 214,
+        "fireRate": 1.56,
+        "damage": 230,
+        "projSpeed": 420,
+        "soakDuration": 3,
+        "bubbleSlow": 0.15,
+        "popSplash": 95,
+        "waveEvery": 2,
+        "pushback": 90,
+        "trapChance": 0.25,
+        "trapDuration": 2,
+        "bounce": 0,
+        "mistAura": 0.15,
+        "healAura": 0.012,
+        "springLife": false,
+        "detectCamo": true,
+        "moveSpeed": 195,
+        "pickup": 62,
+        "critChance": 0,
+        "specialMult": 1,
+        "maxHp": 1045,
+        "lifeSteal": 0,
+        "regen": 0,
+        "spiritAura": 0,
+        "xpMult": 1
+      },
+      "L11_A2B4": {
+        "range": 214,
+        "fireRate": 1.2,
+        "damage": 219,
+        "projSpeed": 420,
+        "soakDuration": 3,
+        "bubbleSlow": 0.15,
+        "popSplash": 60,
+        "waveEvery": 4,
+        "pushback": 70,
+        "trapChance": 0,
+        "trapDuration": 0,
+        "bounce": 3,
+        "mistAura": 0.3,
+        "healAura": 0.03,
+        "springLife": true,
+        "detectCamo": true,
+        "moveSpeed": 195,
+        "pickup": 62,
+        "critChance": 0,
+        "specialMult": 1,
+        "maxHp": 1045,
+        "lifeSteal": 0,
+        "regen": 0,
+        "spiritAura": 0,
+        "xpMult": 1
+      }
+    }
+  },
+  "rules": {
+    "pathLock": "Once one path reaches Tier 3, the other path is capped at Tier 2.",
+    "cardOffer": "Each level offers 3 cards: unlocked path cards first, then random stat cards that are not maxed.",
+    "statFormula": "See computeHeroStats in shared/constants.js; computedStats has sample outputs to test against."
+  }
+}

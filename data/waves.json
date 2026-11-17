@@ -1,0 +1,8925 @@
+{
+  "waves": [
+    {
+      "wave": 1,
+      "spec": [
+        {
+          "type": "sprout",
+          "count": 10,
+          "interval": 0.95,
+          "delay": 0
+        }
+      ],
+      "plan1HeroNormal": {
+        "groups": [
+          {
+            "type": "sprout",
+            "count": 10,
+            "delay": 0,
+            "interval": 0.95,
+            "boss": false,
+            "resist": null
+          }
+        ],
+        "hpBoost": 1
+      },
+      "resists": [
+        null
+      ]
+    },
+    {
+      "wave": 2,
+      "spec": [
+        {
+          "type": "sprout",
+          "count": 14,
+          "interval": 0.8,
+          "delay": 0
+        },
+        {
+          "type": "wasp",
+          "count": 4,
+          "interval": 0.9,
+          "delay": 5
+        }
+      ],
+      "plan1HeroNormal": {
+        "groups": [
+          {
+            "type": "sprout",
+            "count": 14,
+            "delay": 0,
+            "interval": 0.8,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "wasp",
+            "count": 4,
+            "delay": 5,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          }
+        ],
+        "hpBoost": 1
+      },
+      "resists": [
+        null,
+        null
+      ]
+    },
+    {
+      "wave": 3,
+      "spec": [
+        {
+          "type": "sprout",
+          "count": 14,
+          "interval": 0.7,
+          "delay": 0
+        },
+        {
+          "type": "beetle",
+          "count": 5,
+          "interval": 1.2,
+          "delay": 3
+        }
+      ],
+      "plan1HeroNormal": {
+        "groups": [
+          {
+            "type": "sprout",
+            "count": 14,
+            "delay": 0,
+            "interval": 0.7,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "beetle",
+            "count": 5,
+            "delay": 3,
+            "interval": 1.2,
+            "boss": false,
+            "resist": null
+          }
+        ],
+        "hpBoost": 1
+      },
+      "resists": [
+        null,
+        null
+      ]
+    },
+    {
+      "wave": 4,
+      "spec": [
+        {
+          "type": "wasp",
+          "count": 12,
+          "interval": 0.65,
+          "delay": 0
+        },
+        {
+          "type": "beetle",
+          "count": 6,
+          "interval": 1,
+          "delay": 4
+        }
+      ],
+      "plan1HeroNormal": {
+        "groups": [
+          {
+            "type": "wasp",
+            "count": 12,
+            "delay": 0,
+            "interval": 0.65,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "beetle",
+            "count": 6,
+            "delay": 4,
+            "interval": 1,
+            "boss": false,
+            "resist": null
+          }
+        ],
+        "hpBoost": 1
+      },
+      "resists": [
+        null,
+        null
+      ]
+    },
+    {
+      "wave": 5,
+      "spec": [
+        {
+          "type": "sprout",
+          "count": 16,
+          "interval": 0.5,
+          "delay": 0
+        },
+        {
+          "type": "camopuff",
+          "count": 8,
+          "interval": 0.9,
+          "delay": 3
+        },
+        {
+          "type": "beetle",
+          "count": 6,
+          "interval": 0.9,
+          "delay": 6
+        }
+      ],
+      "plan1HeroNormal": {
+        "groups": [
+          {
+            "type": "sprout",
+            "count": 16,
+            "delay": 0,
+            "interval": 0.5,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "camopuff",
+            "count": 8,
+            "delay": 3,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "beetle",
+            "count": 6,
+            "delay": 6,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          }
+        ],
+        "hpBoost": 1
+      },
+      "resists": [
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "wave": 6,
+      "spec": [
+        {
+          "type": "beetle",
+          "count": 12,
+          "interval": 0.85,
+          "delay": 0
+        },
+        {
+          "type": "nutknight",
+          "count": 4,
+          "interval": 1.6,
+          "delay": 4
+        }
+      ],
+      "plan1HeroNormal": {
+        "groups": [
+          {
+            "type": "beetle",
+            "count": 12,
+            "delay": 0,
+            "interval": 0.85,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "nutknight",
+            "count": 4,
+            "delay": 4,
+            "interval": 1.6,
+            "boss": false,
+            "resist": null
+          }
+        ],
+        "hpBoost": 1
+      },
+      "resists": [
+        null,
+        null
+      ]
+    },
+    {
+      "wave": 7,
+      "spec": [
+        {
+          "type": "slug",
+          "count": 5,
+          "interval": 1.4,
+          "delay": 6
+        },
+        {
+          "type": "wasp",
+          "count": 18,
+          "interval": 0.45,
+          "delay": 0
+        },
+        {
+          "type": "camopuff",
+          "count": 12,
+          "interval": 0.65,
+          "delay": 3
+        }
+      ],
+      "plan1HeroNormal": {
+        "groups": [
+          {
+            "type": "slug",
+            "count": 5,
+            "delay": 6,
+            "interval": 1.4,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "wasp",
+            "count": 18,
+            "delay": 0,
+            "interval": 0.44999999999999996,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "camopuff",
+            "count": 12,
+            "delay": 3,
+            "interval": 0.65,
+            "boss": false,
+            "resist": null
+          }
+        ],
+        "hpBoost": 1
+      },
+      "resists": [
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "wave": 8,
+      "spec": [
+        {
+          "type": "puffcap",
+          "count": 5,
+          "interval": 1.3,
+          "delay": 3
+        },
+        {
+          "type": "nutknight",
+          "count": 8,
+          "interval": 1.2,
+          "delay": 0
+        },
+        {
+          "type": "ironpod",
+          "count": 4,
+          "interval": 1.8,
+          "delay": 5
+        }
+      ],
+      "plan1HeroNormal": {
+        "groups": [
+          {
+            "type": "puffcap",
+            "count": 5,
+            "delay": 3,
+            "interval": 1.3,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "nutknight",
+            "count": 8,
+            "delay": 0,
+            "interval": 1.2,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "ironpod",
+            "count": 4,
+            "delay": 5,
+            "interval": 1.8,
+            "boss": false,
+            "resist": null
+          }
+        ],
+        "hpBoost": 1
+      },
+      "resists": [
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "wave": 9,
+      "spec": [
+        {
+          "type": "mothmedic",
+          "count": 3,
+          "interval": 2.5,
+          "delay": 4
+        },
+        {
+          "type": "beetle",
+          "count": 16,
+          "interval": 0.55,
+          "delay": 0
+        },
+        {
+          "type": "camopuff",
+          "count": 14,
+          "interval": 0.55,
+          "delay": 2
+        },
+        {
+          "type": "ironpod",
+          "count": 6,
+          "interval": 1.4,
+          "delay": 6
+        }
+      ],
+      "plan1HeroNormal": {
+        "groups": [
+          {
+            "type": "mothmedic",
+            "count": 3,
+            "delay": 4,
+            "interval": 2.5,
+            "boss": false,
+            "resist": "blast"
+          },
+          {
+            "type": "beetle",
+            "count": 16,
+            "delay": 0,
+            "interval": 0.55,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "camopuff",
+            "count": 14,
+            "delay": 2,
+            "interval": 0.55,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "ironpod",
+            "count": 6,
+            "delay": 6,
+            "interval": 1.3999999999999997,
+            "boss": false,
+            "resist": "leaf"
+          }
+        ],
+        "hpBoost": 1
+      },
+      "resists": [
+        "blast",
+        null,
+        null,
+        "leaf"
+      ]
+    },
+    {
+      "wave": 10,
+      "spec": [
+        {
+          "type": "slug",
+          "count": 6,
+          "interval": 1.2,
+          "delay": 2
+        },
+        {
+          "type": "beetle",
+          "count": 12,
+          "interval": 0.6,
+          "delay": 0
+        },
+        {
+          "type": "zeppelin",
+          "count": 1,
+          "interval": 1,
+          "delay": 5
+        }
+      ],
+      "plan1HeroNormal": {
+        "groups": [
+          {
+            "type": "slug",
+            "count": 6,
+            "delay": 2,
+            "interval": 1.2,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "beetle",
+            "count": 12,
+            "delay": 0,
+            "interval": 0.6,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "zeppelin",
+            "count": 1,
+            "delay": 5,
+            "interval": 1,
+            "boss": true,
+            "resist": null
+          }
+        ],
+        "hpBoost": 1
+      },
+      "resists": [
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "wave": 11,
+      "spec": [
+        {
+          "type": "wasp",
+          "count": 16,
+          "interval": 0.35,
+          "delay": 0
+        },
+        {
+          "type": "beetle",
+          "count": 14,
+          "interval": 0.45,
+          "delay": 1.5
+        },
+        {
+          "type": "camopuff",
+          "count": 12,
+          "interval": 0.45,
+          "delay": 2.5
+        },
+        {
+          "type": "slug",
+          "count": 5,
+          "interval": 0.9,
+          "delay": 3
+        },
+        {
+          "type": "mole",
+          "count": 4,
+          "interval": 1,
+          "delay": 2
+        }
+      ],
+      "plan1HeroNormal": {
+        "groups": [
+          {
+            "type": "wasp",
+            "count": 16,
+            "delay": 0,
+            "interval": 0.35,
+            "boss": false,
+            "resist": "ice"
+          },
+          {
+            "type": "beetle",
+            "count": 14,
+            "delay": 1.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "camopuff",
+            "count": 12,
+            "delay": 2.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": "shock"
+          },
+          {
+            "type": "slug",
+            "count": 5,
+            "delay": 3,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "mole",
+            "count": 4,
+            "delay": 2,
+            "interval": 1,
+            "boss": false,
+            "resist": null
+          }
+        ],
+        "hpBoost": 1
+      },
+      "resists": [
+        "ice",
+        null,
+        "shock",
+        null,
+        null
+      ]
+    },
+    {
+      "wave": 12,
+      "spec": [
+        {
+          "type": "wasp",
+          "count": 18,
+          "interval": 0.35,
+          "delay": 0
+        },
+        {
+          "type": "beetle",
+          "count": 16,
+          "interval": 0.45,
+          "delay": 1.5
+        },
+        {
+          "type": "camopuff",
+          "count": 14,
+          "interval": 0.45,
+          "delay": 2.5
+        },
+        {
+          "type": "nutknight",
+          "count": 8,
+          "interval": 0.8,
+          "delay": 3.5
+        },
+        {
+          "type": "slug",
+          "count": 6,
+          "interval": 0.9,
+          "delay": 3
+        },
+        {
+          "type": "puffcap",
+          "count": 5,
+          "interval": 0.9,
+          "delay": 4
+        },
+        {
+          "type": "mole",
+          "count": 5,
+          "interval": 1,
+          "delay": 2
+        },
+        {
+          "type": "snoozemoth",
+          "count": 2,
+          "interval": 3,
+          "delay": 5
+        }
+      ],
+      "plan1HeroNormal": {
+        "groups": [
+          {
+            "type": "wasp",
+            "count": 18,
+            "delay": 0,
+            "interval": 0.35,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "beetle",
+            "count": 16,
+            "delay": 1.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "camopuff",
+            "count": 14,
+            "delay": 2.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": "blast"
+          },
+          {
+            "type": "nutknight",
+            "count": 8,
+            "delay": 3.5,
+            "interval": 0.8,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "slug",
+            "count": 6,
+            "delay": 3,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "puffcap",
+            "count": 5,
+            "delay": 4,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "mole",
+            "count": 5,
+            "delay": 2,
+            "interval": 1,
+            "boss": false,
+            "resist": "shock"
+          },
+          {
+            "type": "snoozemoth",
+            "count": 2,
+            "delay": 5,
+            "interval": 3,
+            "boss": false,
+            "resist": null
+          }
+        ],
+        "hpBoost": 1
+      },
+      "resists": [
+        null,
+        null,
+        "blast",
+        null,
+        null,
+        null,
+        "shock",
+        null
+      ]
+    },
+    {
+      "wave": 13,
+      "spec": [
+        {
+          "type": "wasp",
+          "count": 20,
+          "interval": 0.35,
+          "delay": 0
+        },
+        {
+          "type": "beetle",
+          "count": 18,
+          "interval": 0.45,
+          "delay": 1.5
+        },
+        {
+          "type": "camopuff",
+          "count": 16,
+          "interval": 0.45,
+          "delay": 2.5
+        },
+        {
+          "type": "nutknight",
+          "count": 9,
+          "interval": 0.8,
+          "delay": 3.5
+        },
+        {
+          "type": "ironpod",
+          "count": 8,
+          "interval": 0.9,
+          "delay": 5
+        },
+        {
+          "type": "slug",
+          "count": 7,
+          "interval": 0.9,
+          "delay": 3
+        },
+        {
+          "type": "puffcap",
+          "count": 6,
+          "interval": 0.9,
+          "delay": 4
+        },
+        {
+          "type": "mothmedic",
+          "count": 3,
+          "interval": 2.2,
+          "delay": 6
+        },
+        {
+          "type": "mole",
+          "count": 6,
+          "interval": 1,
+          "delay": 2
+        },
+        {
+          "type": "snoozemoth",
+          "count": 2,
+          "interval": 3,
+          "delay": 5
+        }
+      ],
+      "plan1HeroNormal": {
+        "groups": [
+          {
+            "type": "wasp",
+            "count": 20,
+            "delay": 0,
+            "interval": 0.35,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "beetle",
+            "count": 18,
+            "delay": 1.5,
+            "interval": 0.44999999999999996,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "camopuff",
+            "count": 16,
+            "delay": 2.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "nutknight",
+            "count": 9,
+            "delay": 3.5,
+            "interval": 0.8,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "ironpod",
+            "count": 8,
+            "delay": 5,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "slug",
+            "count": 7,
+            "delay": 3,
+            "interval": 0.9,
+            "boss": false,
+            "resist": "leaf"
+          },
+          {
+            "type": "puffcap",
+            "count": 6,
+            "delay": 4,
+            "interval": 0.9,
+            "boss": false,
+            "resist": "blast"
+          },
+          {
+            "type": "mothmedic",
+            "count": 3,
+            "delay": 6,
+            "interval": 2.2,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "mole",
+            "count": 6,
+            "delay": 2,
+            "interval": 1,
+            "boss": false,
+            "resist": "leaf"
+          },
+          {
+            "type": "snoozemoth",
+            "count": 2,
+            "delay": 5,
+            "interval": 3,
+            "boss": false,
+            "resist": "shock"
+          }
+        ],
+        "hpBoost": 1
+      },
+      "resists": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        "leaf",
+        "blast",
+        null,
+        "leaf",
+        "shock"
+      ]
+    },
+    {
+      "wave": 14,
+      "spec": [
+        {
+          "type": "wasp",
+          "count": 22,
+          "interval": 0.35,
+          "delay": 0
+        },
+        {
+          "type": "beetle",
+          "count": 20,
+          "interval": 0.45,
+          "delay": 1.5
+        },
+        {
+          "type": "camopuff",
+          "count": 18,
+          "interval": 0.45,
+          "delay": 2.5
+        },
+        {
+          "type": "nutknight",
+          "count": 10,
+          "interval": 0.8,
+          "delay": 3.5
+        },
+        {
+          "type": "ironpod",
+          "count": 9,
+          "interval": 0.9,
+          "delay": 5
+        },
+        {
+          "type": "slug",
+          "count": 8,
+          "interval": 0.9,
+          "delay": 3
+        },
+        {
+          "type": "puffcap",
+          "count": 7,
+          "interval": 0.9,
+          "delay": 4
+        },
+        {
+          "type": "mothmedic",
+          "count": 3,
+          "interval": 2.2,
+          "delay": 6
+        },
+        {
+          "type": "mole",
+          "count": 7,
+          "interval": 1,
+          "delay": 2
+        },
+        {
+          "type": "snoozemoth",
+          "count": 2,
+          "interval": 3,
+          "delay": 5
+        }
+      ],
+      "plan1HeroNormal": {
+        "groups": [
+          {
+            "type": "wasp",
+            "count": 22,
+            "delay": 0,
+            "interval": 0.35,
+            "boss": false,
+            "resist": "blast"
+          },
+          {
+            "type": "beetle",
+            "count": 20,
+            "delay": 1.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "camopuff",
+            "count": 18,
+            "delay": 2.5,
+            "interval": 0.44999999999999996,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "nutknight",
+            "count": 10,
+            "delay": 3.5,
+            "interval": 0.8,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "ironpod",
+            "count": 9,
+            "delay": 5,
+            "interval": 0.8999999999999999,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "slug",
+            "count": 8,
+            "delay": 3,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "puffcap",
+            "count": 7,
+            "delay": 4,
+            "interval": 0.9,
+            "boss": false,
+            "resist": "leaf"
+          },
+          {
+            "type": "mothmedic",
+            "count": 3,
+            "delay": 6,
+            "interval": 2.2,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "mole",
+            "count": 7,
+            "delay": 2,
+            "interval": 1,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "snoozemoth",
+            "count": 2,
+            "delay": 5,
+            "interval": 3,
+            "boss": false,
+            "resist": null
+          }
+        ],
+        "hpBoost": 1
+      },
+      "resists": [
+        "blast",
+        null,
+        null,
+        null,
+        null,
+        null,
+        "leaf",
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "wave": 15,
+      "spec": [
+        {
+          "type": "wasp",
+          "count": 24,
+          "interval": 0.35,
+          "delay": 0
+        },
+        {
+          "type": "beetle",
+          "count": 22,
+          "interval": 0.45,
+          "delay": 1.5
+        },
+        {
+          "type": "camopuff",
+          "count": 20,
+          "interval": 0.45,
+          "delay": 2.5
+        },
+        {
+          "type": "nutknight",
+          "count": 11,
+          "interval": 0.8,
+          "delay": 3.5
+        },
+        {
+          "type": "ironpod",
+          "count": 10,
+          "interval": 0.9,
+          "delay": 5
+        },
+        {
+          "type": "slug",
+          "count": 9,
+          "interval": 0.9,
+          "delay": 3
+        },
+        {
+          "type": "puffcap",
+          "count": 8,
+          "interval": 0.9,
+          "delay": 4
+        },
+        {
+          "type": "mothmedic",
+          "count": 4,
+          "interval": 2.2,
+          "delay": 6
+        },
+        {
+          "type": "mole",
+          "count": 8,
+          "interval": 1,
+          "delay": 2
+        },
+        {
+          "type": "snoozemoth",
+          "count": 3,
+          "interval": 3,
+          "delay": 5
+        },
+        {
+          "type": "zeppelin",
+          "count": 2,
+          "interval": 4,
+          "delay": 6
+        }
+      ],
+      "plan1HeroNormal": {
+        "groups": [
+          {
+            "type": "wasp",
+            "count": 24,
+            "delay": 0,
+            "interval": 0.3499999999999999,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "beetle",
+            "count": 22,
+            "delay": 1.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "camopuff",
+            "count": 20,
+            "delay": 2.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": "ice"
+          },
+          {
+            "type": "nutknight",
+            "count": 11,
+            "delay": 3.5,
+            "interval": 0.8,
+            "boss": false,
+            "resist": "leaf"
+          },
+          {
+            "type": "ironpod",
+            "count": 10,
+            "delay": 5,
+            "interval": 0.9,
+            "boss": false,
+            "resist": "blast"
+          },
+          {
+            "type": "slug",
+            "count": 9,
+            "delay": 3,
+            "interval": 0.8999999999999999,
+            "boss": false,
+            "resist": "shock"
+          },
+          {
+            "type": "puffcap",
+            "count": 8,
+            "delay": 4,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "mothmedic",
+            "count": 4,
+            "delay": 6,
+            "interval": 2.2,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "mole",
+            "count": 8,
+            "delay": 2,
+            "interval": 1,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "snoozemoth",
+            "count": 3,
+            "delay": 5,
+            "interval": 3,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "zeppelin",
+            "count": 2,
+            "delay": 6,
+            "interval": 4,
+            "boss": true,
+            "resist": null
+          }
+        ],
+        "hpBoost": 1
+      },
+      "resists": [
+        null,
+        null,
+        "ice",
+        "leaf",
+        "blast",
+        "shock",
+        null,
+        null,
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "wave": 16,
+      "spec": [
+        {
+          "type": "wasp",
+          "count": 26,
+          "interval": 0.35,
+          "delay": 0
+        },
+        {
+          "type": "beetle",
+          "count": 24,
+          "interval": 0.45,
+          "delay": 1.5
+        },
+        {
+          "type": "camopuff",
+          "count": 22,
+          "interval": 0.45,
+          "delay": 2.5
+        },
+        {
+          "type": "nutknight",
+          "count": 12,
+          "interval": 0.8,
+          "delay": 3.5
+        },
+        {
+          "type": "ironpod",
+          "count": 11,
+          "interval": 0.9,
+          "delay": 5
+        },
+        {
+          "type": "slug",
+          "count": 10,
+          "interval": 0.9,
+          "delay": 3
+        },
+        {
+          "type": "puffcap",
+          "count": 9,
+          "interval": 0.9,
+          "delay": 4
+        },
+        {
+          "type": "mothmedic",
+          "count": 4,
+          "interval": 2.2,
+          "delay": 6
+        },
+        {
+          "type": "mole",
+          "count": 9,
+          "interval": 1,
+          "delay": 2
+        },
+        {
+          "type": "snoozemoth",
+          "count": 3,
+          "interval": 3,
+          "delay": 5
+        }
+      ],
+      "plan1HeroNormal": {
+        "groups": [
+          {
+            "type": "wasp",
+            "count": 26,
+            "delay": 0,
+            "interval": 0.35,
+            "boss": false,
+            "resist": "ice"
+          },
+          {
+            "type": "beetle",
+            "count": 24,
+            "delay": 1.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "camopuff",
+            "count": 22,
+            "delay": 2.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "nutknight",
+            "count": 12,
+            "delay": 3.5,
+            "interval": 0.8000000000000002,
+            "boss": false,
+            "resist": "blast"
+          },
+          {
+            "type": "ironpod",
+            "count": 11,
+            "delay": 5,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "slug",
+            "count": 10,
+            "delay": 3,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "puffcap",
+            "count": 9,
+            "delay": 4,
+            "interval": 0.8999999999999999,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "mothmedic",
+            "count": 4,
+            "delay": 6,
+            "interval": 2.2,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "mole",
+            "count": 9,
+            "delay": 2,
+            "interval": 1,
+            "boss": false,
+            "resist": "shock"
+          },
+          {
+            "type": "snoozemoth",
+            "count": 3,
+            "delay": 5,
+            "interval": 3,
+            "boss": false,
+            "resist": null
+          }
+        ],
+        "hpBoost": 1
+      },
+      "resists": [
+        "ice",
+        null,
+        null,
+        "blast",
+        null,
+        null,
+        null,
+        null,
+        "shock",
+        null
+      ]
+    },
+    {
+      "wave": 17,
+      "spec": [
+        {
+          "type": "wasp",
+          "count": 28,
+          "interval": 0.35,
+          "delay": 0
+        },
+        {
+          "type": "beetle",
+          "count": 26,
+          "interval": 0.45,
+          "delay": 1.5
+        },
+        {
+          "type": "camopuff",
+          "count": 24,
+          "interval": 0.45,
+          "delay": 2.5
+        },
+        {
+          "type": "nutknight",
+          "count": 13,
+          "interval": 0.8,
+          "delay": 3.5
+        },
+        {
+          "type": "ironpod",
+          "count": 12,
+          "interval": 0.9,
+          "delay": 5
+        },
+        {
+          "type": "slug",
+          "count": 11,
+          "interval": 0.9,
+          "delay": 3
+        },
+        {
+          "type": "puffcap",
+          "count": 10,
+          "interval": 0.9,
+          "delay": 4
+        },
+        {
+          "type": "mothmedic",
+          "count": 5,
+          "interval": 2.2,
+          "delay": 6
+        },
+        {
+          "type": "mole",
+          "count": 10,
+          "interval": 1,
+          "delay": 2
+        },
+        {
+          "type": "snoozemoth",
+          "count": 3,
+          "interval": 3,
+          "delay": 5
+        }
+      ],
+      "plan1HeroNormal": {
+        "groups": [
+          {
+            "type": "wasp",
+            "count": 28,
+            "delay": 0,
+            "interval": 0.35,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "beetle",
+            "count": 26,
+            "delay": 1.5,
+            "interval": 0.45000000000000007,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "camopuff",
+            "count": 24,
+            "delay": 2.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": "blast"
+          },
+          {
+            "type": "nutknight",
+            "count": 13,
+            "delay": 3.5,
+            "interval": 0.8,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "ironpod",
+            "count": 12,
+            "delay": 5,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "slug",
+            "count": 11,
+            "delay": 3,
+            "interval": 0.9,
+            "boss": false,
+            "resist": "leaf"
+          },
+          {
+            "type": "puffcap",
+            "count": 10,
+            "delay": 4,
+            "interval": 0.9,
+            "boss": false,
+            "resist": "blast"
+          },
+          {
+            "type": "mothmedic",
+            "count": 5,
+            "delay": 6,
+            "interval": 2.2,
+            "boss": false,
+            "resist": "blast"
+          },
+          {
+            "type": "mole",
+            "count": 10,
+            "delay": 2,
+            "interval": 1,
+            "boss": false,
+            "resist": "fire"
+          },
+          {
+            "type": "snoozemoth",
+            "count": 3,
+            "delay": 5,
+            "interval": 3,
+            "boss": false,
+            "resist": "fire"
+          }
+        ],
+        "hpBoost": 1
+      },
+      "resists": [
+        null,
+        null,
+        "blast",
+        null,
+        null,
+        "leaf",
+        "blast",
+        "blast",
+        "fire",
+        "fire"
+      ]
+    },
+    {
+      "wave": 18,
+      "spec": [
+        {
+          "type": "wasp",
+          "count": 30,
+          "interval": 0.35,
+          "delay": 0
+        },
+        {
+          "type": "beetle",
+          "count": 28,
+          "interval": 0.45,
+          "delay": 1.5
+        },
+        {
+          "type": "camopuff",
+          "count": 26,
+          "interval": 0.45,
+          "delay": 2.5
+        },
+        {
+          "type": "nutknight",
+          "count": 14,
+          "interval": 0.8,
+          "delay": 3.5
+        },
+        {
+          "type": "ironpod",
+          "count": 13,
+          "interval": 0.9,
+          "delay": 5
+        },
+        {
+          "type": "slug",
+          "count": 12,
+          "interval": 0.9,
+          "delay": 3
+        },
+        {
+          "type": "puffcap",
+          "count": 11,
+          "interval": 0.9,
+          "delay": 4
+        },
+        {
+          "type": "mothmedic",
+          "count": 5,
+          "interval": 2.2,
+          "delay": 6
+        },
+        {
+          "type": "mole",
+          "count": 11,
+          "interval": 1,
+          "delay": 2
+        },
+        {
+          "type": "snoozemoth",
+          "count": 4,
+          "interval": 3,
+          "delay": 5
+        }
+      ],
+      "plan1HeroNormal": {
+        "groups": [
+          {
+            "type": "wasp",
+            "count": 30,
+            "delay": 0,
+            "interval": 0.35,
+            "boss": false,
+            "resist": "leaf"
+          },
+          {
+            "type": "beetle",
+            "count": 28,
+            "delay": 1.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "camopuff",
+            "count": 26,
+            "delay": 2.5,
+            "interval": 0.45000000000000007,
+            "boss": false,
+            "resist": "shock"
+          },
+          {
+            "type": "nutknight",
+            "count": 14,
+            "delay": 3.5,
+            "interval": 0.8,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "ironpod",
+            "count": 13,
+            "delay": 5,
+            "interval": 0.9000000000000001,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "slug",
+            "count": 12,
+            "delay": 3,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "puffcap",
+            "count": 11,
+            "delay": 4,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "mothmedic",
+            "count": 5,
+            "delay": 6,
+            "interval": 2.2,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "mole",
+            "count": 11,
+            "delay": 2,
+            "interval": 1,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "snoozemoth",
+            "count": 4,
+            "delay": 5,
+            "interval": 3,
+            "boss": false,
+            "resist": null
+          }
+        ],
+        "hpBoost": 1
+      },
+      "resists": [
+        "leaf",
+        null,
+        "shock",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "wave": 19,
+      "spec": [
+        {
+          "type": "wasp",
+          "count": 32,
+          "interval": 0.35,
+          "delay": 0
+        },
+        {
+          "type": "beetle",
+          "count": 30,
+          "interval": 0.45,
+          "delay": 1.5
+        },
+        {
+          "type": "camopuff",
+          "count": 28,
+          "interval": 0.45,
+          "delay": 2.5
+        },
+        {
+          "type": "nutknight",
+          "count": 15,
+          "interval": 0.8,
+          "delay": 3.5
+        },
+        {
+          "type": "ironpod",
+          "count": 14,
+          "interval": 0.9,
+          "delay": 5
+        },
+        {
+          "type": "slug",
+          "count": 13,
+          "interval": 0.9,
+          "delay": 3
+        },
+        {
+          "type": "puffcap",
+          "count": 12,
+          "interval": 0.9,
+          "delay": 4
+        },
+        {
+          "type": "mothmedic",
+          "count": 6,
+          "interval": 2.2,
+          "delay": 6
+        },
+        {
+          "type": "mole",
+          "count": 12,
+          "interval": 1,
+          "delay": 2
+        },
+        {
+          "type": "snoozemoth",
+          "count": 4,
+          "interval": 3,
+          "delay": 5
+        }
+      ],
+      "plan1HeroNormal": {
+        "groups": [
+          {
+            "type": "wasp",
+            "count": 32,
+            "delay": 0,
+            "interval": 0.35,
+            "boss": false,
+            "resist": "blast"
+          },
+          {
+            "type": "beetle",
+            "count": 30,
+            "delay": 1.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "camopuff",
+            "count": 28,
+            "delay": 2.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": "ice"
+          },
+          {
+            "type": "nutknight",
+            "count": 15,
+            "delay": 3.5,
+            "interval": 0.8,
+            "boss": false,
+            "resist": "leaf"
+          },
+          {
+            "type": "ironpod",
+            "count": 14,
+            "delay": 5,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "slug",
+            "count": 13,
+            "delay": 3,
+            "interval": 0.9000000000000001,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "puffcap",
+            "count": 12,
+            "delay": 4,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "mothmedic",
+            "count": 6,
+            "delay": 6,
+            "interval": 2.2,
+            "boss": false,
+            "resist": "blast"
+          },
+          {
+            "type": "mole",
+            "count": 12,
+            "delay": 2,
+            "interval": 1,
+            "boss": false,
+            "resist": "leaf"
+          },
+          {
+            "type": "snoozemoth",
+            "count": 4,
+            "delay": 5,
+            "interval": 3,
+            "boss": false,
+            "resist": "leaf"
+          }
+        ],
+        "hpBoost": 1
+      },
+      "resists": [
+        "blast",
+        null,
+        "ice",
+        "leaf",
+        null,
+        null,
+        null,
+        "blast",
+        "leaf",
+        "leaf"
+      ]
+    },
+    {
+      "wave": 20,
+      "spec": [
+        {
+          "type": "wasp",
+          "count": 34,
+          "interval": 0.35,
+          "delay": 0
+        },
+        {
+          "type": "beetle",
+          "count": 32,
+          "interval": 0.45,
+          "delay": 1.5
+        },
+        {
+          "type": "camopuff",
+          "count": 28,
+          "interval": 0.45,
+          "delay": 2.5
+        },
+        {
+          "type": "nutknight",
+          "count": 16,
+          "interval": 0.8,
+          "delay": 3.5
+        },
+        {
+          "type": "ironpod",
+          "count": 15,
+          "interval": 0.9,
+          "delay": 5
+        },
+        {
+          "type": "slug",
+          "count": 14,
+          "interval": 0.9,
+          "delay": 3
+        },
+        {
+          "type": "puffcap",
+          "count": 13,
+          "interval": 0.9,
+          "delay": 4
+        },
+        {
+          "type": "mothmedic",
+          "count": 6,
+          "interval": 2.2,
+          "delay": 6
+        },
+        {
+          "type": "mole",
+          "count": 13,
+          "interval": 1,
+          "delay": 2
+        },
+        {
+          "type": "snoozemoth",
+          "count": 4,
+          "interval": 3,
+          "delay": 5
+        },
+        {
+          "type": "zeppelin",
+          "count": 2,
+          "interval": 4.5,
+          "delay": 4
+        },
+        {
+          "type": "dreadblimp",
+          "count": 1,
+          "interval": 1,
+          "delay": 10
+        }
+      ],
+      "plan1HeroNormal": {
+        "groups": [
+          {
+            "type": "wasp",
+            "count": 34,
+            "delay": 0,
+            "interval": 0.35,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "beetle",
+            "count": 32,
+            "delay": 1.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "camopuff",
+            "count": 28,
+            "delay": 2.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "nutknight",
+            "count": 16,
+            "delay": 3.5,
+            "interval": 0.8,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "ironpod",
+            "count": 15,
+            "delay": 5,
+            "interval": 0.9,
+            "boss": false,
+            "resist": "ice"
+          },
+          {
+            "type": "slug",
+            "count": 14,
+            "delay": 3,
+            "interval": 0.9,
+            "boss": false,
+            "resist": "ice"
+          },
+          {
+            "type": "puffcap",
+            "count": 13,
+            "delay": 4,
+            "interval": 0.9000000000000001,
+            "boss": false,
+            "resist": "blast"
+          },
+          {
+            "type": "mothmedic",
+            "count": 6,
+            "delay": 6,
+            "interval": 2.2,
+            "boss": false,
+            "resist": "blast"
+          },
+          {
+            "type": "mole",
+            "count": 13,
+            "delay": 2,
+            "interval": 1,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "snoozemoth",
+            "count": 4,
+            "delay": 5,
+            "interval": 3,
+            "boss": false,
+            "resist": "ice"
+          },
+          {
+            "type": "zeppelin",
+            "count": 2,
+            "delay": 4,
+            "interval": 4.5,
+            "boss": true,
+            "resist": null
+          },
+          {
+            "type": "dreadblimp",
+            "count": 1,
+            "delay": 10,
+            "interval": 1,
+            "boss": true,
+            "resist": null
+          }
+        ],
+        "hpBoost": 1
+      },
+      "resists": [
+        null,
+        null,
+        null,
+        null,
+        "ice",
+        "ice",
+        "blast",
+        "blast",
+        null,
+        "ice",
+        null,
+        null
+      ]
+    },
+    {
+      "wave": 21,
+      "spec": [
+        {
+          "type": "wasp",
+          "count": 36,
+          "interval": 0.35,
+          "delay": 0
+        },
+        {
+          "type": "beetle",
+          "count": 34,
+          "interval": 0.45,
+          "delay": 1.5
+        },
+        {
+          "type": "camopuff",
+          "count": 28,
+          "interval": 0.45,
+          "delay": 2.5
+        },
+        {
+          "type": "nutknight",
+          "count": 17,
+          "interval": 0.8,
+          "delay": 3.5
+        },
+        {
+          "type": "ironpod",
+          "count": 16,
+          "interval": 0.9,
+          "delay": 5
+        },
+        {
+          "type": "slug",
+          "count": 15,
+          "interval": 0.9,
+          "delay": 3
+        },
+        {
+          "type": "puffcap",
+          "count": 14,
+          "interval": 0.9,
+          "delay": 4
+        },
+        {
+          "type": "mothmedic",
+          "count": 7,
+          "interval": 2.2,
+          "delay": 6
+        },
+        {
+          "type": "mole",
+          "count": 14,
+          "interval": 1,
+          "delay": 2
+        },
+        {
+          "type": "snoozemoth",
+          "count": 5,
+          "interval": 3,
+          "delay": 5
+        }
+      ],
+      "plan1HeroNormal": {
+        "groups": [
+          {
+            "type": "wasp",
+            "count": 36,
+            "delay": 0,
+            "interval": 0.35,
+            "boss": false,
+            "resist": "shock"
+          },
+          {
+            "type": "beetle",
+            "count": 34,
+            "delay": 1.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "camopuff",
+            "count": 28,
+            "delay": 2.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "nutknight",
+            "count": 17,
+            "delay": 3.5,
+            "interval": 0.8,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "ironpod",
+            "count": 16,
+            "delay": 5,
+            "interval": 0.9,
+            "boss": false,
+            "resist": "leaf"
+          },
+          {
+            "type": "slug",
+            "count": 15,
+            "delay": 3,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "puffcap",
+            "count": 14,
+            "delay": 4,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "mothmedic",
+            "count": 7,
+            "delay": 6,
+            "interval": 2.2,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "mole",
+            "count": 14,
+            "delay": 2,
+            "interval": 1,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "snoozemoth",
+            "count": 5,
+            "delay": 5,
+            "interval": 3,
+            "boss": false,
+            "resist": "shock"
+          }
+        ],
+        "hpBoost": 1
+      },
+      "resists": [
+        "shock",
+        null,
+        null,
+        null,
+        "leaf",
+        null,
+        null,
+        null,
+        null,
+        "shock"
+      ]
+    },
+    {
+      "wave": 22,
+      "spec": [
+        {
+          "type": "wasp",
+          "count": 38,
+          "interval": 0.35,
+          "delay": 0
+        },
+        {
+          "type": "beetle",
+          "count": 35,
+          "interval": 0.45,
+          "delay": 1.5
+        },
+        {
+          "type": "camopuff",
+          "count": 28,
+          "interval": 0.45,
+          "delay": 2.5
+        },
+        {
+          "type": "nutknight",
+          "count": 18,
+          "interval": 0.8,
+          "delay": 3.5
+        },
+        {
+          "type": "ironpod",
+          "count": 17,
+          "interval": 0.9,
+          "delay": 5
+        },
+        {
+          "type": "slug",
+          "count": 16,
+          "interval": 0.9,
+          "delay": 3
+        },
+        {
+          "type": "puffcap",
+          "count": 14,
+          "interval": 0.9,
+          "delay": 4
+        },
+        {
+          "type": "mothmedic",
+          "count": 7,
+          "interval": 2.2,
+          "delay": 6
+        },
+        {
+          "type": "mole",
+          "count": 15,
+          "interval": 1,
+          "delay": 2
+        },
+        {
+          "type": "snoozemoth",
+          "count": 5,
+          "interval": 3,
+          "delay": 5
+        }
+      ],
+      "plan1HeroNormal": {
+        "groups": [
+          {
+            "type": "wasp",
+            "count": 38,
+            "delay": 0,
+            "interval": 0.35,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "beetle",
+            "count": 35,
+            "delay": 1.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": "blast"
+          },
+          {
+            "type": "camopuff",
+            "count": 28,
+            "delay": 2.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": "leaf"
+          },
+          {
+            "type": "nutknight",
+            "count": 18,
+            "delay": 3.5,
+            "interval": 0.8,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "ironpod",
+            "count": 17,
+            "delay": 5,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "slug",
+            "count": 16,
+            "delay": 3,
+            "interval": 0.9,
+            "boss": false,
+            "resist": "blast"
+          },
+          {
+            "type": "puffcap",
+            "count": 14,
+            "delay": 4,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "mothmedic",
+            "count": 7,
+            "delay": 6,
+            "interval": 2.2,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "mole",
+            "count": 15,
+            "delay": 2,
+            "interval": 1,
+            "boss": false,
+            "resist": "blast"
+          },
+          {
+            "type": "snoozemoth",
+            "count": 5,
+            "delay": 5,
+            "interval": 3,
+            "boss": false,
+            "resist": "blast"
+          }
+        ],
+        "hpBoost": 1
+      },
+      "resists": [
+        null,
+        "blast",
+        "leaf",
+        null,
+        null,
+        "blast",
+        null,
+        null,
+        "blast",
+        "blast"
+      ]
+    },
+    {
+      "wave": 23,
+      "spec": [
+        {
+          "type": "wasp",
+          "count": 40,
+          "interval": 0.35,
+          "delay": 0
+        },
+        {
+          "type": "beetle",
+          "count": 35,
+          "interval": 0.45,
+          "delay": 1.5
+        },
+        {
+          "type": "camopuff",
+          "count": 28,
+          "interval": 0.45,
+          "delay": 2.5
+        },
+        {
+          "type": "nutknight",
+          "count": 19,
+          "interval": 0.8,
+          "delay": 3.5
+        },
+        {
+          "type": "ironpod",
+          "count": 18,
+          "interval": 0.9,
+          "delay": 5
+        },
+        {
+          "type": "slug",
+          "count": 16,
+          "interval": 0.9,
+          "delay": 3
+        },
+        {
+          "type": "puffcap",
+          "count": 14,
+          "interval": 0.9,
+          "delay": 4
+        },
+        {
+          "type": "mothmedic",
+          "count": 8,
+          "interval": 2.2,
+          "delay": 6
+        },
+        {
+          "type": "mole",
+          "count": 16,
+          "interval": 1,
+          "delay": 2
+        },
+        {
+          "type": "snoozemoth",
+          "count": 5,
+          "interval": 3,
+          "delay": 5
+        }
+      ],
+      "plan1HeroNormal": {
+        "groups": [
+          {
+            "type": "wasp",
+            "count": 40,
+            "delay": 0,
+            "interval": 0.35,
+            "boss": false,
+            "resist": "blast"
+          },
+          {
+            "type": "beetle",
+            "count": 35,
+            "delay": 1.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "camopuff",
+            "count": 28,
+            "delay": 2.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "nutknight",
+            "count": 19,
+            "delay": 3.5,
+            "interval": 0.8,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "ironpod",
+            "count": 18,
+            "delay": 5,
+            "interval": 0.8999999999999999,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "slug",
+            "count": 16,
+            "delay": 3,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "puffcap",
+            "count": 14,
+            "delay": 4,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "mothmedic",
+            "count": 8,
+            "delay": 6,
+            "interval": 2.2,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "mole",
+            "count": 16,
+            "delay": 2,
+            "interval": 1,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "snoozemoth",
+            "count": 5,
+            "delay": 5,
+            "interval": 3,
+            "boss": false,
+            "resist": null
+          }
+        ],
+        "hpBoost": 1
+      },
+      "resists": [
+        "blast",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "wave": 24,
+      "spec": [
+        {
+          "type": "wasp",
+          "count": 40,
+          "interval": 0.35,
+          "delay": 0
+        },
+        {
+          "type": "beetle",
+          "count": 35,
+          "interval": 0.45,
+          "delay": 1.5
+        },
+        {
+          "type": "camopuff",
+          "count": 28,
+          "interval": 0.45,
+          "delay": 2.5
+        },
+        {
+          "type": "nutknight",
+          "count": 20,
+          "interval": 0.8,
+          "delay": 3.5
+        },
+        {
+          "type": "ironpod",
+          "count": 19,
+          "interval": 0.9,
+          "delay": 5
+        },
+        {
+          "type": "slug",
+          "count": 16,
+          "interval": 0.9,
+          "delay": 3
+        },
+        {
+          "type": "puffcap",
+          "count": 14,
+          "interval": 0.9,
+          "delay": 4
+        },
+        {
+          "type": "mothmedic",
+          "count": 8,
+          "interval": 2.2,
+          "delay": 6
+        },
+        {
+          "type": "mole",
+          "count": 16,
+          "interval": 1,
+          "delay": 2
+        },
+        {
+          "type": "snoozemoth",
+          "count": 6,
+          "interval": 3,
+          "delay": 5
+        }
+      ],
+      "plan1HeroNormal": {
+        "groups": [
+          {
+            "type": "wasp",
+            "count": 40,
+            "delay": 0,
+            "interval": 0.35,
+            "boss": false,
+            "resist": "blast"
+          },
+          {
+            "type": "beetle",
+            "count": 35,
+            "delay": 1.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "camopuff",
+            "count": 28,
+            "delay": 2.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": "blast"
+          },
+          {
+            "type": "nutknight",
+            "count": 20,
+            "delay": 3.5,
+            "interval": 0.8,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "ironpod",
+            "count": 19,
+            "delay": 5,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "slug",
+            "count": 16,
+            "delay": 3,
+            "interval": 0.9,
+            "boss": false,
+            "resist": "blast"
+          },
+          {
+            "type": "puffcap",
+            "count": 14,
+            "delay": 4,
+            "interval": 0.9,
+            "boss": false,
+            "resist": "fire"
+          },
+          {
+            "type": "mothmedic",
+            "count": 8,
+            "delay": 6,
+            "interval": 2.2,
+            "boss": false,
+            "resist": "fire"
+          },
+          {
+            "type": "mole",
+            "count": 16,
+            "delay": 2,
+            "interval": 1,
+            "boss": false,
+            "resist": "fire"
+          },
+          {
+            "type": "snoozemoth",
+            "count": 6,
+            "delay": 5,
+            "interval": 3,
+            "boss": false,
+            "resist": null
+          }
+        ],
+        "hpBoost": 1
+      },
+      "resists": [
+        "blast",
+        null,
+        "blast",
+        null,
+        null,
+        "blast",
+        "fire",
+        "fire",
+        "fire",
+        null
+      ]
+    },
+    {
+      "wave": 25,
+      "spec": [
+        {
+          "type": "wasp",
+          "count": 40,
+          "interval": 0.35,
+          "delay": 0
+        },
+        {
+          "type": "beetle",
+          "count": 35,
+          "interval": 0.45,
+          "delay": 1.5
+        },
+        {
+          "type": "camopuff",
+          "count": 28,
+          "interval": 0.45,
+          "delay": 2.5
+        },
+        {
+          "type": "nutknight",
+          "count": 21,
+          "interval": 0.8,
+          "delay": 3.5
+        },
+        {
+          "type": "ironpod",
+          "count": 20,
+          "interval": 0.9,
+          "delay": 5
+        },
+        {
+          "type": "slug",
+          "count": 16,
+          "interval": 0.9,
+          "delay": 3
+        },
+        {
+          "type": "puffcap",
+          "count": 14,
+          "interval": 0.9,
+          "delay": 4
+        },
+        {
+          "type": "mothmedic",
+          "count": 8,
+          "interval": 2.2,
+          "delay": 6
+        },
+        {
+          "type": "mole",
+          "count": 16,
+          "interval": 1,
+          "delay": 2
+        },
+        {
+          "type": "snoozemoth",
+          "count": 6,
+          "interval": 3,
+          "delay": 5
+        },
+        {
+          "type": "dreadblimp",
+          "count": 2,
+          "interval": 5.5,
+          "delay": 7
+        }
+      ],
+      "plan1HeroNormal": {
+        "groups": [
+          {
+            "type": "wasp",
+            "count": 40,
+            "delay": 0,
+            "interval": 0.35,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "beetle",
+            "count": 35,
+            "delay": 1.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": "ice"
+          },
+          {
+            "type": "camopuff",
+            "count": 28,
+            "delay": 2.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": "leaf"
+          },
+          {
+            "type": "nutknight",
+            "count": 21,
+            "delay": 3.5,
+            "interval": 0.8,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "ironpod",
+            "count": 20,
+            "delay": 5,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "slug",
+            "count": 16,
+            "delay": 3,
+            "interval": 0.9,
+            "boss": false,
+            "resist": "blast"
+          },
+          {
+            "type": "puffcap",
+            "count": 14,
+            "delay": 4,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "mothmedic",
+            "count": 8,
+            "delay": 6,
+            "interval": 2.2,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "mole",
+            "count": 16,
+            "delay": 2,
+            "interval": 1,
+            "boss": false,
+            "resist": "ice"
+          },
+          {
+            "type": "snoozemoth",
+            "count": 6,
+            "delay": 5,
+            "interval": 3,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "dreadblimp",
+            "count": 2,
+            "delay": 7,
+            "interval": 5.5,
+            "boss": true,
+            "resist": null
+          }
+        ],
+        "hpBoost": 1
+      },
+      "resists": [
+        null,
+        "ice",
+        "leaf",
+        null,
+        null,
+        "blast",
+        null,
+        null,
+        "ice",
+        null,
+        null
+      ]
+    },
+    {
+      "wave": 26,
+      "spec": [
+        {
+          "type": "wasp",
+          "count": 40,
+          "interval": 0.35,
+          "delay": 0
+        },
+        {
+          "type": "beetle",
+          "count": 35,
+          "interval": 0.45,
+          "delay": 1.5
+        },
+        {
+          "type": "camopuff",
+          "count": 28,
+          "interval": 0.45,
+          "delay": 2.5
+        },
+        {
+          "type": "nutknight",
+          "count": 22,
+          "interval": 0.8,
+          "delay": 3.5
+        },
+        {
+          "type": "ironpod",
+          "count": 21,
+          "interval": 0.9,
+          "delay": 5
+        },
+        {
+          "type": "slug",
+          "count": 16,
+          "interval": 0.9,
+          "delay": 3
+        },
+        {
+          "type": "puffcap",
+          "count": 14,
+          "interval": 0.9,
+          "delay": 4
+        },
+        {
+          "type": "mothmedic",
+          "count": 8,
+          "interval": 2.2,
+          "delay": 6
+        },
+        {
+          "type": "mole",
+          "count": 16,
+          "interval": 1,
+          "delay": 2
+        },
+        {
+          "type": "snoozemoth",
+          "count": 6,
+          "interval": 3,
+          "delay": 5
+        }
+      ],
+      "plan1HeroNormal": {
+        "groups": [
+          {
+            "type": "wasp",
+            "count": 40,
+            "delay": 0,
+            "interval": 0.35,
+            "boss": false,
+            "resist": "ice"
+          },
+          {
+            "type": "beetle",
+            "count": 35,
+            "delay": 1.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": "fire"
+          },
+          {
+            "type": "camopuff",
+            "count": 28,
+            "delay": 2.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "nutknight",
+            "count": 22,
+            "delay": 3.5,
+            "interval": 0.8,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "ironpod",
+            "count": 21,
+            "delay": 5,
+            "interval": 0.9000000000000001,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "slug",
+            "count": 16,
+            "delay": 3,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "puffcap",
+            "count": 14,
+            "delay": 4,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "mothmedic",
+            "count": 8,
+            "delay": 6,
+            "interval": 2.2,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "mole",
+            "count": 16,
+            "delay": 2,
+            "interval": 1,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "snoozemoth",
+            "count": 6,
+            "delay": 5,
+            "interval": 3,
+            "boss": false,
+            "resist": null
+          }
+        ],
+        "hpBoost": 1
+      },
+      "resists": [
+        "ice",
+        "fire",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "wave": 27,
+      "spec": [
+        {
+          "type": "wasp",
+          "count": 40,
+          "interval": 0.35,
+          "delay": 0
+        },
+        {
+          "type": "beetle",
+          "count": 35,
+          "interval": 0.45,
+          "delay": 1.5
+        },
+        {
+          "type": "camopuff",
+          "count": 28,
+          "interval": 0.45,
+          "delay": 2.5
+        },
+        {
+          "type": "nutknight",
+          "count": 23,
+          "interval": 0.8,
+          "delay": 3.5
+        },
+        {
+          "type": "ironpod",
+          "count": 22,
+          "interval": 0.9,
+          "delay": 5
+        },
+        {
+          "type": "slug",
+          "count": 16,
+          "interval": 0.9,
+          "delay": 3
+        },
+        {
+          "type": "puffcap",
+          "count": 14,
+          "interval": 0.9,
+          "delay": 4
+        },
+        {
+          "type": "mothmedic",
+          "count": 8,
+          "interval": 2.2,
+          "delay": 6
+        },
+        {
+          "type": "mole",
+          "count": 16,
+          "interval": 1,
+          "delay": 2
+        },
+        {
+          "type": "snoozemoth",
+          "count": 6,
+          "interval": 3,
+          "delay": 5
+        }
+      ],
+      "plan1HeroNormal": {
+        "groups": [
+          {
+            "type": "wasp",
+            "count": 40,
+            "delay": 0,
+            "interval": 0.35,
+            "boss": false,
+            "resist": "fire"
+          },
+          {
+            "type": "beetle",
+            "count": 35,
+            "delay": 1.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": "ice"
+          },
+          {
+            "type": "camopuff",
+            "count": 28,
+            "delay": 2.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "nutknight",
+            "count": 23,
+            "delay": 3.5,
+            "interval": 0.8,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "ironpod",
+            "count": 22,
+            "delay": 5,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "slug",
+            "count": 16,
+            "delay": 3,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "puffcap",
+            "count": 14,
+            "delay": 4,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "mothmedic",
+            "count": 8,
+            "delay": 6,
+            "interval": 2.2,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "mole",
+            "count": 16,
+            "delay": 2,
+            "interval": 1,
+            "boss": false,
+            "resist": "shock"
+          },
+          {
+            "type": "snoozemoth",
+            "count": 6,
+            "delay": 5,
+            "interval": 3,
+            "boss": false,
+            "resist": "leaf"
+          }
+        ],
+        "hpBoost": 1
+      },
+      "resists": [
+        "fire",
+        "ice",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        "shock",
+        "leaf"
+      ]
+    },
+    {
+      "wave": 28,
+      "spec": [
+        {
+          "type": "wasp",
+          "count": 40,
+          "interval": 0.35,
+          "delay": 0
+        },
+        {
+          "type": "beetle",
+          "count": 35,
+          "interval": 0.45,
+          "delay": 1.5
+        },
+        {
+          "type": "camopuff",
+          "count": 28,
+          "interval": 0.45,
+          "delay": 2.5
+        },
+        {
+          "type": "nutknight",
+          "count": 24,
+          "interval": 0.8,
+          "delay": 3.5
+        },
+        {
+          "type": "ironpod",
+          "count": 22,
+          "interval": 0.9,
+          "delay": 5
+        },
+        {
+          "type": "slug",
+          "count": 16,
+          "interval": 0.9,
+          "delay": 3
+        },
+        {
+          "type": "puffcap",
+          "count": 14,
+          "interval": 0.9,
+          "delay": 4
+        },
+        {
+          "type": "mothmedic",
+          "count": 8,
+          "interval": 2.2,
+          "delay": 6
+        },
+        {
+          "type": "mole",
+          "count": 16,
+          "interval": 1,
+          "delay": 2
+        },
+        {
+          "type": "snoozemoth",
+          "count": 6,
+          "interval": 3,
+          "delay": 5
+        }
+      ],
+      "plan1HeroNormal": {
+        "groups": [
+          {
+            "type": "wasp",
+            "count": 40,
+            "delay": 0,
+            "interval": 0.35,
+            "boss": false,
+            "resist": "shock"
+          },
+          {
+            "type": "beetle",
+            "count": 35,
+            "delay": 1.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "camopuff",
+            "count": 28,
+            "delay": 2.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "nutknight",
+            "count": 24,
+            "delay": 3.5,
+            "interval": 0.8000000000000002,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "ironpod",
+            "count": 22,
+            "delay": 5,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "slug",
+            "count": 16,
+            "delay": 3,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "puffcap",
+            "count": 14,
+            "delay": 4,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "mothmedic",
+            "count": 8,
+            "delay": 6,
+            "interval": 2.2,
+            "boss": false,
+            "resist": "fire"
+          },
+          {
+            "type": "mole",
+            "count": 16,
+            "delay": 2,
+            "interval": 1,
+            "boss": false,
+            "resist": "blast"
+          },
+          {
+            "type": "snoozemoth",
+            "count": 6,
+            "delay": 5,
+            "interval": 3,
+            "boss": false,
+            "resist": null
+          }
+        ],
+        "hpBoost": 1
+      },
+      "resists": [
+        "shock",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        "fire",
+        "blast",
+        null
+      ]
+    },
+    {
+      "wave": 29,
+      "spec": [
+        {
+          "type": "wasp",
+          "count": 40,
+          "interval": 0.35,
+          "delay": 0
+        },
+        {
+          "type": "beetle",
+          "count": 35,
+          "interval": 0.45,
+          "delay": 1.5
+        },
+        {
+          "type": "camopuff",
+          "count": 28,
+          "interval": 0.45,
+          "delay": 2.5
+        },
+        {
+          "type": "nutknight",
+          "count": 24,
+          "interval": 0.8,
+          "delay": 3.5
+        },
+        {
+          "type": "ironpod",
+          "count": 22,
+          "interval": 0.9,
+          "delay": 5
+        },
+        {
+          "type": "slug",
+          "count": 16,
+          "interval": 0.9,
+          "delay": 3
+        },
+        {
+          "type": "puffcap",
+          "count": 14,
+          "interval": 0.9,
+          "delay": 4
+        },
+        {
+          "type": "mothmedic",
+          "count": 8,
+          "interval": 2.2,
+          "delay": 6
+        },
+        {
+          "type": "mole",
+          "count": 16,
+          "interval": 1,
+          "delay": 2
+        },
+        {
+          "type": "snoozemoth",
+          "count": 6,
+          "interval": 3,
+          "delay": 5
+        }
+      ],
+      "plan1HeroNormal": {
+        "groups": [
+          {
+            "type": "wasp",
+            "count": 40,
+            "delay": 0,
+            "interval": 0.35,
+            "boss": false,
+            "resist": "ice"
+          },
+          {
+            "type": "beetle",
+            "count": 35,
+            "delay": 1.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "camopuff",
+            "count": 28,
+            "delay": 2.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "nutknight",
+            "count": 24,
+            "delay": 3.5,
+            "interval": 0.8000000000000002,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "ironpod",
+            "count": 22,
+            "delay": 5,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "slug",
+            "count": 16,
+            "delay": 3,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "puffcap",
+            "count": 14,
+            "delay": 4,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "mothmedic",
+            "count": 8,
+            "delay": 6,
+            "interval": 2.2,
+            "boss": false,
+            "resist": "leaf"
+          },
+          {
+            "type": "mole",
+            "count": 16,
+            "delay": 2,
+            "interval": 1,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "snoozemoth",
+            "count": 6,
+            "delay": 5,
+            "interval": 3,
+            "boss": false,
+            "resist": "fire"
+          }
+        ],
+        "hpBoost": 1
+      },
+      "resists": [
+        "ice",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        "leaf",
+        null,
+        "fire"
+      ]
+    },
+    {
+      "wave": 30,
+      "spec": [
+        {
+          "type": "wasp",
+          "count": 40,
+          "interval": 0.35,
+          "delay": 0
+        },
+        {
+          "type": "beetle",
+          "count": 35,
+          "interval": 0.45,
+          "delay": 1.5
+        },
+        {
+          "type": "camopuff",
+          "count": 28,
+          "interval": 0.45,
+          "delay": 2.5
+        },
+        {
+          "type": "nutknight",
+          "count": 24,
+          "interval": 0.8,
+          "delay": 3.5
+        },
+        {
+          "type": "ironpod",
+          "count": 22,
+          "interval": 0.9,
+          "delay": 5
+        },
+        {
+          "type": "slug",
+          "count": 16,
+          "interval": 0.9,
+          "delay": 3
+        },
+        {
+          "type": "puffcap",
+          "count": 14,
+          "interval": 0.9,
+          "delay": 4
+        },
+        {
+          "type": "mothmedic",
+          "count": 8,
+          "interval": 2.2,
+          "delay": 6
+        },
+        {
+          "type": "mole",
+          "count": 16,
+          "interval": 1,
+          "delay": 2
+        },
+        {
+          "type": "snoozemoth",
+          "count": 6,
+          "interval": 3,
+          "delay": 5
+        },
+        {
+          "type": "dreadblimp",
+          "count": 3,
+          "interval": 5.5,
+          "delay": 7
+        }
+      ],
+      "plan1HeroNormal": {
+        "groups": [
+          {
+            "type": "wasp",
+            "count": 40,
+            "delay": 0,
+            "interval": 0.35,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "beetle",
+            "count": 35,
+            "delay": 1.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "camopuff",
+            "count": 28,
+            "delay": 2.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "nutknight",
+            "count": 24,
+            "delay": 3.5,
+            "interval": 0.8000000000000002,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "ironpod",
+            "count": 22,
+            "delay": 5,
+            "interval": 0.9,
+            "boss": false,
+            "resist": "shock"
+          },
+          {
+            "type": "slug",
+            "count": 16,
+            "delay": 3,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "puffcap",
+            "count": 14,
+            "delay": 4,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "mothmedic",
+            "count": 8,
+            "delay": 6,
+            "interval": 2.2,
+            "boss": false,
+            "resist": "shock"
+          },
+          {
+            "type": "mole",
+            "count": 16,
+            "delay": 2,
+            "interval": 1,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "snoozemoth",
+            "count": 6,
+            "delay": 5,
+            "interval": 3,
+            "boss": false,
+            "resist": "fire"
+          },
+          {
+            "type": "dreadblimp",
+            "count": 3,
+            "delay": 7,
+            "interval": 5.5,
+            "boss": true,
+            "resist": null
+          }
+        ],
+        "hpBoost": 1
+      },
+      "resists": [
+        null,
+        null,
+        null,
+        null,
+        "shock",
+        null,
+        null,
+        "shock",
+        null,
+        "fire",
+        null
+      ]
+    },
+    {
+      "wave": 31,
+      "spec": [
+        {
+          "type": "wasp",
+          "count": 40,
+          "interval": 0.35,
+          "delay": 0
+        },
+        {
+          "type": "beetle",
+          "count": 35,
+          "interval": 0.45,
+          "delay": 1.5
+        },
+        {
+          "type": "camopuff",
+          "count": 28,
+          "interval": 0.45,
+          "delay": 2.5
+        },
+        {
+          "type": "nutknight",
+          "count": 24,
+          "interval": 0.8,
+          "delay": 3.5
+        },
+        {
+          "type": "ironpod",
+          "count": 22,
+          "interval": 0.9,
+          "delay": 5
+        },
+        {
+          "type": "slug",
+          "count": 16,
+          "interval": 0.9,
+          "delay": 3
+        },
+        {
+          "type": "puffcap",
+          "count": 14,
+          "interval": 0.9,
+          "delay": 4
+        },
+        {
+          "type": "mothmedic",
+          "count": 8,
+          "interval": 2.2,
+          "delay": 6
+        },
+        {
+          "type": "mole",
+          "count": 16,
+          "interval": 1,
+          "delay": 2
+        },
+        {
+          "type": "snoozemoth",
+          "count": 6,
+          "interval": 3,
+          "delay": 5
+        }
+      ],
+      "plan1HeroNormal": {
+        "groups": [
+          {
+            "type": "wasp",
+            "count": 40,
+            "delay": 0,
+            "interval": 0.35,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "beetle",
+            "count": 35,
+            "delay": 1.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "camopuff",
+            "count": 28,
+            "delay": 2.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "nutknight",
+            "count": 24,
+            "delay": 3.5,
+            "interval": 0.8000000000000002,
+            "boss": false,
+            "resist": "blast"
+          },
+          {
+            "type": "ironpod",
+            "count": 22,
+            "delay": 5,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "slug",
+            "count": 16,
+            "delay": 3,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "puffcap",
+            "count": 14,
+            "delay": 4,
+            "interval": 0.9,
+            "boss": false,
+            "resist": "blast"
+          },
+          {
+            "type": "mothmedic",
+            "count": 8,
+            "delay": 6,
+            "interval": 2.2,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "mole",
+            "count": 16,
+            "delay": 2,
+            "interval": 1,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "snoozemoth",
+            "count": 6,
+            "delay": 5,
+            "interval": 3,
+            "boss": false,
+            "resist": null
+          }
+        ],
+        "hpBoost": 1
+      },
+      "resists": [
+        null,
+        null,
+        null,
+        "blast",
+        null,
+        null,
+        "blast",
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "wave": 32,
+      "spec": [
+        {
+          "type": "wasp",
+          "count": 40,
+          "interval": 0.35,
+          "delay": 0
+        },
+        {
+          "type": "beetle",
+          "count": 35,
+          "interval": 0.45,
+          "delay": 1.5
+        },
+        {
+          "type": "camopuff",
+          "count": 28,
+          "interval": 0.45,
+          "delay": 2.5
+        },
+        {
+          "type": "nutknight",
+          "count": 24,
+          "interval": 0.8,
+          "delay": 3.5
+        },
+        {
+          "type": "ironpod",
+          "count": 22,
+          "interval": 0.9,
+          "delay": 5
+        },
+        {
+          "type": "slug",
+          "count": 16,
+          "interval": 0.9,
+          "delay": 3
+        },
+        {
+          "type": "puffcap",
+          "count": 14,
+          "interval": 0.9,
+          "delay": 4
+        },
+        {
+          "type": "mothmedic",
+          "count": 8,
+          "interval": 2.2,
+          "delay": 6
+        },
+        {
+          "type": "mole",
+          "count": 16,
+          "interval": 1,
+          "delay": 2
+        },
+        {
+          "type": "snoozemoth",
+          "count": 6,
+          "interval": 3,
+          "delay": 5
+        }
+      ],
+      "plan1HeroNormal": {
+        "groups": [
+          {
+            "type": "wasp",
+            "count": 40,
+            "delay": 0,
+            "interval": 0.35,
+            "boss": false,
+            "resist": "leaf"
+          },
+          {
+            "type": "beetle",
+            "count": 35,
+            "delay": 1.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "camopuff",
+            "count": 28,
+            "delay": 2.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "nutknight",
+            "count": 24,
+            "delay": 3.5,
+            "interval": 0.8000000000000002,
+            "boss": false,
+            "resist": "shock"
+          },
+          {
+            "type": "ironpod",
+            "count": 22,
+            "delay": 5,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "slug",
+            "count": 16,
+            "delay": 3,
+            "interval": 0.9,
+            "boss": false,
+            "resist": "ice"
+          },
+          {
+            "type": "puffcap",
+            "count": 14,
+            "delay": 4,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "mothmedic",
+            "count": 8,
+            "delay": 6,
+            "interval": 2.2,
+            "boss": false,
+            "resist": "ice"
+          },
+          {
+            "type": "mole",
+            "count": 16,
+            "delay": 2,
+            "interval": 1,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "snoozemoth",
+            "count": 6,
+            "delay": 5,
+            "interval": 3,
+            "boss": false,
+            "resist": "shock"
+          }
+        ],
+        "hpBoost": 1
+      },
+      "resists": [
+        "leaf",
+        null,
+        null,
+        "shock",
+        null,
+        "ice",
+        null,
+        "ice",
+        null,
+        "shock"
+      ]
+    },
+    {
+      "wave": 33,
+      "spec": [
+        {
+          "type": "wasp",
+          "count": 40,
+          "interval": 0.35,
+          "delay": 0
+        },
+        {
+          "type": "beetle",
+          "count": 35,
+          "interval": 0.45,
+          "delay": 1.5
+        },
+        {
+          "type": "camopuff",
+          "count": 28,
+          "interval": 0.45,
+          "delay": 2.5
+        },
+        {
+          "type": "nutknight",
+          "count": 24,
+          "interval": 0.8,
+          "delay": 3.5
+        },
+        {
+          "type": "ironpod",
+          "count": 22,
+          "interval": 0.9,
+          "delay": 5
+        },
+        {
+          "type": "slug",
+          "count": 16,
+          "interval": 0.9,
+          "delay": 3
+        },
+        {
+          "type": "puffcap",
+          "count": 14,
+          "interval": 0.9,
+          "delay": 4
+        },
+        {
+          "type": "mothmedic",
+          "count": 8,
+          "interval": 2.2,
+          "delay": 6
+        },
+        {
+          "type": "mole",
+          "count": 16,
+          "interval": 1,
+          "delay": 2
+        },
+        {
+          "type": "snoozemoth",
+          "count": 6,
+          "interval": 3,
+          "delay": 5
+        }
+      ],
+      "plan1HeroNormal": {
+        "groups": [
+          {
+            "type": "wasp",
+            "count": 40,
+            "delay": 0,
+            "interval": 0.35,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "beetle",
+            "count": 35,
+            "delay": 1.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": "fire"
+          },
+          {
+            "type": "camopuff",
+            "count": 28,
+            "delay": 2.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "nutknight",
+            "count": 24,
+            "delay": 3.5,
+            "interval": 0.8000000000000002,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "ironpod",
+            "count": 22,
+            "delay": 5,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "slug",
+            "count": 16,
+            "delay": 3,
+            "interval": 0.9,
+            "boss": false,
+            "resist": "ice"
+          },
+          {
+            "type": "puffcap",
+            "count": 14,
+            "delay": 4,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "mothmedic",
+            "count": 8,
+            "delay": 6,
+            "interval": 2.2,
+            "boss": false,
+            "resist": "ice"
+          },
+          {
+            "type": "mole",
+            "count": 16,
+            "delay": 2,
+            "interval": 1,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "snoozemoth",
+            "count": 6,
+            "delay": 5,
+            "interval": 3,
+            "boss": false,
+            "resist": null
+          }
+        ],
+        "hpBoost": 1
+      },
+      "resists": [
+        null,
+        "fire",
+        null,
+        null,
+        null,
+        "ice",
+        null,
+        "ice",
+        null,
+        null
+      ]
+    },
+    {
+      "wave": 34,
+      "spec": [
+        {
+          "type": "wasp",
+          "count": 40,
+          "interval": 0.35,
+          "delay": 0
+        },
+        {
+          "type": "beetle",
+          "count": 35,
+          "interval": 0.45,
+          "delay": 1.5
+        },
+        {
+          "type": "camopuff",
+          "count": 28,
+          "interval": 0.45,
+          "delay": 2.5
+        },
+        {
+          "type": "nutknight",
+          "count": 24,
+          "interval": 0.8,
+          "delay": 3.5
+        },
+        {
+          "type": "ironpod",
+          "count": 22,
+          "interval": 0.9,
+          "delay": 5
+        },
+        {
+          "type": "slug",
+          "count": 16,
+          "interval": 0.9,
+          "delay": 3
+        },
+        {
+          "type": "puffcap",
+          "count": 14,
+          "interval": 0.9,
+          "delay": 4
+        },
+        {
+          "type": "mothmedic",
+          "count": 8,
+          "interval": 2.2,
+          "delay": 6
+        },
+        {
+          "type": "mole",
+          "count": 16,
+          "interval": 1,
+          "delay": 2
+        },
+        {
+          "type": "snoozemoth",
+          "count": 6,
+          "interval": 3,
+          "delay": 5
+        }
+      ],
+      "plan1HeroNormal": {
+        "groups": [
+          {
+            "type": "wasp",
+            "count": 40,
+            "delay": 0,
+            "interval": 0.35,
+            "boss": false,
+            "resist": "ice"
+          },
+          {
+            "type": "beetle",
+            "count": 35,
+            "delay": 1.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "camopuff",
+            "count": 28,
+            "delay": 2.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "nutknight",
+            "count": 24,
+            "delay": 3.5,
+            "interval": 0.8000000000000002,
+            "boss": false,
+            "resist": "blast"
+          },
+          {
+            "type": "ironpod",
+            "count": 22,
+            "delay": 5,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "slug",
+            "count": 16,
+            "delay": 3,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "puffcap",
+            "count": 14,
+            "delay": 4,
+            "interval": 0.9,
+            "boss": false,
+            "resist": "shock"
+          },
+          {
+            "type": "mothmedic",
+            "count": 8,
+            "delay": 6,
+            "interval": 2.2,
+            "boss": false,
+            "resist": "shock"
+          },
+          {
+            "type": "mole",
+            "count": 16,
+            "delay": 2,
+            "interval": 1,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "snoozemoth",
+            "count": 6,
+            "delay": 5,
+            "interval": 3,
+            "boss": false,
+            "resist": null
+          }
+        ],
+        "hpBoost": 1
+      },
+      "resists": [
+        "ice",
+        null,
+        null,
+        "blast",
+        null,
+        null,
+        "shock",
+        "shock",
+        null,
+        null
+      ]
+    },
+    {
+      "wave": 35,
+      "spec": [
+        {
+          "type": "wasp",
+          "count": 40,
+          "interval": 0.35,
+          "delay": 0
+        },
+        {
+          "type": "beetle",
+          "count": 35,
+          "interval": 0.45,
+          "delay": 1.5
+        },
+        {
+          "type": "camopuff",
+          "count": 28,
+          "interval": 0.45,
+          "delay": 2.5
+        },
+        {
+          "type": "nutknight",
+          "count": 24,
+          "interval": 0.8,
+          "delay": 3.5
+        },
+        {
+          "type": "ironpod",
+          "count": 22,
+          "interval": 0.9,
+          "delay": 5
+        },
+        {
+          "type": "slug",
+          "count": 16,
+          "interval": 0.9,
+          "delay": 3
+        },
+        {
+          "type": "puffcap",
+          "count": 14,
+          "interval": 0.9,
+          "delay": 4
+        },
+        {
+          "type": "mothmedic",
+          "count": 8,
+          "interval": 2.2,
+          "delay": 6
+        },
+        {
+          "type": "mole",
+          "count": 16,
+          "interval": 1,
+          "delay": 2
+        },
+        {
+          "type": "snoozemoth",
+          "count": 6,
+          "interval": 3,
+          "delay": 5
+        },
+        {
+          "type": "dreadblimp",
+          "count": 4,
+          "interval": 5.5,
+          "delay": 7
+        },
+        {
+          "type": "zeppelin",
+          "count": 1,
+          "interval": 4,
+          "delay": 4
+        }
+      ],
+      "plan1HeroNormal": {
+        "groups": [
+          {
+            "type": "wasp",
+            "count": 40,
+            "delay": 0,
+            "interval": 0.35,
+            "boss": false,
+            "resist": "ice"
+          },
+          {
+            "type": "beetle",
+            "count": 35,
+            "delay": 1.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "camopuff",
+            "count": 28,
+            "delay": 2.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "nutknight",
+            "count": 24,
+            "delay": 3.5,
+            "interval": 0.8000000000000002,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "ironpod",
+            "count": 22,
+            "delay": 5,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "slug",
+            "count": 16,
+            "delay": 3,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "puffcap",
+            "count": 14,
+            "delay": 4,
+            "interval": 0.9,
+            "boss": false,
+            "resist": "blast"
+          },
+          {
+            "type": "mothmedic",
+            "count": 8,
+            "delay": 6,
+            "interval": 2.2,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "mole",
+            "count": 16,
+            "delay": 2,
+            "interval": 1,
+            "boss": false,
+            "resist": "ice"
+          },
+          {
+            "type": "snoozemoth",
+            "count": 6,
+            "delay": 5,
+            "interval": 3,
+            "boss": false,
+            "resist": "ice"
+          },
+          {
+            "type": "dreadblimp",
+            "count": 4,
+            "delay": 7,
+            "interval": 5.5,
+            "boss": true,
+            "resist": null
+          },
+          {
+            "type": "zeppelin",
+            "count": 1,
+            "delay": 4,
+            "interval": 4,
+            "boss": true,
+            "resist": null
+          }
+        ],
+        "hpBoost": 1
+      },
+      "resists": [
+        "ice",
+        null,
+        null,
+        null,
+        null,
+        null,
+        "blast",
+        null,
+        "ice",
+        "ice",
+        null,
+        null
+      ]
+    },
+    {
+      "wave": 36,
+      "spec": [
+        {
+          "type": "wasp",
+          "count": 40,
+          "interval": 0.35,
+          "delay": 0
+        },
+        {
+          "type": "beetle",
+          "count": 35,
+          "interval": 0.45,
+          "delay": 1.5
+        },
+        {
+          "type": "camopuff",
+          "count": 28,
+          "interval": 0.45,
+          "delay": 2.5
+        },
+        {
+          "type": "nutknight",
+          "count": 24,
+          "interval": 0.8,
+          "delay": 3.5
+        },
+        {
+          "type": "ironpod",
+          "count": 22,
+          "interval": 0.9,
+          "delay": 5
+        },
+        {
+          "type": "slug",
+          "count": 16,
+          "interval": 0.9,
+          "delay": 3
+        },
+        {
+          "type": "puffcap",
+          "count": 14,
+          "interval": 0.9,
+          "delay": 4
+        },
+        {
+          "type": "mothmedic",
+          "count": 8,
+          "interval": 2.2,
+          "delay": 6
+        },
+        {
+          "type": "mole",
+          "count": 16,
+          "interval": 1,
+          "delay": 2
+        },
+        {
+          "type": "snoozemoth",
+          "count": 6,
+          "interval": 3,
+          "delay": 5
+        }
+      ],
+      "plan1HeroNormal": {
+        "groups": [
+          {
+            "type": "wasp",
+            "count": 40,
+            "delay": 0,
+            "interval": 0.35,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "beetle",
+            "count": 35,
+            "delay": 1.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "camopuff",
+            "count": 28,
+            "delay": 2.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "nutknight",
+            "count": 24,
+            "delay": 3.5,
+            "interval": 0.8000000000000002,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "ironpod",
+            "count": 22,
+            "delay": 5,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "slug",
+            "count": 16,
+            "delay": 3,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "puffcap",
+            "count": 14,
+            "delay": 4,
+            "interval": 0.9,
+            "boss": false,
+            "resist": "leaf"
+          },
+          {
+            "type": "mothmedic",
+            "count": 8,
+            "delay": 6,
+            "interval": 2.2,
+            "boss": false,
+            "resist": "shock"
+          },
+          {
+            "type": "mole",
+            "count": 16,
+            "delay": 2,
+            "interval": 1,
+            "boss": false,
+            "resist": "fire"
+          },
+          {
+            "type": "snoozemoth",
+            "count": 6,
+            "delay": 5,
+            "interval": 3,
+            "boss": false,
+            "resist": null
+          }
+        ],
+        "hpBoost": 1
+      },
+      "resists": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        "leaf",
+        "shock",
+        "fire",
+        null
+      ]
+    },
+    {
+      "wave": 37,
+      "spec": [
+        {
+          "type": "wasp",
+          "count": 40,
+          "interval": 0.35,
+          "delay": 0
+        },
+        {
+          "type": "beetle",
+          "count": 35,
+          "interval": 0.45,
+          "delay": 1.5
+        },
+        {
+          "type": "camopuff",
+          "count": 28,
+          "interval": 0.45,
+          "delay": 2.5
+        },
+        {
+          "type": "nutknight",
+          "count": 24,
+          "interval": 0.8,
+          "delay": 3.5
+        },
+        {
+          "type": "ironpod",
+          "count": 22,
+          "interval": 0.9,
+          "delay": 5
+        },
+        {
+          "type": "slug",
+          "count": 16,
+          "interval": 0.9,
+          "delay": 3
+        },
+        {
+          "type": "puffcap",
+          "count": 14,
+          "interval": 0.9,
+          "delay": 4
+        },
+        {
+          "type": "mothmedic",
+          "count": 8,
+          "interval": 2.2,
+          "delay": 6
+        },
+        {
+          "type": "mole",
+          "count": 16,
+          "interval": 1,
+          "delay": 2
+        },
+        {
+          "type": "snoozemoth",
+          "count": 6,
+          "interval": 3,
+          "delay": 5
+        }
+      ],
+      "plan1HeroNormal": {
+        "groups": [
+          {
+            "type": "wasp",
+            "count": 40,
+            "delay": 0,
+            "interval": 0.35,
+            "boss": false,
+            "resist": "blast"
+          },
+          {
+            "type": "beetle",
+            "count": 35,
+            "delay": 1.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": "fire"
+          },
+          {
+            "type": "camopuff",
+            "count": 28,
+            "delay": 2.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": "leaf"
+          },
+          {
+            "type": "nutknight",
+            "count": 24,
+            "delay": 3.5,
+            "interval": 0.8000000000000002,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "ironpod",
+            "count": 22,
+            "delay": 5,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "slug",
+            "count": 16,
+            "delay": 3,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "puffcap",
+            "count": 14,
+            "delay": 4,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "mothmedic",
+            "count": 8,
+            "delay": 6,
+            "interval": 2.2,
+            "boss": false,
+            "resist": "shock"
+          },
+          {
+            "type": "mole",
+            "count": 16,
+            "delay": 2,
+            "interval": 1,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "snoozemoth",
+            "count": 6,
+            "delay": 5,
+            "interval": 3,
+            "boss": false,
+            "resist": "shock"
+          }
+        ],
+        "hpBoost": 1
+      },
+      "resists": [
+        "blast",
+        "fire",
+        "leaf",
+        null,
+        null,
+        null,
+        null,
+        "shock",
+        null,
+        "shock"
+      ]
+    },
+    {
+      "wave": 38,
+      "spec": [
+        {
+          "type": "wasp",
+          "count": 40,
+          "interval": 0.35,
+          "delay": 0
+        },
+        {
+          "type": "beetle",
+          "count": 35,
+          "interval": 0.45,
+          "delay": 1.5
+        },
+        {
+          "type": "camopuff",
+          "count": 28,
+          "interval": 0.45,
+          "delay": 2.5
+        },
+        {
+          "type": "nutknight",
+          "count": 24,
+          "interval": 0.8,
+          "delay": 3.5
+        },
+        {
+          "type": "ironpod",
+          "count": 22,
+          "interval": 0.9,
+          "delay": 5
+        },
+        {
+          "type": "slug",
+          "count": 16,
+          "interval": 0.9,
+          "delay": 3
+        },
+        {
+          "type": "puffcap",
+          "count": 14,
+          "interval": 0.9,
+          "delay": 4
+        },
+        {
+          "type": "mothmedic",
+          "count": 8,
+          "interval": 2.2,
+          "delay": 6
+        },
+        {
+          "type": "mole",
+          "count": 16,
+          "interval": 1,
+          "delay": 2
+        },
+        {
+          "type": "snoozemoth",
+          "count": 6,
+          "interval": 3,
+          "delay": 5
+        }
+      ],
+      "plan1HeroNormal": {
+        "groups": [
+          {
+            "type": "wasp",
+            "count": 40,
+            "delay": 0,
+            "interval": 0.35,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "beetle",
+            "count": 35,
+            "delay": 1.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "camopuff",
+            "count": 28,
+            "delay": 2.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": "ice"
+          },
+          {
+            "type": "nutknight",
+            "count": 24,
+            "delay": 3.5,
+            "interval": 0.8000000000000002,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "ironpod",
+            "count": 22,
+            "delay": 5,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "slug",
+            "count": 16,
+            "delay": 3,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "puffcap",
+            "count": 14,
+            "delay": 4,
+            "interval": 0.9,
+            "boss": false,
+            "resist": "blast"
+          },
+          {
+            "type": "mothmedic",
+            "count": 8,
+            "delay": 6,
+            "interval": 2.2,
+            "boss": false,
+            "resist": "shock"
+          },
+          {
+            "type": "mole",
+            "count": 16,
+            "delay": 2,
+            "interval": 1,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "snoozemoth",
+            "count": 6,
+            "delay": 5,
+            "interval": 3,
+            "boss": false,
+            "resist": null
+          }
+        ],
+        "hpBoost": 1
+      },
+      "resists": [
+        null,
+        null,
+        "ice",
+        null,
+        null,
+        null,
+        "blast",
+        "shock",
+        null,
+        null
+      ]
+    },
+    {
+      "wave": 39,
+      "spec": [
+        {
+          "type": "wasp",
+          "count": 40,
+          "interval": 0.35,
+          "delay": 0
+        },
+        {
+          "type": "beetle",
+          "count": 35,
+          "interval": 0.45,
+          "delay": 1.5
+        },
+        {
+          "type": "camopuff",
+          "count": 28,
+          "interval": 0.45,
+          "delay": 2.5
+        },
+        {
+          "type": "nutknight",
+          "count": 24,
+          "interval": 0.8,
+          "delay": 3.5
+        },
+        {
+          "type": "ironpod",
+          "count": 22,
+          "interval": 0.9,
+          "delay": 5
+        },
+        {
+          "type": "slug",
+          "count": 16,
+          "interval": 0.9,
+          "delay": 3
+        },
+        {
+          "type": "puffcap",
+          "count": 14,
+          "interval": 0.9,
+          "delay": 4
+        },
+        {
+          "type": "mothmedic",
+          "count": 8,
+          "interval": 2.2,
+          "delay": 6
+        },
+        {
+          "type": "mole",
+          "count": 16,
+          "interval": 1,
+          "delay": 2
+        },
+        {
+          "type": "snoozemoth",
+          "count": 6,
+          "interval": 3,
+          "delay": 5
+        }
+      ],
+      "plan1HeroNormal": {
+        "groups": [
+          {
+            "type": "wasp",
+            "count": 40,
+            "delay": 0,
+            "interval": 0.35,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "beetle",
+            "count": 35,
+            "delay": 1.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "camopuff",
+            "count": 28,
+            "delay": 2.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": "ice"
+          },
+          {
+            "type": "nutknight",
+            "count": 24,
+            "delay": 3.5,
+            "interval": 0.8000000000000002,
+            "boss": false,
+            "resist": "leaf"
+          },
+          {
+            "type": "ironpod",
+            "count": 22,
+            "delay": 5,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "slug",
+            "count": 16,
+            "delay": 3,
+            "interval": 0.9,
+            "boss": false,
+            "resist": "blast"
+          },
+          {
+            "type": "puffcap",
+            "count": 14,
+            "delay": 4,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "mothmedic",
+            "count": 8,
+            "delay": 6,
+            "interval": 2.2,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "mole",
+            "count": 16,
+            "delay": 2,
+            "interval": 1,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "snoozemoth",
+            "count": 6,
+            "delay": 5,
+            "interval": 3,
+            "boss": false,
+            "resist": null
+          }
+        ],
+        "hpBoost": 1
+      },
+      "resists": [
+        null,
+        null,
+        "ice",
+        "leaf",
+        null,
+        "blast",
+        null,
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "wave": 40,
+      "spec": [
+        {
+          "type": "wasp",
+          "count": 40,
+          "interval": 0.35,
+          "delay": 0
+        },
+        {
+          "type": "beetle",
+          "count": 35,
+          "interval": 0.45,
+          "delay": 1.5
+        },
+        {
+          "type": "camopuff",
+          "count": 28,
+          "interval": 0.45,
+          "delay": 2.5
+        },
+        {
+          "type": "nutknight",
+          "count": 24,
+          "interval": 0.8,
+          "delay": 3.5
+        },
+        {
+          "type": "ironpod",
+          "count": 22,
+          "interval": 0.9,
+          "delay": 5
+        },
+        {
+          "type": "slug",
+          "count": 16,
+          "interval": 0.9,
+          "delay": 3
+        },
+        {
+          "type": "puffcap",
+          "count": 14,
+          "interval": 0.9,
+          "delay": 4
+        },
+        {
+          "type": "mothmedic",
+          "count": 8,
+          "interval": 2.2,
+          "delay": 6
+        },
+        {
+          "type": "mole",
+          "count": 16,
+          "interval": 1,
+          "delay": 2
+        },
+        {
+          "type": "snoozemoth",
+          "count": 6,
+          "interval": 3,
+          "delay": 5
+        },
+        {
+          "type": "dreadblimp",
+          "count": 4,
+          "interval": 5.5,
+          "delay": 7
+        }
+      ],
+      "plan1HeroNormal": {
+        "groups": [
+          {
+            "type": "wasp",
+            "count": 40,
+            "delay": 0,
+            "interval": 0.35,
+            "boss": false,
+            "resist": "blast"
+          },
+          {
+            "type": "beetle",
+            "count": 35,
+            "delay": 1.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "camopuff",
+            "count": 28,
+            "delay": 2.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": "ice"
+          },
+          {
+            "type": "nutknight",
+            "count": 24,
+            "delay": 3.5,
+            "interval": 0.8000000000000002,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "ironpod",
+            "count": 22,
+            "delay": 5,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "slug",
+            "count": 16,
+            "delay": 3,
+            "interval": 0.9,
+            "boss": false,
+            "resist": "shock"
+          },
+          {
+            "type": "puffcap",
+            "count": 14,
+            "delay": 4,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "mothmedic",
+            "count": 8,
+            "delay": 6,
+            "interval": 2.2,
+            "boss": false,
+            "resist": "ice"
+          },
+          {
+            "type": "mole",
+            "count": 16,
+            "delay": 2,
+            "interval": 1,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "snoozemoth",
+            "count": 6,
+            "delay": 5,
+            "interval": 3,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "dreadblimp",
+            "count": 4,
+            "delay": 7,
+            "interval": 5.5,
+            "boss": true,
+            "resist": null
+          }
+        ],
+        "hpBoost": 1
+      },
+      "resists": [
+        "blast",
+        null,
+        "ice",
+        null,
+        null,
+        "shock",
+        null,
+        "ice",
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "wave": 41,
+      "spec": [
+        {
+          "type": "wasp",
+          "count": 40,
+          "interval": 0.35,
+          "delay": 0
+        },
+        {
+          "type": "beetle",
+          "count": 35,
+          "interval": 0.45,
+          "delay": 1.5
+        },
+        {
+          "type": "camopuff",
+          "count": 28,
+          "interval": 0.45,
+          "delay": 2.5
+        },
+        {
+          "type": "nutknight",
+          "count": 24,
+          "interval": 0.8,
+          "delay": 3.5
+        },
+        {
+          "type": "ironpod",
+          "count": 22,
+          "interval": 0.9,
+          "delay": 5
+        },
+        {
+          "type": "slug",
+          "count": 16,
+          "interval": 0.9,
+          "delay": 3
+        },
+        {
+          "type": "puffcap",
+          "count": 14,
+          "interval": 0.9,
+          "delay": 4
+        },
+        {
+          "type": "mothmedic",
+          "count": 8,
+          "interval": 2.2,
+          "delay": 6
+        },
+        {
+          "type": "mole",
+          "count": 16,
+          "interval": 1,
+          "delay": 2
+        },
+        {
+          "type": "snoozemoth",
+          "count": 6,
+          "interval": 3,
+          "delay": 5
+        }
+      ],
+      "plan1HeroNormal": {
+        "groups": [
+          {
+            "type": "wasp",
+            "count": 40,
+            "delay": 0,
+            "interval": 0.35,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "beetle",
+            "count": 35,
+            "delay": 1.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "camopuff",
+            "count": 28,
+            "delay": 2.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "nutknight",
+            "count": 24,
+            "delay": 3.5,
+            "interval": 0.8000000000000002,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "ironpod",
+            "count": 22,
+            "delay": 5,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "slug",
+            "count": 16,
+            "delay": 3,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "puffcap",
+            "count": 14,
+            "delay": 4,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "mothmedic",
+            "count": 8,
+            "delay": 6,
+            "interval": 2.2,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "mole",
+            "count": 16,
+            "delay": 2,
+            "interval": 1,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "snoozemoth",
+            "count": 6,
+            "delay": 5,
+            "interval": 3,
+            "boss": false,
+            "resist": null
+          }
+        ],
+        "hpBoost": 1
+      },
+      "resists": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "wave": 42,
+      "spec": [
+        {
+          "type": "wasp",
+          "count": 40,
+          "interval": 0.35,
+          "delay": 0
+        },
+        {
+          "type": "beetle",
+          "count": 35,
+          "interval": 0.45,
+          "delay": 1.5
+        },
+        {
+          "type": "camopuff",
+          "count": 28,
+          "interval": 0.45,
+          "delay": 2.5
+        },
+        {
+          "type": "nutknight",
+          "count": 24,
+          "interval": 0.8,
+          "delay": 3.5
+        },
+        {
+          "type": "ironpod",
+          "count": 22,
+          "interval": 0.9,
+          "delay": 5
+        },
+        {
+          "type": "slug",
+          "count": 16,
+          "interval": 0.9,
+          "delay": 3
+        },
+        {
+          "type": "puffcap",
+          "count": 14,
+          "interval": 0.9,
+          "delay": 4
+        },
+        {
+          "type": "mothmedic",
+          "count": 8,
+          "interval": 2.2,
+          "delay": 6
+        },
+        {
+          "type": "mole",
+          "count": 16,
+          "interval": 1,
+          "delay": 2
+        },
+        {
+          "type": "snoozemoth",
+          "count": 6,
+          "interval": 3,
+          "delay": 5
+        }
+      ],
+      "plan1HeroNormal": {
+        "groups": [
+          {
+            "type": "wasp",
+            "count": 40,
+            "delay": 0,
+            "interval": 0.35,
+            "boss": false,
+            "resist": "fire"
+          },
+          {
+            "type": "beetle",
+            "count": 35,
+            "delay": 1.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": "leaf"
+          },
+          {
+            "type": "camopuff",
+            "count": 28,
+            "delay": 2.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": "blast"
+          },
+          {
+            "type": "nutknight",
+            "count": 24,
+            "delay": 3.5,
+            "interval": 0.8000000000000002,
+            "boss": false,
+            "resist": "blast"
+          },
+          {
+            "type": "ironpod",
+            "count": 22,
+            "delay": 5,
+            "interval": 0.9,
+            "boss": false,
+            "resist": "blast"
+          },
+          {
+            "type": "slug",
+            "count": 16,
+            "delay": 3,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "puffcap",
+            "count": 14,
+            "delay": 4,
+            "interval": 0.9,
+            "boss": false,
+            "resist": "ice"
+          },
+          {
+            "type": "mothmedic",
+            "count": 8,
+            "delay": 6,
+            "interval": 2.2,
+            "boss": false,
+            "resist": "blast"
+          },
+          {
+            "type": "mole",
+            "count": 16,
+            "delay": 2,
+            "interval": 1,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "snoozemoth",
+            "count": 6,
+            "delay": 5,
+            "interval": 3,
+            "boss": false,
+            "resist": null
+          }
+        ],
+        "hpBoost": 1
+      },
+      "resists": [
+        "fire",
+        "leaf",
+        "blast",
+        "blast",
+        "blast",
+        null,
+        "ice",
+        "blast",
+        null,
+        null
+      ]
+    },
+    {
+      "wave": 43,
+      "spec": [
+        {
+          "type": "wasp",
+          "count": 40,
+          "interval": 0.35,
+          "delay": 0
+        },
+        {
+          "type": "beetle",
+          "count": 35,
+          "interval": 0.45,
+          "delay": 1.5
+        },
+        {
+          "type": "camopuff",
+          "count": 28,
+          "interval": 0.45,
+          "delay": 2.5
+        },
+        {
+          "type": "nutknight",
+          "count": 24,
+          "interval": 0.8,
+          "delay": 3.5
+        },
+        {
+          "type": "ironpod",
+          "count": 22,
+          "interval": 0.9,
+          "delay": 5
+        },
+        {
+          "type": "slug",
+          "count": 16,
+          "interval": 0.9,
+          "delay": 3
+        },
+        {
+          "type": "puffcap",
+          "count": 14,
+          "interval": 0.9,
+          "delay": 4
+        },
+        {
+          "type": "mothmedic",
+          "count": 8,
+          "interval": 2.2,
+          "delay": 6
+        },
+        {
+          "type": "mole",
+          "count": 16,
+          "interval": 1,
+          "delay": 2
+        },
+        {
+          "type": "snoozemoth",
+          "count": 6,
+          "interval": 3,
+          "delay": 5
+        }
+      ],
+      "plan1HeroNormal": {
+        "groups": [
+          {
+            "type": "wasp",
+            "count": 40,
+            "delay": 0,
+            "interval": 0.35,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "beetle",
+            "count": 35,
+            "delay": 1.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": "shock"
+          },
+          {
+            "type": "camopuff",
+            "count": 28,
+            "delay": 2.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": "blast"
+          },
+          {
+            "type": "nutknight",
+            "count": 24,
+            "delay": 3.5,
+            "interval": 0.8000000000000002,
+            "boss": false,
+            "resist": "blast"
+          },
+          {
+            "type": "ironpod",
+            "count": 22,
+            "delay": 5,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "slug",
+            "count": 16,
+            "delay": 3,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "puffcap",
+            "count": 14,
+            "delay": 4,
+            "interval": 0.9,
+            "boss": false,
+            "resist": "leaf"
+          },
+          {
+            "type": "mothmedic",
+            "count": 8,
+            "delay": 6,
+            "interval": 2.2,
+            "boss": false,
+            "resist": "shock"
+          },
+          {
+            "type": "mole",
+            "count": 16,
+            "delay": 2,
+            "interval": 1,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "snoozemoth",
+            "count": 6,
+            "delay": 5,
+            "interval": 3,
+            "boss": false,
+            "resist": "fire"
+          }
+        ],
+        "hpBoost": 1
+      },
+      "resists": [
+        null,
+        "shock",
+        "blast",
+        "blast",
+        null,
+        null,
+        "leaf",
+        "shock",
+        null,
+        "fire"
+      ]
+    },
+    {
+      "wave": 44,
+      "spec": [
+        {
+          "type": "wasp",
+          "count": 40,
+          "interval": 0.35,
+          "delay": 0
+        },
+        {
+          "type": "beetle",
+          "count": 35,
+          "interval": 0.45,
+          "delay": 1.5
+        },
+        {
+          "type": "camopuff",
+          "count": 28,
+          "interval": 0.45,
+          "delay": 2.5
+        },
+        {
+          "type": "nutknight",
+          "count": 24,
+          "interval": 0.8,
+          "delay": 3.5
+        },
+        {
+          "type": "ironpod",
+          "count": 22,
+          "interval": 0.9,
+          "delay": 5
+        },
+        {
+          "type": "slug",
+          "count": 16,
+          "interval": 0.9,
+          "delay": 3
+        },
+        {
+          "type": "puffcap",
+          "count": 14,
+          "interval": 0.9,
+          "delay": 4
+        },
+        {
+          "type": "mothmedic",
+          "count": 8,
+          "interval": 2.2,
+          "delay": 6
+        },
+        {
+          "type": "mole",
+          "count": 16,
+          "interval": 1,
+          "delay": 2
+        },
+        {
+          "type": "snoozemoth",
+          "count": 6,
+          "interval": 3,
+          "delay": 5
+        }
+      ],
+      "plan1HeroNormal": {
+        "groups": [
+          {
+            "type": "wasp",
+            "count": 40,
+            "delay": 0,
+            "interval": 0.35,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "beetle",
+            "count": 35,
+            "delay": 1.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": "fire"
+          },
+          {
+            "type": "camopuff",
+            "count": 28,
+            "delay": 2.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "nutknight",
+            "count": 24,
+            "delay": 3.5,
+            "interval": 0.8000000000000002,
+            "boss": false,
+            "resist": "fire"
+          },
+          {
+            "type": "ironpod",
+            "count": 22,
+            "delay": 5,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "slug",
+            "count": 16,
+            "delay": 3,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "puffcap",
+            "count": 14,
+            "delay": 4,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "mothmedic",
+            "count": 8,
+            "delay": 6,
+            "interval": 2.2,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "mole",
+            "count": 16,
+            "delay": 2,
+            "interval": 1,
+            "boss": false,
+            "resist": "shock"
+          },
+          {
+            "type": "snoozemoth",
+            "count": 6,
+            "delay": 5,
+            "interval": 3,
+            "boss": false,
+            "resist": null
+          }
+        ],
+        "hpBoost": 1
+      },
+      "resists": [
+        null,
+        "fire",
+        null,
+        "fire",
+        null,
+        null,
+        null,
+        null,
+        "shock",
+        null
+      ]
+    },
+    {
+      "wave": 45,
+      "spec": [
+        {
+          "type": "wasp",
+          "count": 40,
+          "interval": 0.35,
+          "delay": 0
+        },
+        {
+          "type": "beetle",
+          "count": 35,
+          "interval": 0.45,
+          "delay": 1.5
+        },
+        {
+          "type": "camopuff",
+          "count": 28,
+          "interval": 0.45,
+          "delay": 2.5
+        },
+        {
+          "type": "nutknight",
+          "count": 24,
+          "interval": 0.8,
+          "delay": 3.5
+        },
+        {
+          "type": "ironpod",
+          "count": 22,
+          "interval": 0.9,
+          "delay": 5
+        },
+        {
+          "type": "slug",
+          "count": 16,
+          "interval": 0.9,
+          "delay": 3
+        },
+        {
+          "type": "puffcap",
+          "count": 14,
+          "interval": 0.9,
+          "delay": 4
+        },
+        {
+          "type": "mothmedic",
+          "count": 8,
+          "interval": 2.2,
+          "delay": 6
+        },
+        {
+          "type": "mole",
+          "count": 16,
+          "interval": 1,
+          "delay": 2
+        },
+        {
+          "type": "snoozemoth",
+          "count": 6,
+          "interval": 3,
+          "delay": 5
+        },
+        {
+          "type": "dreadblimp",
+          "count": 4,
+          "interval": 5.5,
+          "delay": 7
+        },
+        {
+          "type": "zeppelin",
+          "count": 2,
+          "interval": 4,
+          "delay": 4
+        }
+      ],
+      "plan1HeroNormal": {
+        "groups": [
+          {
+            "type": "wasp",
+            "count": 40,
+            "delay": 0,
+            "interval": 0.35,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "beetle",
+            "count": 35,
+            "delay": 1.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": "blast"
+          },
+          {
+            "type": "camopuff",
+            "count": 28,
+            "delay": 2.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "nutknight",
+            "count": 24,
+            "delay": 3.5,
+            "interval": 0.8000000000000002,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "ironpod",
+            "count": 22,
+            "delay": 5,
+            "interval": 0.9,
+            "boss": false,
+            "resist": "fire"
+          },
+          {
+            "type": "slug",
+            "count": 16,
+            "delay": 3,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "puffcap",
+            "count": 14,
+            "delay": 4,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "mothmedic",
+            "count": 8,
+            "delay": 6,
+            "interval": 2.2,
+            "boss": false,
+            "resist": "ice"
+          },
+          {
+            "type": "mole",
+            "count": 16,
+            "delay": 2,
+            "interval": 1,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "snoozemoth",
+            "count": 6,
+            "delay": 5,
+            "interval": 3,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "dreadblimp",
+            "count": 4,
+            "delay": 7,
+            "interval": 5.5,
+            "boss": true,
+            "resist": null
+          },
+          {
+            "type": "zeppelin",
+            "count": 2,
+            "delay": 4,
+            "interval": 4,
+            "boss": true,
+            "resist": null
+          }
+        ],
+        "hpBoost": 1
+      },
+      "resists": [
+        null,
+        "blast",
+        null,
+        null,
+        "fire",
+        null,
+        null,
+        "ice",
+        null,
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "wave": 46,
+      "spec": [
+        {
+          "type": "wasp",
+          "count": 40,
+          "interval": 0.35,
+          "delay": 0
+        },
+        {
+          "type": "beetle",
+          "count": 35,
+          "interval": 0.45,
+          "delay": 1.5
+        },
+        {
+          "type": "camopuff",
+          "count": 28,
+          "interval": 0.45,
+          "delay": 2.5
+        },
+        {
+          "type": "nutknight",
+          "count": 24,
+          "interval": 0.8,
+          "delay": 3.5
+        },
+        {
+          "type": "ironpod",
+          "count": 22,
+          "interval": 0.9,
+          "delay": 5
+        },
+        {
+          "type": "slug",
+          "count": 16,
+          "interval": 0.9,
+          "delay": 3
+        },
+        {
+          "type": "puffcap",
+          "count": 14,
+          "interval": 0.9,
+          "delay": 4
+        },
+        {
+          "type": "mothmedic",
+          "count": 8,
+          "interval": 2.2,
+          "delay": 6
+        },
+        {
+          "type": "mole",
+          "count": 16,
+          "interval": 1,
+          "delay": 2
+        },
+        {
+          "type": "snoozemoth",
+          "count": 6,
+          "interval": 3,
+          "delay": 5
+        }
+      ],
+      "plan1HeroNormal": {
+        "groups": [
+          {
+            "type": "wasp",
+            "count": 40,
+            "delay": 0,
+            "interval": 0.35,
+            "boss": false,
+            "resist": "ice"
+          },
+          {
+            "type": "beetle",
+            "count": 35,
+            "delay": 1.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "camopuff",
+            "count": 28,
+            "delay": 2.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": "blast"
+          },
+          {
+            "type": "nutknight",
+            "count": 24,
+            "delay": 3.5,
+            "interval": 0.8000000000000002,
+            "boss": false,
+            "resist": "shock"
+          },
+          {
+            "type": "ironpod",
+            "count": 22,
+            "delay": 5,
+            "interval": 0.9,
+            "boss": false,
+            "resist": "ice"
+          },
+          {
+            "type": "slug",
+            "count": 16,
+            "delay": 3,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "puffcap",
+            "count": 14,
+            "delay": 4,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "mothmedic",
+            "count": 8,
+            "delay": 6,
+            "interval": 2.2,
+            "boss": false,
+            "resist": "leaf"
+          },
+          {
+            "type": "mole",
+            "count": 16,
+            "delay": 2,
+            "interval": 1,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "snoozemoth",
+            "count": 6,
+            "delay": 5,
+            "interval": 3,
+            "boss": false,
+            "resist": null
+          }
+        ],
+        "hpBoost": 1
+      },
+      "resists": [
+        "ice",
+        null,
+        "blast",
+        "shock",
+        "ice",
+        null,
+        null,
+        "leaf",
+        null,
+        null
+      ]
+    },
+    {
+      "wave": 47,
+      "spec": [
+        {
+          "type": "wasp",
+          "count": 40,
+          "interval": 0.35,
+          "delay": 0
+        },
+        {
+          "type": "beetle",
+          "count": 35,
+          "interval": 0.45,
+          "delay": 1.5
+        },
+        {
+          "type": "camopuff",
+          "count": 28,
+          "interval": 0.45,
+          "delay": 2.5
+        },
+        {
+          "type": "nutknight",
+          "count": 24,
+          "interval": 0.8,
+          "delay": 3.5
+        },
+        {
+          "type": "ironpod",
+          "count": 22,
+          "interval": 0.9,
+          "delay": 5
+        },
+        {
+          "type": "slug",
+          "count": 16,
+          "interval": 0.9,
+          "delay": 3
+        },
+        {
+          "type": "puffcap",
+          "count": 14,
+          "interval": 0.9,
+          "delay": 4
+        },
+        {
+          "type": "mothmedic",
+          "count": 8,
+          "interval": 2.2,
+          "delay": 6
+        },
+        {
+          "type": "mole",
+          "count": 16,
+          "interval": 1,
+          "delay": 2
+        },
+        {
+          "type": "snoozemoth",
+          "count": 6,
+          "interval": 3,
+          "delay": 5
+        }
+      ],
+      "plan1HeroNormal": {
+        "groups": [
+          {
+            "type": "wasp",
+            "count": 40,
+            "delay": 0,
+            "interval": 0.35,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "beetle",
+            "count": 35,
+            "delay": 1.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "camopuff",
+            "count": 28,
+            "delay": 2.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "nutknight",
+            "count": 24,
+            "delay": 3.5,
+            "interval": 0.8000000000000002,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "ironpod",
+            "count": 22,
+            "delay": 5,
+            "interval": 0.9,
+            "boss": false,
+            "resist": "blast"
+          },
+          {
+            "type": "slug",
+            "count": 16,
+            "delay": 3,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "puffcap",
+            "count": 14,
+            "delay": 4,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "mothmedic",
+            "count": 8,
+            "delay": 6,
+            "interval": 2.2,
+            "boss": false,
+            "resist": "ice"
+          },
+          {
+            "type": "mole",
+            "count": 16,
+            "delay": 2,
+            "interval": 1,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "snoozemoth",
+            "count": 6,
+            "delay": 5,
+            "interval": 3,
+            "boss": false,
+            "resist": "shock"
+          }
+        ],
+        "hpBoost": 1
+      },
+      "resists": [
+        null,
+        null,
+        null,
+        null,
+        "blast",
+        null,
+        null,
+        "ice",
+        null,
+        "shock"
+      ]
+    },
+    {
+      "wave": 48,
+      "spec": [
+        {
+          "type": "wasp",
+          "count": 40,
+          "interval": 0.35,
+          "delay": 0
+        },
+        {
+          "type": "beetle",
+          "count": 35,
+          "interval": 0.45,
+          "delay": 1.5
+        },
+        {
+          "type": "camopuff",
+          "count": 28,
+          "interval": 0.45,
+          "delay": 2.5
+        },
+        {
+          "type": "nutknight",
+          "count": 24,
+          "interval": 0.8,
+          "delay": 3.5
+        },
+        {
+          "type": "ironpod",
+          "count": 22,
+          "interval": 0.9,
+          "delay": 5
+        },
+        {
+          "type": "slug",
+          "count": 16,
+          "interval": 0.9,
+          "delay": 3
+        },
+        {
+          "type": "puffcap",
+          "count": 14,
+          "interval": 0.9,
+          "delay": 4
+        },
+        {
+          "type": "mothmedic",
+          "count": 8,
+          "interval": 2.2,
+          "delay": 6
+        },
+        {
+          "type": "mole",
+          "count": 16,
+          "interval": 1,
+          "delay": 2
+        },
+        {
+          "type": "snoozemoth",
+          "count": 6,
+          "interval": 3,
+          "delay": 5
+        }
+      ],
+      "plan1HeroNormal": {
+        "groups": [
+          {
+            "type": "wasp",
+            "count": 40,
+            "delay": 0,
+            "interval": 0.35,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "beetle",
+            "count": 35,
+            "delay": 1.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": "fire"
+          },
+          {
+            "type": "camopuff",
+            "count": 28,
+            "delay": 2.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "nutknight",
+            "count": 24,
+            "delay": 3.5,
+            "interval": 0.8000000000000002,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "ironpod",
+            "count": 22,
+            "delay": 5,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "slug",
+            "count": 16,
+            "delay": 3,
+            "interval": 0.9,
+            "boss": false,
+            "resist": "ice"
+          },
+          {
+            "type": "puffcap",
+            "count": 14,
+            "delay": 4,
+            "interval": 0.9,
+            "boss": false,
+            "resist": "ice"
+          },
+          {
+            "type": "mothmedic",
+            "count": 8,
+            "delay": 6,
+            "interval": 2.2,
+            "boss": false,
+            "resist": "fire"
+          },
+          {
+            "type": "mole",
+            "count": 16,
+            "delay": 2,
+            "interval": 1,
+            "boss": false,
+            "resist": "ice"
+          },
+          {
+            "type": "snoozemoth",
+            "count": 6,
+            "delay": 5,
+            "interval": 3,
+            "boss": false,
+            "resist": null
+          }
+        ],
+        "hpBoost": 1
+      },
+      "resists": [
+        null,
+        "fire",
+        null,
+        null,
+        null,
+        "ice",
+        "ice",
+        "fire",
+        "ice",
+        null
+      ]
+    },
+    {
+      "wave": 49,
+      "spec": [
+        {
+          "type": "wasp",
+          "count": 40,
+          "interval": 0.35,
+          "delay": 0
+        },
+        {
+          "type": "beetle",
+          "count": 35,
+          "interval": 0.45,
+          "delay": 1.5
+        },
+        {
+          "type": "camopuff",
+          "count": 28,
+          "interval": 0.45,
+          "delay": 2.5
+        },
+        {
+          "type": "nutknight",
+          "count": 24,
+          "interval": 0.8,
+          "delay": 3.5
+        },
+        {
+          "type": "ironpod",
+          "count": 22,
+          "interval": 0.9,
+          "delay": 5
+        },
+        {
+          "type": "slug",
+          "count": 16,
+          "interval": 0.9,
+          "delay": 3
+        },
+        {
+          "type": "puffcap",
+          "count": 14,
+          "interval": 0.9,
+          "delay": 4
+        },
+        {
+          "type": "mothmedic",
+          "count": 8,
+          "interval": 2.2,
+          "delay": 6
+        },
+        {
+          "type": "mole",
+          "count": 16,
+          "interval": 1,
+          "delay": 2
+        },
+        {
+          "type": "snoozemoth",
+          "count": 6,
+          "interval": 3,
+          "delay": 5
+        }
+      ],
+      "plan1HeroNormal": {
+        "groups": [
+          {
+            "type": "wasp",
+            "count": 40,
+            "delay": 0,
+            "interval": 0.35,
+            "boss": false,
+            "resist": "ice"
+          },
+          {
+            "type": "beetle",
+            "count": 35,
+            "delay": 1.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "camopuff",
+            "count": 28,
+            "delay": 2.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "nutknight",
+            "count": 24,
+            "delay": 3.5,
+            "interval": 0.8000000000000002,
+            "boss": false,
+            "resist": "fire"
+          },
+          {
+            "type": "ironpod",
+            "count": 22,
+            "delay": 5,
+            "interval": 0.9,
+            "boss": false,
+            "resist": "fire"
+          },
+          {
+            "type": "slug",
+            "count": 16,
+            "delay": 3,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "puffcap",
+            "count": 14,
+            "delay": 4,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "mothmedic",
+            "count": 8,
+            "delay": 6,
+            "interval": 2.2,
+            "boss": false,
+            "resist": "fire"
+          },
+          {
+            "type": "mole",
+            "count": 16,
+            "delay": 2,
+            "interval": 1,
+            "boss": false,
+            "resist": "shock"
+          },
+          {
+            "type": "snoozemoth",
+            "count": 6,
+            "delay": 5,
+            "interval": 3,
+            "boss": false,
+            "resist": null
+          }
+        ],
+        "hpBoost": 1
+      },
+      "resists": [
+        "ice",
+        null,
+        null,
+        "fire",
+        "fire",
+        null,
+        null,
+        "fire",
+        "shock",
+        null
+      ]
+    },
+    {
+      "wave": 50,
+      "spec": [
+        {
+          "type": "wasp",
+          "count": 40,
+          "interval": 0.35,
+          "delay": 0
+        },
+        {
+          "type": "beetle",
+          "count": 35,
+          "interval": 0.45,
+          "delay": 1.5
+        },
+        {
+          "type": "camopuff",
+          "count": 28,
+          "interval": 0.45,
+          "delay": 2.5
+        },
+        {
+          "type": "nutknight",
+          "count": 24,
+          "interval": 0.8,
+          "delay": 3.5
+        },
+        {
+          "type": "ironpod",
+          "count": 22,
+          "interval": 0.9,
+          "delay": 5
+        },
+        {
+          "type": "slug",
+          "count": 16,
+          "interval": 0.9,
+          "delay": 3
+        },
+        {
+          "type": "puffcap",
+          "count": 14,
+          "interval": 0.9,
+          "delay": 4
+        },
+        {
+          "type": "mothmedic",
+          "count": 8,
+          "interval": 2.2,
+          "delay": 6
+        },
+        {
+          "type": "mole",
+          "count": 16,
+          "interval": 1,
+          "delay": 2
+        },
+        {
+          "type": "snoozemoth",
+          "count": 6,
+          "interval": 3,
+          "delay": 5
+        },
+        {
+          "type": "dreadblimp",
+          "count": 4,
+          "interval": 5.5,
+          "delay": 7
+        }
+      ],
+      "plan1HeroNormal": {
+        "groups": [
+          {
+            "type": "wasp",
+            "count": 40,
+            "delay": 0,
+            "interval": 0.35,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "beetle",
+            "count": 35,
+            "delay": 1.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "camopuff",
+            "count": 28,
+            "delay": 2.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": "ice"
+          },
+          {
+            "type": "nutknight",
+            "count": 24,
+            "delay": 3.5,
+            "interval": 0.8000000000000002,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "ironpod",
+            "count": 22,
+            "delay": 5,
+            "interval": 0.9,
+            "boss": false,
+            "resist": "fire"
+          },
+          {
+            "type": "slug",
+            "count": 16,
+            "delay": 3,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "puffcap",
+            "count": 14,
+            "delay": 4,
+            "interval": 0.9,
+            "boss": false,
+            "resist": "fire"
+          },
+          {
+            "type": "mothmedic",
+            "count": 8,
+            "delay": 6,
+            "interval": 2.2,
+            "boss": false,
+            "resist": "fire"
+          },
+          {
+            "type": "mole",
+            "count": 16,
+            "delay": 2,
+            "interval": 1,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "snoozemoth",
+            "count": 6,
+            "delay": 5,
+            "interval": 3,
+            "boss": false,
+            "resist": "fire"
+          },
+          {
+            "type": "dreadblimp",
+            "count": 4,
+            "delay": 7,
+            "interval": 5.5,
+            "boss": true,
+            "resist": null
+          }
+        ],
+        "hpBoost": 1
+      },
+      "resists": [
+        null,
+        null,
+        "ice",
+        null,
+        "fire",
+        null,
+        "fire",
+        "fire",
+        null,
+        "fire",
+        null
+      ]
+    },
+    {
+      "wave": 51,
+      "spec": [
+        {
+          "type": "wasp",
+          "count": 40,
+          "interval": 0.35,
+          "delay": 0
+        },
+        {
+          "type": "beetle",
+          "count": 35,
+          "interval": 0.45,
+          "delay": 1.5
+        },
+        {
+          "type": "camopuff",
+          "count": 28,
+          "interval": 0.45,
+          "delay": 2.5
+        },
+        {
+          "type": "nutknight",
+          "count": 24,
+          "interval": 0.8,
+          "delay": 3.5
+        },
+        {
+          "type": "ironpod",
+          "count": 22,
+          "interval": 0.9,
+          "delay": 5
+        },
+        {
+          "type": "slug",
+          "count": 16,
+          "interval": 0.9,
+          "delay": 3
+        },
+        {
+          "type": "puffcap",
+          "count": 14,
+          "interval": 0.9,
+          "delay": 4
+        },
+        {
+          "type": "mothmedic",
+          "count": 8,
+          "interval": 2.2,
+          "delay": 6
+        },
+        {
+          "type": "mole",
+          "count": 16,
+          "interval": 1,
+          "delay": 2
+        },
+        {
+          "type": "snoozemoth",
+          "count": 6,
+          "interval": 3,
+          "delay": 5
+        }
+      ],
+      "plan1HeroNormal": {
+        "groups": [
+          {
+            "type": "wasp",
+            "count": 40,
+            "delay": 0,
+            "interval": 0.35,
+            "boss": false,
+            "resist": "leaf"
+          },
+          {
+            "type": "beetle",
+            "count": 35,
+            "delay": 1.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "camopuff",
+            "count": 28,
+            "delay": 2.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "nutknight",
+            "count": 24,
+            "delay": 3.5,
+            "interval": 0.8000000000000002,
+            "boss": false,
+            "resist": "leaf"
+          },
+          {
+            "type": "ironpod",
+            "count": 22,
+            "delay": 5,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "slug",
+            "count": 16,
+            "delay": 3,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "puffcap",
+            "count": 14,
+            "delay": 4,
+            "interval": 0.9,
+            "boss": false,
+            "resist": "blast"
+          },
+          {
+            "type": "mothmedic",
+            "count": 8,
+            "delay": 6,
+            "interval": 2.2,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "mole",
+            "count": 16,
+            "delay": 2,
+            "interval": 1,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "snoozemoth",
+            "count": 6,
+            "delay": 5,
+            "interval": 3,
+            "boss": false,
+            "resist": "leaf"
+          }
+        ],
+        "hpBoost": 1
+      },
+      "resists": [
+        "leaf",
+        null,
+        null,
+        "leaf",
+        null,
+        null,
+        "blast",
+        null,
+        null,
+        "leaf"
+      ]
+    },
+    {
+      "wave": 52,
+      "spec": [
+        {
+          "type": "wasp",
+          "count": 40,
+          "interval": 0.35,
+          "delay": 0
+        },
+        {
+          "type": "beetle",
+          "count": 35,
+          "interval": 0.45,
+          "delay": 1.5
+        },
+        {
+          "type": "camopuff",
+          "count": 28,
+          "interval": 0.45,
+          "delay": 2.5
+        },
+        {
+          "type": "nutknight",
+          "count": 24,
+          "interval": 0.8,
+          "delay": 3.5
+        },
+        {
+          "type": "ironpod",
+          "count": 22,
+          "interval": 0.9,
+          "delay": 5
+        },
+        {
+          "type": "slug",
+          "count": 16,
+          "interval": 0.9,
+          "delay": 3
+        },
+        {
+          "type": "puffcap",
+          "count": 14,
+          "interval": 0.9,
+          "delay": 4
+        },
+        {
+          "type": "mothmedic",
+          "count": 8,
+          "interval": 2.2,
+          "delay": 6
+        },
+        {
+          "type": "mole",
+          "count": 16,
+          "interval": 1,
+          "delay": 2
+        },
+        {
+          "type": "snoozemoth",
+          "count": 6,
+          "interval": 3,
+          "delay": 5
+        }
+      ],
+      "plan1HeroNormal": {
+        "groups": [
+          {
+            "type": "wasp",
+            "count": 40,
+            "delay": 0,
+            "interval": 0.35,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "beetle",
+            "count": 35,
+            "delay": 1.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "camopuff",
+            "count": 28,
+            "delay": 2.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "nutknight",
+            "count": 24,
+            "delay": 3.5,
+            "interval": 0.8000000000000002,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "ironpod",
+            "count": 22,
+            "delay": 5,
+            "interval": 0.9,
+            "boss": false,
+            "resist": "blast"
+          },
+          {
+            "type": "slug",
+            "count": 16,
+            "delay": 3,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "puffcap",
+            "count": 14,
+            "delay": 4,
+            "interval": 0.9,
+            "boss": false,
+            "resist": "leaf"
+          },
+          {
+            "type": "mothmedic",
+            "count": 8,
+            "delay": 6,
+            "interval": 2.2,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "mole",
+            "count": 16,
+            "delay": 2,
+            "interval": 1,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "snoozemoth",
+            "count": 6,
+            "delay": 5,
+            "interval": 3,
+            "boss": false,
+            "resist": null
+          }
+        ],
+        "hpBoost": 1
+      },
+      "resists": [
+        null,
+        null,
+        null,
+        null,
+        "blast",
+        null,
+        "leaf",
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "wave": 53,
+      "spec": [
+        {
+          "type": "wasp",
+          "count": 40,
+          "interval": 0.35,
+          "delay": 0
+        },
+        {
+          "type": "beetle",
+          "count": 35,
+          "interval": 0.45,
+          "delay": 1.5
+        },
+        {
+          "type": "camopuff",
+          "count": 28,
+          "interval": 0.45,
+          "delay": 2.5
+        },
+        {
+          "type": "nutknight",
+          "count": 24,
+          "interval": 0.8,
+          "delay": 3.5
+        },
+        {
+          "type": "ironpod",
+          "count": 22,
+          "interval": 0.9,
+          "delay": 5
+        },
+        {
+          "type": "slug",
+          "count": 16,
+          "interval": 0.9,
+          "delay": 3
+        },
+        {
+          "type": "puffcap",
+          "count": 14,
+          "interval": 0.9,
+          "delay": 4
+        },
+        {
+          "type": "mothmedic",
+          "count": 8,
+          "interval": 2.2,
+          "delay": 6
+        },
+        {
+          "type": "mole",
+          "count": 16,
+          "interval": 1,
+          "delay": 2
+        },
+        {
+          "type": "snoozemoth",
+          "count": 6,
+          "interval": 3,
+          "delay": 5
+        }
+      ],
+      "plan1HeroNormal": {
+        "groups": [
+          {
+            "type": "wasp",
+            "count": 40,
+            "delay": 0,
+            "interval": 0.35,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "beetle",
+            "count": 35,
+            "delay": 1.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": "ice"
+          },
+          {
+            "type": "camopuff",
+            "count": 28,
+            "delay": 2.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "nutknight",
+            "count": 24,
+            "delay": 3.5,
+            "interval": 0.8000000000000002,
+            "boss": false,
+            "resist": "ice"
+          },
+          {
+            "type": "ironpod",
+            "count": 22,
+            "delay": 5,
+            "interval": 0.9,
+            "boss": false,
+            "resist": "shock"
+          },
+          {
+            "type": "slug",
+            "count": 16,
+            "delay": 3,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "puffcap",
+            "count": 14,
+            "delay": 4,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "mothmedic",
+            "count": 8,
+            "delay": 6,
+            "interval": 2.2,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "mole",
+            "count": 16,
+            "delay": 2,
+            "interval": 1,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "snoozemoth",
+            "count": 6,
+            "delay": 5,
+            "interval": 3,
+            "boss": false,
+            "resist": null
+          }
+        ],
+        "hpBoost": 1
+      },
+      "resists": [
+        null,
+        "ice",
+        null,
+        "ice",
+        "shock",
+        null,
+        null,
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "wave": 54,
+      "spec": [
+        {
+          "type": "wasp",
+          "count": 40,
+          "interval": 0.35,
+          "delay": 0
+        },
+        {
+          "type": "beetle",
+          "count": 35,
+          "interval": 0.45,
+          "delay": 1.5
+        },
+        {
+          "type": "camopuff",
+          "count": 28,
+          "interval": 0.45,
+          "delay": 2.5
+        },
+        {
+          "type": "nutknight",
+          "count": 24,
+          "interval": 0.8,
+          "delay": 3.5
+        },
+        {
+          "type": "ironpod",
+          "count": 22,
+          "interval": 0.9,
+          "delay": 5
+        },
+        {
+          "type": "slug",
+          "count": 16,
+          "interval": 0.9,
+          "delay": 3
+        },
+        {
+          "type": "puffcap",
+          "count": 14,
+          "interval": 0.9,
+          "delay": 4
+        },
+        {
+          "type": "mothmedic",
+          "count": 8,
+          "interval": 2.2,
+          "delay": 6
+        },
+        {
+          "type": "mole",
+          "count": 16,
+          "interval": 1,
+          "delay": 2
+        },
+        {
+          "type": "snoozemoth",
+          "count": 6,
+          "interval": 3,
+          "delay": 5
+        }
+      ],
+      "plan1HeroNormal": {
+        "groups": [
+          {
+            "type": "wasp",
+            "count": 40,
+            "delay": 0,
+            "interval": 0.35,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "beetle",
+            "count": 35,
+            "delay": 1.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "camopuff",
+            "count": 28,
+            "delay": 2.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "nutknight",
+            "count": 24,
+            "delay": 3.5,
+            "interval": 0.8000000000000002,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "ironpod",
+            "count": 22,
+            "delay": 5,
+            "interval": 0.9,
+            "boss": false,
+            "resist": "fire"
+          },
+          {
+            "type": "slug",
+            "count": 16,
+            "delay": 3,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "puffcap",
+            "count": 14,
+            "delay": 4,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "mothmedic",
+            "count": 8,
+            "delay": 6,
+            "interval": 2.2,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "mole",
+            "count": 16,
+            "delay": 2,
+            "interval": 1,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "snoozemoth",
+            "count": 6,
+            "delay": 5,
+            "interval": 3,
+            "boss": false,
+            "resist": null
+          }
+        ],
+        "hpBoost": 1
+      },
+      "resists": [
+        null,
+        null,
+        null,
+        null,
+        "fire",
+        null,
+        null,
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "wave": 55,
+      "spec": [
+        {
+          "type": "wasp",
+          "count": 40,
+          "interval": 0.35,
+          "delay": 0
+        },
+        {
+          "type": "beetle",
+          "count": 35,
+          "interval": 0.45,
+          "delay": 1.5
+        },
+        {
+          "type": "camopuff",
+          "count": 28,
+          "interval": 0.45,
+          "delay": 2.5
+        },
+        {
+          "type": "nutknight",
+          "count": 24,
+          "interval": 0.8,
+          "delay": 3.5
+        },
+        {
+          "type": "ironpod",
+          "count": 22,
+          "interval": 0.9,
+          "delay": 5
+        },
+        {
+          "type": "slug",
+          "count": 16,
+          "interval": 0.9,
+          "delay": 3
+        },
+        {
+          "type": "puffcap",
+          "count": 14,
+          "interval": 0.9,
+          "delay": 4
+        },
+        {
+          "type": "mothmedic",
+          "count": 8,
+          "interval": 2.2,
+          "delay": 6
+        },
+        {
+          "type": "mole",
+          "count": 16,
+          "interval": 1,
+          "delay": 2
+        },
+        {
+          "type": "snoozemoth",
+          "count": 6,
+          "interval": 3,
+          "delay": 5
+        },
+        {
+          "type": "dreadblimp",
+          "count": 4,
+          "interval": 5.5,
+          "delay": 7
+        },
+        {
+          "type": "zeppelin",
+          "count": 2,
+          "interval": 4,
+          "delay": 4
+        }
+      ],
+      "plan1HeroNormal": {
+        "groups": [
+          {
+            "type": "wasp",
+            "count": 40,
+            "delay": 0,
+            "interval": 0.35,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "beetle",
+            "count": 35,
+            "delay": 1.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": "blast"
+          },
+          {
+            "type": "camopuff",
+            "count": 28,
+            "delay": 2.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": "shock"
+          },
+          {
+            "type": "nutknight",
+            "count": 24,
+            "delay": 3.5,
+            "interval": 0.8000000000000002,
+            "boss": false,
+            "resist": "ice"
+          },
+          {
+            "type": "ironpod",
+            "count": 22,
+            "delay": 5,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "slug",
+            "count": 16,
+            "delay": 3,
+            "interval": 0.9,
+            "boss": false,
+            "resist": "shock"
+          },
+          {
+            "type": "puffcap",
+            "count": 14,
+            "delay": 4,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "mothmedic",
+            "count": 8,
+            "delay": 6,
+            "interval": 2.2,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "mole",
+            "count": 16,
+            "delay": 2,
+            "interval": 1,
+            "boss": false,
+            "resist": "fire"
+          },
+          {
+            "type": "snoozemoth",
+            "count": 6,
+            "delay": 5,
+            "interval": 3,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "dreadblimp",
+            "count": 4,
+            "delay": 7,
+            "interval": 5.5,
+            "boss": true,
+            "resist": null
+          },
+          {
+            "type": "zeppelin",
+            "count": 2,
+            "delay": 4,
+            "interval": 4,
+            "boss": true,
+            "resist": null
+          }
+        ],
+        "hpBoost": 1
+      },
+      "resists": [
+        null,
+        "blast",
+        "shock",
+        "ice",
+        null,
+        "shock",
+        null,
+        null,
+        "fire",
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "wave": 56,
+      "spec": [
+        {
+          "type": "wasp",
+          "count": 40,
+          "interval": 0.35,
+          "delay": 0
+        },
+        {
+          "type": "beetle",
+          "count": 35,
+          "interval": 0.45,
+          "delay": 1.5
+        },
+        {
+          "type": "camopuff",
+          "count": 28,
+          "interval": 0.45,
+          "delay": 2.5
+        },
+        {
+          "type": "nutknight",
+          "count": 24,
+          "interval": 0.8,
+          "delay": 3.5
+        },
+        {
+          "type": "ironpod",
+          "count": 22,
+          "interval": 0.9,
+          "delay": 5
+        },
+        {
+          "type": "slug",
+          "count": 16,
+          "interval": 0.9,
+          "delay": 3
+        },
+        {
+          "type": "puffcap",
+          "count": 14,
+          "interval": 0.9,
+          "delay": 4
+        },
+        {
+          "type": "mothmedic",
+          "count": 8,
+          "interval": 2.2,
+          "delay": 6
+        },
+        {
+          "type": "mole",
+          "count": 16,
+          "interval": 1,
+          "delay": 2
+        },
+        {
+          "type": "snoozemoth",
+          "count": 6,
+          "interval": 3,
+          "delay": 5
+        }
+      ],
+      "plan1HeroNormal": {
+        "groups": [
+          {
+            "type": "wasp",
+            "count": 40,
+            "delay": 0,
+            "interval": 0.35,
+            "boss": false,
+            "resist": "blast"
+          },
+          {
+            "type": "beetle",
+            "count": 35,
+            "delay": 1.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": "blast"
+          },
+          {
+            "type": "camopuff",
+            "count": 28,
+            "delay": 2.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "nutknight",
+            "count": 24,
+            "delay": 3.5,
+            "interval": 0.8000000000000002,
+            "boss": false,
+            "resist": "leaf"
+          },
+          {
+            "type": "ironpod",
+            "count": 22,
+            "delay": 5,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "slug",
+            "count": 16,
+            "delay": 3,
+            "interval": 0.9,
+            "boss": false,
+            "resist": "shock"
+          },
+          {
+            "type": "puffcap",
+            "count": 14,
+            "delay": 4,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "mothmedic",
+            "count": 8,
+            "delay": 6,
+            "interval": 2.2,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "mole",
+            "count": 16,
+            "delay": 2,
+            "interval": 1,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "snoozemoth",
+            "count": 6,
+            "delay": 5,
+            "interval": 3,
+            "boss": false,
+            "resist": "shock"
+          }
+        ],
+        "hpBoost": 1
+      },
+      "resists": [
+        "blast",
+        "blast",
+        null,
+        "leaf",
+        null,
+        "shock",
+        null,
+        null,
+        null,
+        "shock"
+      ]
+    },
+    {
+      "wave": 57,
+      "spec": [
+        {
+          "type": "wasp",
+          "count": 40,
+          "interval": 0.35,
+          "delay": 0
+        },
+        {
+          "type": "beetle",
+          "count": 35,
+          "interval": 0.45,
+          "delay": 1.5
+        },
+        {
+          "type": "camopuff",
+          "count": 28,
+          "interval": 0.45,
+          "delay": 2.5
+        },
+        {
+          "type": "nutknight",
+          "count": 24,
+          "interval": 0.8,
+          "delay": 3.5
+        },
+        {
+          "type": "ironpod",
+          "count": 22,
+          "interval": 0.9,
+          "delay": 5
+        },
+        {
+          "type": "slug",
+          "count": 16,
+          "interval": 0.9,
+          "delay": 3
+        },
+        {
+          "type": "puffcap",
+          "count": 14,
+          "interval": 0.9,
+          "delay": 4
+        },
+        {
+          "type": "mothmedic",
+          "count": 8,
+          "interval": 2.2,
+          "delay": 6
+        },
+        {
+          "type": "mole",
+          "count": 16,
+          "interval": 1,
+          "delay": 2
+        },
+        {
+          "type": "snoozemoth",
+          "count": 6,
+          "interval": 3,
+          "delay": 5
+        }
+      ],
+      "plan1HeroNormal": {
+        "groups": [
+          {
+            "type": "wasp",
+            "count": 40,
+            "delay": 0,
+            "interval": 0.35,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "beetle",
+            "count": 35,
+            "delay": 1.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": "leaf"
+          },
+          {
+            "type": "camopuff",
+            "count": 28,
+            "delay": 2.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "nutknight",
+            "count": 24,
+            "delay": 3.5,
+            "interval": 0.8000000000000002,
+            "boss": false,
+            "resist": "fire"
+          },
+          {
+            "type": "ironpod",
+            "count": 22,
+            "delay": 5,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "slug",
+            "count": 16,
+            "delay": 3,
+            "interval": 0.9,
+            "boss": false,
+            "resist": "blast"
+          },
+          {
+            "type": "puffcap",
+            "count": 14,
+            "delay": 4,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "mothmedic",
+            "count": 8,
+            "delay": 6,
+            "interval": 2.2,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "mole",
+            "count": 16,
+            "delay": 2,
+            "interval": 1,
+            "boss": false,
+            "resist": "shock"
+          },
+          {
+            "type": "snoozemoth",
+            "count": 6,
+            "delay": 5,
+            "interval": 3,
+            "boss": false,
+            "resist": null
+          }
+        ],
+        "hpBoost": 1
+      },
+      "resists": [
+        null,
+        "leaf",
+        null,
+        "fire",
+        null,
+        "blast",
+        null,
+        null,
+        "shock",
+        null
+      ]
+    },
+    {
+      "wave": 58,
+      "spec": [
+        {
+          "type": "wasp",
+          "count": 40,
+          "interval": 0.35,
+          "delay": 0
+        },
+        {
+          "type": "beetle",
+          "count": 35,
+          "interval": 0.45,
+          "delay": 1.5
+        },
+        {
+          "type": "camopuff",
+          "count": 28,
+          "interval": 0.45,
+          "delay": 2.5
+        },
+        {
+          "type": "nutknight",
+          "count": 24,
+          "interval": 0.8,
+          "delay": 3.5
+        },
+        {
+          "type": "ironpod",
+          "count": 22,
+          "interval": 0.9,
+          "delay": 5
+        },
+        {
+          "type": "slug",
+          "count": 16,
+          "interval": 0.9,
+          "delay": 3
+        },
+        {
+          "type": "puffcap",
+          "count": 14,
+          "interval": 0.9,
+          "delay": 4
+        },
+        {
+          "type": "mothmedic",
+          "count": 8,
+          "interval": 2.2,
+          "delay": 6
+        },
+        {
+          "type": "mole",
+          "count": 16,
+          "interval": 1,
+          "delay": 2
+        },
+        {
+          "type": "snoozemoth",
+          "count": 6,
+          "interval": 3,
+          "delay": 5
+        }
+      ],
+      "plan1HeroNormal": {
+        "groups": [
+          {
+            "type": "wasp",
+            "count": 40,
+            "delay": 0,
+            "interval": 0.35,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "beetle",
+            "count": 35,
+            "delay": 1.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "camopuff",
+            "count": 28,
+            "delay": 2.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "nutknight",
+            "count": 24,
+            "delay": 3.5,
+            "interval": 0.8000000000000002,
+            "boss": false,
+            "resist": "fire"
+          },
+          {
+            "type": "ironpod",
+            "count": 22,
+            "delay": 5,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "slug",
+            "count": 16,
+            "delay": 3,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "puffcap",
+            "count": 14,
+            "delay": 4,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "mothmedic",
+            "count": 8,
+            "delay": 6,
+            "interval": 2.2,
+            "boss": false,
+            "resist": "leaf"
+          },
+          {
+            "type": "mole",
+            "count": 16,
+            "delay": 2,
+            "interval": 1,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "snoozemoth",
+            "count": 6,
+            "delay": 5,
+            "interval": 3,
+            "boss": false,
+            "resist": null
+          }
+        ],
+        "hpBoost": 1
+      },
+      "resists": [
+        null,
+        null,
+        null,
+        "fire",
+        null,
+        null,
+        null,
+        "leaf",
+        null,
+        null
+      ]
+    },
+    {
+      "wave": 59,
+      "spec": [
+        {
+          "type": "wasp",
+          "count": 40,
+          "interval": 0.35,
+          "delay": 0
+        },
+        {
+          "type": "beetle",
+          "count": 35,
+          "interval": 0.45,
+          "delay": 1.5
+        },
+        {
+          "type": "camopuff",
+          "count": 28,
+          "interval": 0.45,
+          "delay": 2.5
+        },
+        {
+          "type": "nutknight",
+          "count": 24,
+          "interval": 0.8,
+          "delay": 3.5
+        },
+        {
+          "type": "ironpod",
+          "count": 22,
+          "interval": 0.9,
+          "delay": 5
+        },
+        {
+          "type": "slug",
+          "count": 16,
+          "interval": 0.9,
+          "delay": 3
+        },
+        {
+          "type": "puffcap",
+          "count": 14,
+          "interval": 0.9,
+          "delay": 4
+        },
+        {
+          "type": "mothmedic",
+          "count": 8,
+          "interval": 2.2,
+          "delay": 6
+        },
+        {
+          "type": "mole",
+          "count": 16,
+          "interval": 1,
+          "delay": 2
+        },
+        {
+          "type": "snoozemoth",
+          "count": 6,
+          "interval": 3,
+          "delay": 5
+        }
+      ],
+      "plan1HeroNormal": {
+        "groups": [
+          {
+            "type": "wasp",
+            "count": 40,
+            "delay": 0,
+            "interval": 0.35,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "beetle",
+            "count": 35,
+            "delay": 1.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": "leaf"
+          },
+          {
+            "type": "camopuff",
+            "count": 28,
+            "delay": 2.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": "ice"
+          },
+          {
+            "type": "nutknight",
+            "count": 24,
+            "delay": 3.5,
+            "interval": 0.8000000000000002,
+            "boss": false,
+            "resist": "leaf"
+          },
+          {
+            "type": "ironpod",
+            "count": 22,
+            "delay": 5,
+            "interval": 0.9,
+            "boss": false,
+            "resist": "ice"
+          },
+          {
+            "type": "slug",
+            "count": 16,
+            "delay": 3,
+            "interval": 0.9,
+            "boss": false,
+            "resist": "shock"
+          },
+          {
+            "type": "puffcap",
+            "count": 14,
+            "delay": 4,
+            "interval": 0.9,
+            "boss": false,
+            "resist": "fire"
+          },
+          {
+            "type": "mothmedic",
+            "count": 8,
+            "delay": 6,
+            "interval": 2.2,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "mole",
+            "count": 16,
+            "delay": 2,
+            "interval": 1,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "snoozemoth",
+            "count": 6,
+            "delay": 5,
+            "interval": 3,
+            "boss": false,
+            "resist": null
+          }
+        ],
+        "hpBoost": 1
+      },
+      "resists": [
+        null,
+        "leaf",
+        "ice",
+        "leaf",
+        "ice",
+        "shock",
+        "fire",
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "wave": 60,
+      "spec": [
+        {
+          "type": "wasp",
+          "count": 40,
+          "interval": 0.35,
+          "delay": 0
+        },
+        {
+          "type": "beetle",
+          "count": 35,
+          "interval": 0.45,
+          "delay": 1.5
+        },
+        {
+          "type": "camopuff",
+          "count": 28,
+          "interval": 0.45,
+          "delay": 2.5
+        },
+        {
+          "type": "nutknight",
+          "count": 24,
+          "interval": 0.8,
+          "delay": 3.5
+        },
+        {
+          "type": "ironpod",
+          "count": 22,
+          "interval": 0.9,
+          "delay": 5
+        },
+        {
+          "type": "slug",
+          "count": 16,
+          "interval": 0.9,
+          "delay": 3
+        },
+        {
+          "type": "puffcap",
+          "count": 14,
+          "interval": 0.9,
+          "delay": 4
+        },
+        {
+          "type": "mothmedic",
+          "count": 8,
+          "interval": 2.2,
+          "delay": 6
+        },
+        {
+          "type": "mole",
+          "count": 16,
+          "interval": 1,
+          "delay": 2
+        },
+        {
+          "type": "snoozemoth",
+          "count": 6,
+          "interval": 3,
+          "delay": 5
+        },
+        {
+          "type": "dreadblimp",
+          "count": 4,
+          "interval": 5.5,
+          "delay": 7
+        }
+      ],
+      "plan1HeroNormal": {
+        "groups": [
+          {
+            "type": "wasp",
+            "count": 40,
+            "delay": 0,
+            "interval": 0.35,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "beetle",
+            "count": 35,
+            "delay": 1.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": "ice"
+          },
+          {
+            "type": "camopuff",
+            "count": 28,
+            "delay": 2.5,
+            "interval": 0.45,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "nutknight",
+            "count": 24,
+            "delay": 3.5,
+            "interval": 0.8000000000000002,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "ironpod",
+            "count": 22,
+            "delay": 5,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "slug",
+            "count": 16,
+            "delay": 3,
+            "interval": 0.9,
+            "boss": false,
+            "resist": "fire"
+          },
+          {
+            "type": "puffcap",
+            "count": 14,
+            "delay": 4,
+            "interval": 0.9,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "mothmedic",
+            "count": 8,
+            "delay": 6,
+            "interval": 2.2,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "mole",
+            "count": 16,
+            "delay": 2,
+            "interval": 1,
+            "boss": false,
+            "resist": null
+          },
+          {
+            "type": "snoozemoth",
+            "count": 6,
+            "delay": 5,
+            "interval": 3,
+            "boss": false,
+            "resist": "blast"
+          },
+          {
+            "type": "dreadblimp",
+            "count": 4,
+            "delay": 7,
+            "interval": 5.5,
+            "boss": true,
+            "resist": null
+          }
+        ],
+        "hpBoost": 1
+      },
+      "resists": [
+        null,
+        "ice",
+        null,
+        null,
+        null,
+        "fire",
+        null,
+        null,
+        null,
+        "blast",
+        null
+      ]
+    }
+  ],
+  "endlessRamp": [
+    {
+      "wave": 20,
+      "normal": {
+        "hp": 1,
+        "speed": 1,
+        "count": 1
+      },
+      "easy": {
+        "hp": 1,
+        "speed": 1,
+        "count": 1
+      }
+    },
+    {
+      "wave": 25,
+      "normal": {
+        "hp": 1,
+        "speed": 1,
+        "count": 1
+      },
+      "easy": {
+        "hp": 1,
+        "speed": 1,
+        "count": 1
+      }
+    },
+    {
+      "wave": 30,
+      "normal": {
+        "hp": 1.1592740743,
+        "speed": 1.06,
+        "count": 1.175
+      },
+      "easy": {
+        "hp": 1.6105100000000006,
+        "speed": 1.06,
+        "count": 1.175
+      }
+    },
+    {
+      "wave": 35,
+      "normal": {
+        "hp": 1.3439163793441222,
+        "speed": 1.12,
+        "count": 1.35
+      },
+      "easy": {
+        "hp": 2.5937424601000023,
+        "speed": 1.12,
+        "count": 1.35
+      }
+    },
+    {
+      "wave": 40,
+      "normal": {
+        "hp": 1.557967416600765,
+        "speed": 1.18,
+        "count": 1.525
+      },
+      "easy": {
+        "hp": 4.177248169415656,
+        "speed": 1.18,
+        "count": 1.525
+      }
+    },
+    {
+      "wave": 45,
+      "normal": {
+        "hp": 1.8061112346694148,
+        "speed": 1.24,
+        "count": 1.7000000000000002
+      },
+      "easy": {
+        "hp": 6.727499949325611,
+        "speed": 1.24,
+        "count": 1.7000000000000002
+      }
+    },
+    {
+      "wave": 50,
+      "normal": {
+        "hp": 2.093777929654216,
+        "speed": 1.3,
+        "count": 1.875
+      },
+      "easy": {
+        "hp": 10.834705943388395,
+        "speed": 1.3,
+        "count": 1.875
+      }
+    },
+    {
+      "wave": 55,
+      "normal": {
+        "hp": 2.427262471189662,
+        "speed": 1.3599999999999999,
+        "count": 2.05
+      },
+      "easy": {
+        "hp": 17.44940226888645,
+        "speed": 1.3599999999999999,
+        "count": 2.05
+      }
+    },
+    {
+      "wave": 60,
+      "normal": {
+        "hp": 2.8138624543715265,
+        "speed": 1.42,
+        "count": 2.2
+      },
+      "easy": {
+        "hp": 28.10243684806433,
+        "speed": 1.42,
+        "count": 2.2
+      }
+    },
+    {
+      "wave": 65,
+      "normal": {
+        "hp": 3.2620377919990777,
+        "speed": 1.45,
+        "count": 2.2
+      },
+      "easy": {
+        "hp": 45.2592555681761,
+        "speed": 1.45,
+        "count": 2.2
+      }
+    },
+    {
+      "wave": 70,
+      "normal": {
+        "hp": 3.781595841651347,
+        "speed": 1.45,
+        "count": 2.2
+      },
+      "easy": {
+        "hp": 72.89048368510332,
+        "speed": 1.45,
+        "count": 2.2
+      }
+    },
+    {
+      "wave": 75,
+      "normal": {
+        "hp": 4.383906018707096,
+        "speed": 1.45,
+        "count": 2.2
+      },
+      "easy": {
+        "hp": 117.39085287969579,
+        "speed": 1.45,
+        "count": 2.2
+      }
+    },
+    {
+      "wave": 80,
+      "normal": {
+        "hp": 5.082148591654867,
+        "speed": 1.45,
+        "count": 2.2
+      },
+      "easy": {
+        "hp": 189.05914247127893,
+        "speed": 1.45,
+        "count": 2.2
+      }
+    }
+  ],
+  "twistWaves": [
+    8,
+    11,
+    14,
+    17,
+    20,
+    23,
+    26,
+    29,
+    32,
+    34,
+    36,
+    38,
+    40,
+    42,
+    44,
+    46,
+    48,
+    50,
+    51,
+    52,
+    53,
+    54,
+    55,
+    56,
+    57,
+    58,
+    59,
+    60,
+    61,
+    62,
+    63,
+    64,
+    65,
+    66,
+    67,
+    68,
+    69,
+    70,
+    71,
+    72,
+    73,
+    74,
+    75,
+    76,
+    77,
+    78,
+    79,
+    80
+  ]
+}

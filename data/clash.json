@@ -1,0 +1,637 @@
+{
+  "config": {
+    "mapId": "valley",
+    "allyBase": {
+      "x": 210,
+      "y": 1110
+    },
+    "foeBase": {
+      "x": 1950,
+      "y": 210
+    },
+    "allyTowers": [
+      {
+        "lane": 0,
+        "tier": 2,
+        "x": 200,
+        "y": 690
+      },
+      {
+        "lane": 0,
+        "tier": 1,
+        "x": 200,
+        "y": 270
+      },
+      {
+        "lane": 1,
+        "tier": 2,
+        "x": 570,
+        "y": 820
+      },
+      {
+        "lane": 1,
+        "tier": 1,
+        "x": 850,
+        "y": 820
+      },
+      {
+        "lane": 2,
+        "tier": 2,
+        "x": 630,
+        "y": 1120
+      },
+      {
+        "lane": 2,
+        "tier": 1,
+        "x": 1050,
+        "y": 1120
+      }
+    ],
+    "gates": [
+      {
+        "lane": 0,
+        "x": 100,
+        "y": 860
+      },
+      {
+        "lane": 1,
+        "x": 422,
+        "y": 962
+      },
+      {
+        "lane": 2,
+        "x": 450,
+        "y": 1220
+      }
+    ],
+    "guardians": [
+      {
+        "x": 262,
+        "y": 958
+      },
+      {
+        "x": 362,
+        "y": 1058
+      }
+    ],
+    "gateHp": 5200,
+    "gateRegrow": 300,
+    "guardianHp": 6200,
+    "power": {
+      "minion": 0.55,
+      "rival": 0.65,
+      "camp": 0.65,
+      "struct": 0.6
+    },
+    "maxLevel": 18,
+    "elderAt": 1200,
+    "waveEvery": 30,
+    "firstWave": 8,
+    "towerHp": 3100,
+    "coreHp": 14000,
+    "towerRange": 240,
+    "coreRange": 290,
+    "heroHp": 520,
+    "heroHpPerLevel": 58,
+    "heroHpMult": {
+      "peashooter": 1,
+      "sunblossom": 0.95,
+      "frostlotus": 1.05,
+      "boomshroom": 1.05,
+      "voltcactus": 1,
+      "snapdragon": 1.25,
+      "bubblelily": 0.95
+    },
+    "fountainRadius": 270,
+    "shopRadius": 300,
+    "passiveAcorns": 1,
+    "xpCost": 2.4,
+    "heroStructMult": 0.5,
+    "recallTime": 3,
+    "reviveTime": 2.5,
+    "reviveRadius": 85,
+    "reviveHp": 0.4,
+    "maxItems": 6,
+    "maxPotions": 3
+  },
+  "difficulty": {
+    "easy": {
+      "desc": "Gentle pests and one or two rival champions. Still a real battle: about 20–25 minutes.",
+      "foeHp": 0.85,
+      "foeDmg": 0.7,
+      "rivalLv": -1,
+      "rivalHp": 0.85,
+      "rivalDmg": 0.75,
+      "structHp": 1.55,
+      "allyTower": 1.2,
+      "extraRivals": 0,
+      "soloRivals": 0,
+      "maxRivals": 2,
+      "respawn": 0.7,
+      "teamHp": 0.3,
+      "teamStruct": 0.9,
+      "regrow": 1,
+      "allyTowerDmg": 1.2,
+      "teamStructBig": 0.3
+    },
+    "normal": {
+      "desc": "A real battle: more rivals (one extra for teams), pests that push hard, and about 20–30 minutes to win.",
+      "foeHp": 1.15,
+      "foeDmg": 1.15,
+      "rivalLv": 0,
+      "rivalHp": 1.1,
+      "rivalDmg": 1.1,
+      "structHp": 1.9,
+      "allyTower": 1,
+      "extraRivals": 1,
+      "soloRivals": 0,
+      "maxRivals": 3,
+      "respawn": 1,
+      "teamHp": 0.4,
+      "teamStruct": 1,
+      "regrow": 1,
+      "allyTowerDmg": 1,
+      "teamStructBig": 0.5
+    },
+    "hard": {
+      "desc": "Long and tough (30–45 minutes): strong pests, up to 4 rivals ahead of your level, very thick Thorn bark.",
+      "foeHp": 1.45,
+      "foeDmg": 1.45,
+      "rivalLv": 1,
+      "rivalHp": 1.35,
+      "rivalDmg": 1.3,
+      "structHp": 2.5,
+      "allyTower": 0.95,
+      "extraRivals": 1,
+      "soloRivals": 1,
+      "maxRivals": 4,
+      "respawn": 1.15,
+      "teamHp": 0.5,
+      "teamStruct": 1.1,
+      "regrow": 1,
+      "allyTowerDmg": 0.7,
+      "teamStructBig": 1.3
+    },
+    "nightmare": {
+      "desc": "For experts: a huge pest army, 4 rivals two levels ahead, and the thickest bark. Expect to lose a lot!",
+      "foeHp": 1.7,
+      "foeDmg": 1.7,
+      "rivalLv": 2,
+      "rivalHp": 1.5,
+      "rivalDmg": 1.5,
+      "structHp": 3,
+      "allyTower": 0.85,
+      "extraRivals": 2,
+      "soloRivals": 1,
+      "maxRivals": 4,
+      "respawn": 1.3,
+      "teamHp": 0.6,
+      "teamStruct": 1.2,
+      "regrow": 0.9,
+      "allyTowerDmg": 0.6,
+      "teamStructBig": 1
+    }
+  },
+  "allies": {
+    "budling": {
+      "id": "budling",
+      "name": "Bud Buddy",
+      "radius": 17,
+      "hp": 270,
+      "dmg": 16,
+      "rate": 1,
+      "range": 46,
+      "speed": 76,
+      "color": "#4ade80"
+    },
+    "peapod": {
+      "id": "peapod",
+      "name": "Pea Pod",
+      "radius": 16,
+      "hp": 175,
+      "dmg": 13,
+      "rate": 0.75,
+      "range": 165,
+      "speed": 76,
+      "ranged": true,
+      "color": "#86efac"
+    },
+    "pumpkin": {
+      "id": "pumpkin",
+      "name": "Pumpkin Cannon",
+      "radius": 21,
+      "hp": 560,
+      "dmg": 34,
+      "rate": 0.45,
+      "range": 205,
+      "speed": 68,
+      "ranged": true,
+      "siege": true,
+      "color": "#fb923c"
+    }
+  },
+  "foes": {
+    "grunt": {
+      "id": "grunt",
+      "name": "Grub Grunt",
+      "art": "sprout",
+      "radius": 15,
+      "hp": 270,
+      "dmg": 16,
+      "rate": 1,
+      "range": 46,
+      "speed": 76,
+      "xp": 26,
+      "acorns": 7,
+      "color": "#A3E635",
+      "outline": "#3F6212",
+      "minion": true
+    },
+    "stinger": {
+      "id": "stinger",
+      "name": "Stinger Wasp",
+      "art": "wasp",
+      "radius": 14,
+      "hp": 175,
+      "dmg": 13,
+      "rate": 0.75,
+      "range": 165,
+      "speed": 76,
+      "ranged": true,
+      "xp": 22,
+      "acorns": 8,
+      "color": "#FACC15",
+      "outline": "#854D0E",
+      "minion": true
+    },
+    "shellcart": {
+      "id": "shellcart",
+      "name": "Siege Tankbug",
+      "art": "ironpod",
+      "radius": 22,
+      "hp": 600,
+      "dmg": 34,
+      "rate": 0.45,
+      "range": 205,
+      "speed": 68,
+      "ranged": true,
+      "siege": true,
+      "xp": 55,
+      "acorns": 20,
+      "color": "#94A3B8",
+      "outline": "#1E293B",
+      "minion": true,
+      "armored": true
+    },
+    "thorntower": {
+      "id": "thorntower",
+      "name": "Thorn Tower",
+      "radius": 34,
+      "structure": true,
+      "color": "#7c3aed",
+      "outline": "#2e1065",
+      "xp": 160,
+      "acorns": 90
+    },
+    "thornguard": {
+      "id": "thornguard",
+      "name": "Heart Guardian",
+      "radius": 36,
+      "structure": true,
+      "guardian": true,
+      "color": "#a21caf",
+      "outline": "#4a044e",
+      "xp": 200,
+      "acorns": 110
+    },
+    "thorngate": {
+      "id": "thorngate",
+      "name": "Bramble Gate",
+      "radius": 36,
+      "structure": true,
+      "gate": true,
+      "color": "#6d28d9",
+      "outline": "#2e1065",
+      "xp": 150,
+      "acorns": 70
+    },
+    "thornheart": {
+      "id": "thornheart",
+      "name": "Thorn Heart",
+      "radius": 62,
+      "structure": true,
+      "core": true,
+      "color": "#be185d",
+      "outline": "#500724",
+      "xp": 0,
+      "acorns": 0
+    },
+    "rival_brute": {
+      "id": "rival_brute",
+      "name": "Sir Shellbash",
+      "title": "the Armored Acorn",
+      "art": "nutknight",
+      "radius": 30,
+      "rival": true,
+      "melee": true,
+      "hp": 2100,
+      "hpLv": 260,
+      "dmg": 42,
+      "dmgLv": 8,
+      "rate": 0.9,
+      "range": 62,
+      "speed": 92,
+      "ability": "slam",
+      "abilityCd": 8,
+      "color": "#D97706",
+      "outline": "#78350F",
+      "desc": "Tough melee knight. SLAMS the ground: step away when the ring appears!"
+    },
+    "rival_queen": {
+      "id": "rival_queen",
+      "name": "Queen Stinger",
+      "title": "Ruler of the Hive",
+      "art": "wasp",
+      "radius": 26,
+      "rival": true,
+      "hp": 1600,
+      "hpLv": 200,
+      "dmg": 34,
+      "dmgLv": 7,
+      "rate": 1,
+      "range": 205,
+      "speed": 104,
+      "ability": "volley",
+      "abilityCd": 6,
+      "color": "#FACC15",
+      "outline": "#854D0E",
+      "desc": "Shoots stingers from far away. Dodge her stinger fan sideways!"
+    },
+    "rival_mole": {
+      "id": "rival_mole",
+      "name": "Digger Duke",
+      "title": "Lord of the Tunnels",
+      "art": "mole",
+      "radius": 28,
+      "rival": true,
+      "melee": true,
+      "hp": 1900,
+      "hpLv": 240,
+      "dmg": 38,
+      "dmgLv": 8,
+      "rate": 0.9,
+      "range": 62,
+      "speed": 96,
+      "ability": "burrow",
+      "abilityCd": 9,
+      "color": "#A8A29E",
+      "outline": "#44403C",
+      "desc": "Digs underground and pops up right under you! Keep moving when you see his dirt mound coming."
+    },
+    "rival_witch": {
+      "id": "rival_witch",
+      "name": "Spore Witch",
+      "title": "Queen of Mushrooms",
+      "art": "puffcap",
+      "radius": 28,
+      "rival": true,
+      "hp": 1700,
+      "hpLv": 210,
+      "dmg": 30,
+      "dmgLv": 7,
+      "rate": 0.9,
+      "range": 190,
+      "speed": 92,
+      "ability": "spores",
+      "abilityCd": 9,
+      "color": "#A3E635",
+      "outline": "#3F6212",
+      "desc": "Throws dizzy spore clouds. Walk out of the purple circle before it pops!"
+    },
+    "rubybeetle": {
+      "id": "rubybeetle",
+      "name": "Ruby Beetle",
+      "art": "rubybeetle",
+      "radius": 24,
+      "neutral": true,
+      "hp": 1500,
+      "dmg": 30,
+      "rate": 0.8,
+      "range": 62,
+      "speed": 95,
+      "xp": 110,
+      "acorns": 40,
+      "buff": "ember",
+      "respawn": 75,
+      "firstAt": 25,
+      "color": "#ef4444",
+      "outline": "#7f1d1d"
+    },
+    "sapphiresnail": {
+      "id": "sapphiresnail",
+      "name": "Sapphire Snail",
+      "art": "sapphiresnail",
+      "radius": 24,
+      "neutral": true,
+      "hp": 1500,
+      "dmg": 26,
+      "rate": 0.8,
+      "range": 150,
+      "speed": 80,
+      "ranged": true,
+      "xp": 110,
+      "acorns": 40,
+      "buff": "dew",
+      "respawn": 75,
+      "firstAt": 25,
+      "color": "#3b82f6",
+      "outline": "#1e3a8a"
+    },
+    "rumbletoad": {
+      "id": "rumbletoad",
+      "name": "Rumble Toad",
+      "art": "rumbletoad",
+      "radius": 44,
+      "neutral": true,
+      "epic": true,
+      "hp": 6000,
+      "dmg": 55,
+      "rate": 0.6,
+      "range": 80,
+      "speed": 70,
+      "xp": 260,
+      "acorns": 100,
+      "buff": "toad",
+      "respawn": 150,
+      "elderRespawn": 180,
+      "firstAt": 120,
+      "color": "#22c55e",
+      "outline": "#14532d"
+    },
+    "nestgrub": {
+      "id": "nestgrub",
+      "name": "Nest Grub",
+      "art": "sprout",
+      "radius": 14,
+      "neutral": true,
+      "hp": 460,
+      "dmg": 12,
+      "rate": 1,
+      "range": 50,
+      "speed": 90,
+      "xp": 34,
+      "acorns": 12,
+      "respawn": 50,
+      "firstAt": 25,
+      "color": "#A3E635",
+      "outline": "#3F6212"
+    }
+  },
+  "rivalOrder": [
+    "rival_queen",
+    "rival_brute",
+    "rival_witch",
+    "rival_mole"
+  ],
+  "camps": [
+    {
+      "id": "ruby",
+      "kind": "rubybeetle",
+      "x": 570,
+      "y": 510,
+      "count": 1
+    },
+    {
+      "id": "sapphire",
+      "kind": "sapphiresnail",
+      "x": 1590,
+      "y": 810,
+      "count": 1
+    },
+    {
+      "id": "toad",
+      "kind": "rumbletoad",
+      "x": 930,
+      "y": 390,
+      "count": 1
+    },
+    {
+      "id": "nest",
+      "kind": "nestgrub",
+      "x": 1230,
+      "y": 930,
+      "count": 3
+    }
+  ],
+  "items": {
+    "sword": {
+      "id": "sword",
+      "name": "Thorn Sword",
+      "icon": "🗡️",
+      "cost": 300,
+      "dmg": 0.25,
+      "desc": "+25% damage"
+    },
+    "bark": {
+      "id": "bark",
+      "name": "Bark Shield",
+      "icon": "🛡️",
+      "cost": 300,
+      "hp": 320,
+      "desc": "+320 health"
+    },
+    "sandals": {
+      "id": "sandals",
+      "name": "Swift Sandals",
+      "icon": "👟",
+      "cost": 250,
+      "speed": 0.25,
+      "unique": true,
+      "desc": "+25% walking speed (only one pair)"
+    },
+    "bow": {
+      "id": "bow",
+      "name": "Long Stem Bow",
+      "icon": "🏹",
+      "cost": 400,
+      "range": 0.15,
+      "haste": 0.15,
+      "desc": "+15% range and +15% attack speed"
+    },
+    "rose": {
+      "id": "rose",
+      "name": "Vampire Rose",
+      "icon": "🌹",
+      "cost": 450,
+      "steal": 0.12,
+      "desc": "Heal 12% of the damage you deal"
+    },
+    "charm": {
+      "id": "charm",
+      "name": "Dewdrop Charm",
+      "icon": "⏳",
+      "cost": 400,
+      "charge": 0.3,
+      "desc": "Special recharges 30% faster"
+    },
+    "moss": {
+      "id": "moss",
+      "name": "Mossy Heart",
+      "icon": "💚",
+      "cost": 350,
+      "regen": 0.015,
+      "hp": 120,
+      "desc": "+120 health and heal 1.5% every second"
+    },
+    "acorn": {
+      "id": "acorn",
+      "name": "Giant's Acorn",
+      "icon": "👑",
+      "cost": 1000,
+      "dmg": 0.4,
+      "hp": 420,
+      "desc": "Big item: +40% damage and +420 health"
+    }
+  },
+  "itemOrder": [
+    "sword",
+    "bark",
+    "sandals",
+    "bow",
+    "rose",
+    "charm",
+    "moss",
+    "acorn"
+  ],
+  "goldenItem": {
+    "example": {
+      "def": {
+        "id": "sword",
+        "name": "Thorn Sword",
+        "icon": "🗡️",
+        "cost": 300,
+        "dmg": 0.25,
+        "desc": "+25% damage"
+      },
+      "id": "sword+",
+      "baseId": "sword",
+      "golden": true,
+      "mult": 1.8,
+      "name": "Golden Thorn Sword",
+      "icon": "🗡️",
+      "upgradeCost": 450,
+      "spent": 750
+    },
+    "rule": "Buying an owned item again makes it Golden: effects x1.8, costs 1.5x the item."
+  },
+  "potion": {
+    "id": "juice",
+    "name": "Berry Juice",
+    "icon": "🧃",
+    "cost": 50,
+    "heal": 0.5,
+    "dur": 6,
+    "desc": "Drink (R) to heal half your health over 6 seconds. Hold up to 3."
+  },
+  "foeBuildingsAreMirrored": "Pest buildings = clashMirror(ally building) and lane = 2 - lane."
+}

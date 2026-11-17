@@ -1,0 +1,1433 @@
+{
+ "scale": 1.5,
+ "heroes": {
+  "peashooter": {
+   "cell": [
+    120,
+    120
+   ],
+   "origin": [
+    60,
+    104
+   ],
+   "frames": {
+    "idle": [
+     0,
+     4
+    ],
+    "walk": [
+     4,
+     6
+    ],
+    "attack": [
+     10,
+     1
+    ]
+   },
+   "variants": {
+    "10": "heroes/peashooter_10.png",
+    "11": "heroes/peashooter_11.png",
+    "12": "heroes/peashooter_12.png",
+    "13": "heroes/peashooter_13.png",
+    "14": "heroes/peashooter_14.png",
+    "20": "heroes/peashooter_20.png",
+    "21": "heroes/peashooter_21.png",
+    "22": "heroes/peashooter_22.png",
+    "23": "heroes/peashooter_23.png",
+    "24": "heroes/peashooter_24.png",
+    "30": "heroes/peashooter_30.png",
+    "31": "heroes/peashooter_31.png",
+    "32": "heroes/peashooter_32.png",
+    "40": "heroes/peashooter_40.png",
+    "41": "heroes/peashooter_41.png",
+    "42": "heroes/peashooter_42.png",
+    "00": "heroes/peashooter_00.png",
+    "01": "heroes/peashooter_01.png",
+    "02": "heroes/peashooter_02.png",
+    "03": "heroes/peashooter_03.png",
+    "04": "heroes/peashooter_04.png"
+   }
+  },
+  "sunblossom": {
+   "cell": [
+    120,
+    120
+   ],
+   "origin": [
+    60,
+    104
+   ],
+   "frames": {
+    "idle": [
+     0,
+     4
+    ],
+    "walk": [
+     4,
+     6
+    ],
+    "attack": [
+     10,
+     1
+    ]
+   },
+   "variants": {
+    "10": "heroes/sunblossom_10.png",
+    "11": "heroes/sunblossom_11.png",
+    "12": "heroes/sunblossom_12.png",
+    "13": "heroes/sunblossom_13.png",
+    "14": "heroes/sunblossom_14.png",
+    "20": "heroes/sunblossom_20.png",
+    "21": "heroes/sunblossom_21.png",
+    "22": "heroes/sunblossom_22.png",
+    "23": "heroes/sunblossom_23.png",
+    "24": "heroes/sunblossom_24.png",
+    "30": "heroes/sunblossom_30.png",
+    "31": "heroes/sunblossom_31.png",
+    "32": "heroes/sunblossom_32.png",
+    "40": "heroes/sunblossom_40.png",
+    "41": "heroes/sunblossom_41.png",
+    "42": "heroes/sunblossom_42.png",
+    "00": "heroes/sunblossom_00.png",
+    "01": "heroes/sunblossom_01.png",
+    "02": "heroes/sunblossom_02.png",
+    "03": "heroes/sunblossom_03.png",
+    "04": "heroes/sunblossom_04.png"
+   }
+  },
+  "frostlotus": {
+   "cell": [
+    120,
+    120
+   ],
+   "origin": [
+    60,
+    104
+   ],
+   "frames": {
+    "idle": [
+     0,
+     4
+    ],
+    "walk": [
+     4,
+     6
+    ],
+    "attack": [
+     10,
+     1
+    ]
+   },
+   "variants": {
+    "10": "heroes/frostlotus_10.png",
+    "11": "heroes/frostlotus_11.png",
+    "12": "heroes/frostlotus_12.png",
+    "13": "heroes/frostlotus_13.png",
+    "14": "heroes/frostlotus_14.png",
+    "20": "heroes/frostlotus_20.png",
+    "21": "heroes/frostlotus_21.png",
+    "22": "heroes/frostlotus_22.png",
+    "23": "heroes/frostlotus_23.png",
+    "24": "heroes/frostlotus_24.png",
+    "30": "heroes/frostlotus_30.png",
+    "31": "heroes/frostlotus_31.png",
+    "32": "heroes/frostlotus_32.png",
+    "40": "heroes/frostlotus_40.png",
+    "41": "heroes/frostlotus_41.png",
+    "42": "heroes/frostlotus_42.png",
+    "00": "heroes/frostlotus_00.png",
+    "01": "heroes/frostlotus_01.png",
+    "02": "heroes/frostlotus_02.png",
+    "03": "heroes/frostlotus_03.png",
+    "04": "heroes/frostlotus_04.png"
+   }
+  },
+  "boomshroom": {
+   "cell": [
+    120,
+    120
+   ],
+   "origin": [
+    60,
+    104
+   ],
+   "frames": {
+    "idle": [
+     0,
+     4
+    ],
+    "walk": [
+     4,
+     6
+    ],
+    "attack": [
+     10,
+     1
+    ]
+   },
+   "variants": {
+    "10": "heroes/boomshroom_10.png",
+    "11": "heroes/boomshroom_11.png",
+    "12": "heroes/boomshroom_12.png",
+    "13": "heroes/boomshroom_13.png",
+    "14": "heroes/boomshroom_14.png",
+    "20": "heroes/boomshroom_20.png",
+    "21": "heroes/boomshroom_21.png",
+    "22": "heroes/boomshroom_22.png",
+    "23": "heroes/boomshroom_23.png",
+    "24": "heroes/boomshroom_24.png",
+    "30": "heroes/boomshroom_30.png",
+    "31": "heroes/boomshroom_31.png",
+    "32": "heroes/boomshroom_32.png",
+    "40": "heroes/boomshroom_40.png",
+    "41": "heroes/boomshroom_41.png",
+    "42": "heroes/boomshroom_42.png",
+    "00": "heroes/boomshroom_00.png",
+    "01": "heroes/boomshroom_01.png",
+    "02": "heroes/boomshroom_02.png",
+    "03": "heroes/boomshroom_03.png",
+    "04": "heroes/boomshroom_04.png"
+   }
+  },
+  "voltcactus": {
+   "cell": [
+    120,
+    120
+   ],
+   "origin": [
+    60,
+    104
+   ],
+   "frames": {
+    "idle": [
+     0,
+     4
+    ],
+    "walk": [
+     4,
+     6
+    ],
+    "attack": [
+     10,
+     1
+    ]
+   },
+   "variants": {
+    "10": "heroes/voltcactus_10.png",
+    "11": "heroes/voltcactus_11.png",
+    "12": "heroes/voltcactus_12.png",
+    "13": "heroes/voltcactus_13.png",
+    "14": "heroes/voltcactus_14.png",
+    "20": "heroes/voltcactus_20.png",
+    "21": "heroes/voltcactus_21.png",
+    "22": "heroes/voltcactus_22.png",
+    "23": "heroes/voltcactus_23.png",
+    "24": "heroes/voltcactus_24.png",
+    "30": "heroes/voltcactus_30.png",
+    "31": "heroes/voltcactus_31.png",
+    "32": "heroes/voltcactus_32.png",
+    "40": "heroes/voltcactus_40.png",
+    "41": "heroes/voltcactus_41.png",
+    "42": "heroes/voltcactus_42.png",
+    "00": "heroes/voltcactus_00.png",
+    "01": "heroes/voltcactus_01.png",
+    "02": "heroes/voltcactus_02.png",
+    "03": "heroes/voltcactus_03.png",
+    "04": "heroes/voltcactus_04.png"
+   }
+  },
+  "snapdragon": {
+   "cell": [
+    120,
+    120
+   ],
+   "origin": [
+    60,
+    104
+   ],
+   "frames": {
+    "idle": [
+     0,
+     4
+    ],
+    "walk": [
+     4,
+     6
+    ],
+    "attack": [
+     10,
+     1
+    ]
+   },
+   "variants": {
+    "10": "heroes/snapdragon_10.png",
+    "11": "heroes/snapdragon_11.png",
+    "12": "heroes/snapdragon_12.png",
+    "13": "heroes/snapdragon_13.png",
+    "14": "heroes/snapdragon_14.png",
+    "20": "heroes/snapdragon_20.png",
+    "21": "heroes/snapdragon_21.png",
+    "22": "heroes/snapdragon_22.png",
+    "23": "heroes/snapdragon_23.png",
+    "24": "heroes/snapdragon_24.png",
+    "30": "heroes/snapdragon_30.png",
+    "31": "heroes/snapdragon_31.png",
+    "32": "heroes/snapdragon_32.png",
+    "40": "heroes/snapdragon_40.png",
+    "41": "heroes/snapdragon_41.png",
+    "42": "heroes/snapdragon_42.png",
+    "00": "heroes/snapdragon_00.png",
+    "01": "heroes/snapdragon_01.png",
+    "02": "heroes/snapdragon_02.png",
+    "03": "heroes/snapdragon_03.png",
+    "04": "heroes/snapdragon_04.png"
+   }
+  },
+  "bubblelily": {
+   "cell": [
+    120,
+    120
+   ],
+   "origin": [
+    60,
+    104
+   ],
+   "frames": {
+    "idle": [
+     0,
+     4
+    ],
+    "walk": [
+     4,
+     6
+    ],
+    "attack": [
+     10,
+     1
+    ]
+   },
+   "variants": {
+    "10": "heroes/bubblelily_10.png",
+    "11": "heroes/bubblelily_11.png",
+    "12": "heroes/bubblelily_12.png",
+    "13": "heroes/bubblelily_13.png",
+    "14": "heroes/bubblelily_14.png",
+    "20": "heroes/bubblelily_20.png",
+    "21": "heroes/bubblelily_21.png",
+    "22": "heroes/bubblelily_22.png",
+    "23": "heroes/bubblelily_23.png",
+    "24": "heroes/bubblelily_24.png",
+    "30": "heroes/bubblelily_30.png",
+    "31": "heroes/bubblelily_31.png",
+    "32": "heroes/bubblelily_32.png",
+    "40": "heroes/bubblelily_40.png",
+    "41": "heroes/bubblelily_41.png",
+    "42": "heroes/bubblelily_42.png",
+    "00": "heroes/bubblelily_00.png",
+    "01": "heroes/bubblelily_01.png",
+    "02": "heroes/bubblelily_02.png",
+    "03": "heroes/bubblelily_03.png",
+    "04": "heroes/bubblelily_04.png"
+   }
+  }
+ },
+ "pests": {
+  "sprout": {
+   "file": "pests/sprout.png",
+   "cell": [
+    60,
+    66
+   ],
+   "origin": [
+    30,
+    51
+   ],
+   "frames": 8
+  },
+  "wasp": {
+   "file": "pests/wasp.png",
+   "cell": [
+    56,
+    61.60000000000001
+   ],
+   "origin": [
+    28,
+    47.6
+   ],
+   "frames": 8
+  },
+  "beetle": {
+   "file": "pests/beetle.png",
+   "cell": [
+    72,
+    79.2
+   ],
+   "origin": [
+    36,
+    61.199999999999996
+   ],
+   "frames": 8
+  },
+  "camopuff": {
+   "file": "pests/camopuff.png",
+   "cell": [
+    60,
+    66
+   ],
+   "origin": [
+    30,
+    51
+   ],
+   "frames": 8
+  },
+  "nutknight": {
+   "file": "pests/nutknight.png",
+   "cell": [
+    80,
+    88
+   ],
+   "origin": [
+    40,
+    68
+   ],
+   "frames": 8
+  },
+  "ironpod": {
+   "file": "pests/ironpod.png",
+   "cell": [
+    88,
+    96.80000000000001
+   ],
+   "origin": [
+    44,
+    74.8
+   ],
+   "frames": 8
+  },
+  "zeppelin": {
+   "file": "pests/zeppelin.png",
+   "cell": [
+    136,
+    149.60000000000002
+   ],
+   "origin": [
+    68,
+    115.6
+   ],
+   "frames": 8
+  },
+  "dreadblimp": {
+   "file": "pests/dreadblimp.png",
+   "cell": [
+    160,
+    176
+   ],
+   "origin": [
+    80,
+    136
+   ],
+   "frames": 8
+  },
+  "slug": {
+   "file": "pests/slug.png",
+   "cell": [
+    72,
+    79.2
+   ],
+   "origin": [
+    36,
+    61.199999999999996
+   ],
+   "frames": 8
+  },
+  "slugling": {
+   "file": "pests/slugling.png",
+   "cell": [
+    44,
+    48.400000000000006
+   ],
+   "origin": [
+    22,
+    37.4
+   ],
+   "frames": 8
+  },
+  "puffcap": {
+   "file": "pests/puffcap.png",
+   "cell": [
+    64,
+    70.4
+   ],
+   "origin": [
+    32,
+    54.4
+   ],
+   "frames": 8
+  },
+  "mothmedic": {
+   "file": "pests/mothmedic.png",
+   "cell": [
+    56,
+    61.60000000000001
+   ],
+   "origin": [
+    28,
+    47.6
+   ],
+   "frames": 8
+  },
+  "mole": {
+   "file": "pests/mole.png",
+   "cell": [
+    68,
+    74.80000000000001
+   ],
+   "origin": [
+    34,
+    57.8
+   ],
+   "frames": 8
+  },
+  "snoozemoth": {
+   "file": "pests/snoozemoth.png",
+   "cell": [
+    60,
+    66
+   ],
+   "origin": [
+    30,
+    51
+   ],
+   "frames": 8
+  },
+  "goldbug": {
+   "file": "pests/goldbug.png",
+   "cell": [
+    60,
+    66
+   ],
+   "origin": [
+    30,
+    51
+   ],
+   "frames": 8
+  },
+  "grunt": {
+   "file": "pests/grunt.png",
+   "cell": [
+    60,
+    66
+   ],
+   "origin": [
+    30,
+    51
+   ],
+   "frames": 8
+  },
+  "stinger": {
+   "file": "pests/stinger.png",
+   "cell": [
+    56,
+    61.60000000000001
+   ],
+   "origin": [
+    28,
+    47.6
+   ],
+   "frames": 8
+  },
+  "shellcart": {
+   "file": "pests/shellcart.png",
+   "cell": [
+    88,
+    96.80000000000001
+   ],
+   "origin": [
+    44,
+    74.8
+   ],
+   "frames": 8
+  },
+  "rival_brute": {
+   "file": "pests/rival_brute.png",
+   "cell": [
+    120,
+    132
+   ],
+   "origin": [
+    60,
+    102
+   ],
+   "frames": 8
+  },
+  "rival_queen": {
+   "file": "pests/rival_queen.png",
+   "cell": [
+    104,
+    114.4
+   ],
+   "origin": [
+    52,
+    88.39999999999999
+   ],
+   "frames": 8
+  },
+  "rival_mole": {
+   "file": "pests/rival_mole.png",
+   "cell": [
+    112,
+    123.20000000000002
+   ],
+   "origin": [
+    56,
+    95.2
+   ],
+   "frames": 8
+  },
+  "rival_witch": {
+   "file": "pests/rival_witch.png",
+   "cell": [
+    112,
+    123.20000000000002
+   ],
+   "origin": [
+    56,
+    95.2
+   ],
+   "frames": 8
+  },
+  "rubybeetle": {
+   "file": "pests/rubybeetle.png",
+   "cell": [
+    96,
+    105.60000000000001
+   ],
+   "origin": [
+    48,
+    81.6
+   ],
+   "frames": 8
+  },
+  "sapphiresnail": {
+   "file": "pests/sapphiresnail.png",
+   "cell": [
+    96,
+    105.60000000000001
+   ],
+   "origin": [
+    48,
+    81.6
+   ],
+   "frames": 8
+  },
+  "rumbletoad": {
+   "file": "pests/rumbletoad.png",
+   "cell": [
+    176,
+    193.60000000000002
+   ],
+   "origin": [
+    88,
+    149.6
+   ],
+   "frames": 8
+  },
+  "nestgrub": {
+   "file": "pests/nestgrub.png",
+   "cell": [
+    56,
+    61.60000000000001
+   ],
+   "origin": [
+    28,
+    47.6
+   ],
+   "frames": 8
+  },
+  "budling": {
+   "file": "pests/budling.png",
+   "cell": [
+    68,
+    74.80000000000001
+   ],
+   "origin": [
+    34,
+    57.8
+   ],
+   "frames": 8
+  },
+  "peapod": {
+   "file": "pests/peapod.png",
+   "cell": [
+    64,
+    70.4
+   ],
+   "origin": [
+    32,
+    54.4
+   ],
+   "frames": 8
+  },
+  "pumpkin": {
+   "file": "pests/pumpkin.png",
+   "cell": [
+    84,
+    92.4
+   ],
+   "origin": [
+    42,
+    71.39999999999999
+   ],
+   "frames": 8
+  }
+ },
+ "pets": {
+  "ladybug": {
+   "file": "pets/ladybug.png",
+   "cell": [
+    72,
+    80
+   ],
+   "origin": [
+    36,
+    70
+   ],
+   "frames": {
+    "idle": [
+     0,
+     4
+    ],
+    "move": [
+     4,
+     6
+    ]
+   }
+  },
+  "bee": {
+   "file": "pets/bee.png",
+   "cell": [
+    72,
+    80
+   ],
+   "origin": [
+    36,
+    70
+   ],
+   "frames": {
+    "idle": [
+     0,
+     4
+    ],
+    "move": [
+     4,
+     6
+    ]
+   }
+  },
+  "bunny": {
+   "file": "pets/bunny.png",
+   "cell": [
+    72,
+    80
+   ],
+   "origin": [
+    36,
+    70
+   ],
+   "frames": {
+    "idle": [
+     0,
+     4
+    ],
+    "move": [
+     4,
+     6
+    ]
+   }
+  },
+  "butterfly": {
+   "file": "pets/butterfly.png",
+   "cell": [
+    72,
+    80
+   ],
+   "origin": [
+    36,
+    70
+   ],
+   "frames": {
+    "idle": [
+     0,
+     4
+    ],
+    "move": [
+     4,
+     6
+    ]
+   }
+  },
+  "snail": {
+   "file": "pets/snail.png",
+   "cell": [
+    72,
+    80
+   ],
+   "origin": [
+    36,
+    70
+   ],
+   "frames": {
+    "idle": [
+     0,
+     4
+    ],
+    "move": [
+     4,
+     6
+    ]
+   }
+  },
+  "froggy": {
+   "file": "pets/froggy.png",
+   "cell": [
+    72,
+    80
+   ],
+   "origin": [
+    36,
+    70
+   ],
+   "frames": {
+    "idle": [
+     0,
+     4
+    ],
+    "move": [
+     4,
+     6
+    ]
+   }
+  },
+  "hedgehog": {
+   "file": "pets/hedgehog.png",
+   "cell": [
+    72,
+    80
+   ],
+   "origin": [
+    36,
+    70
+   ],
+   "frames": {
+    "idle": [
+     0,
+     4
+    ],
+    "move": [
+     4,
+     6
+    ]
+   }
+  },
+  "dragon": {
+   "file": "pets/dragon.png",
+   "cell": [
+    72,
+    80
+   ],
+   "origin": [
+    36,
+    70
+   ],
+   "frames": {
+    "idle": [
+     0,
+     4
+    ],
+    "move": [
+     4,
+     6
+    ]
+   }
+  }
+ },
+ "hats": {
+  "flower": {
+   "file": "hats/flower.png",
+   "cell": [
+    64,
+    64
+   ],
+   "origin": [
+    32,
+    50
+   ]
+  },
+  "cap": {
+   "file": "hats/cap.png",
+   "cell": [
+    64,
+    64
+   ],
+   "origin": [
+    32,
+    50
+   ]
+  },
+  "party": {
+   "file": "hats/party.png",
+   "cell": [
+    64,
+    64
+   ],
+   "origin": [
+    32,
+    50
+   ]
+  },
+  "pirate": {
+   "file": "hats/pirate.png",
+   "cell": [
+    64,
+    64
+   ],
+   "origin": [
+    32,
+    50
+   ]
+  },
+  "wizard": {
+   "file": "hats/wizard.png",
+   "cell": [
+    64,
+    64
+   ],
+   "origin": [
+    32,
+    50
+   ]
+  },
+  "crown": {
+   "file": "hats/crown.png",
+   "cell": [
+    64,
+    64
+   ],
+   "origin": [
+    32,
+    50
+   ]
+  },
+  "goldcrown": {
+   "file": "hats/goldcrown.png",
+   "cell": [
+    64,
+    64
+   ],
+   "origin": [
+    32,
+    50
+   ]
+  },
+  "firecrown": {
+   "file": "hats/firecrown.png",
+   "cell": [
+    64,
+    64
+   ],
+   "origin": [
+    32,
+    50
+   ]
+  },
+  "propeller": {
+   "file": "hats/propeller.png",
+   "cell": [
+    64,
+    64
+   ],
+   "origin": [
+    32,
+    50
+   ]
+  },
+  "helmet": {
+   "file": "hats/helmet.png",
+   "cell": [
+    64,
+    64
+   ],
+   "origin": [
+    32,
+    50
+   ]
+  },
+  "thorncrown": {
+   "file": "hats/thorncrown.png",
+   "cell": [
+    64,
+    64
+   ],
+   "origin": [
+    32,
+    50
+   ]
+  }
+ },
+ "gadgets": {
+  "sentry": {
+   "cell": [
+    150,
+    160
+   ],
+   "origin": [
+    75,
+    118
+   ],
+   "looks": {
+    "1_s0": "gadgets/sentry_1_s0.png",
+    "1_s1": "gadgets/sentry_1_s1.png",
+    "1_s2": "gadgets/sentry_1_s2.png",
+    "1_s3": "gadgets/sentry_1_s3.png",
+    "2_s0": "gadgets/sentry_2_s0.png",
+    "2_s1": "gadgets/sentry_2_s1.png",
+    "2_s2": "gadgets/sentry_2_s2.png",
+    "2_s3": "gadgets/sentry_2_s3.png",
+    "3a_s0": "gadgets/sentry_3a_s0.png",
+    "3a_s1": "gadgets/sentry_3a_s1.png",
+    "3a_s2": "gadgets/sentry_3a_s2.png",
+    "3a_s3": "gadgets/sentry_3a_s3.png",
+    "3b_s0": "gadgets/sentry_3b_s0.png",
+    "3b_s1": "gadgets/sentry_3b_s1.png",
+    "3b_s2": "gadgets/sentry_3b_s2.png",
+    "3b_s3": "gadgets/sentry_3b_s3.png"
+   }
+  },
+  "mortar": {
+   "cell": [
+    150,
+    160
+   ],
+   "origin": [
+    75,
+    118
+   ],
+   "looks": {
+    "1_s0": "gadgets/mortar_1_s0.png",
+    "1_s1": "gadgets/mortar_1_s1.png",
+    "1_s2": "gadgets/mortar_1_s2.png",
+    "1_s3": "gadgets/mortar_1_s3.png",
+    "2_s0": "gadgets/mortar_2_s0.png",
+    "2_s1": "gadgets/mortar_2_s1.png",
+    "2_s2": "gadgets/mortar_2_s2.png",
+    "2_s3": "gadgets/mortar_2_s3.png",
+    "3a_s0": "gadgets/mortar_3a_s0.png",
+    "3a_s1": "gadgets/mortar_3a_s1.png",
+    "3a_s2": "gadgets/mortar_3a_s2.png",
+    "3a_s3": "gadgets/mortar_3a_s3.png",
+    "3b_s0": "gadgets/mortar_3b_s0.png",
+    "3b_s1": "gadgets/mortar_3b_s1.png",
+    "3b_s2": "gadgets/mortar_3b_s2.png",
+    "3b_s3": "gadgets/mortar_3b_s3.png"
+   }
+  },
+  "fern": {
+   "cell": [
+    150,
+    160
+   ],
+   "origin": [
+    75,
+    118
+   ],
+   "looks": {
+    "1_s0": "gadgets/fern_1_s0.png",
+    "1_s1": "gadgets/fern_1_s1.png",
+    "1_s2": "gadgets/fern_1_s2.png",
+    "1_s3": "gadgets/fern_1_s3.png",
+    "2_s0": "gadgets/fern_2_s0.png",
+    "2_s1": "gadgets/fern_2_s1.png",
+    "2_s2": "gadgets/fern_2_s2.png",
+    "2_s3": "gadgets/fern_2_s3.png",
+    "3a_s0": "gadgets/fern_3a_s0.png",
+    "3a_s1": "gadgets/fern_3a_s1.png",
+    "3a_s2": "gadgets/fern_3a_s2.png",
+    "3a_s3": "gadgets/fern_3a_s3.png",
+    "3b_s0": "gadgets/fern_3b_s0.png",
+    "3b_s1": "gadgets/fern_3b_s1.png",
+    "3b_s2": "gadgets/fern_3b_s2.png",
+    "3b_s3": "gadgets/fern_3b_s3.png"
+   }
+  },
+  "zap": {
+   "cell": [
+    150,
+    160
+   ],
+   "origin": [
+    75,
+    118
+   ],
+   "looks": {
+    "1_s0": "gadgets/zap_1_s0.png",
+    "1_s1": "gadgets/zap_1_s1.png",
+    "1_s2": "gadgets/zap_1_s2.png",
+    "1_s3": "gadgets/zap_1_s3.png",
+    "2_s0": "gadgets/zap_2_s0.png",
+    "2_s1": "gadgets/zap_2_s1.png",
+    "2_s2": "gadgets/zap_2_s2.png",
+    "2_s3": "gadgets/zap_2_s3.png",
+    "3a_s0": "gadgets/zap_3a_s0.png",
+    "3a_s1": "gadgets/zap_3a_s1.png",
+    "3a_s2": "gadgets/zap_3a_s2.png",
+    "3a_s3": "gadgets/zap_3a_s3.png",
+    "3b_s0": "gadgets/zap_3b_s0.png",
+    "3b_s1": "gadgets/zap_3b_s1.png",
+    "3b_s2": "gadgets/zap_3b_s2.png",
+    "3b_s3": "gadgets/zap_3b_s3.png"
+   }
+  },
+  "thorns": {
+   "cell": [
+    150,
+    160
+   ],
+   "origin": [
+    75,
+    118
+   ],
+   "looks": {
+    "1_s0": "gadgets/thorns_1_s0.png",
+    "1_s1": "gadgets/thorns_1_s1.png",
+    "1_s2": "gadgets/thorns_1_s2.png",
+    "1_s3": "gadgets/thorns_1_s3.png",
+    "2_s0": "gadgets/thorns_2_s0.png",
+    "2_s1": "gadgets/thorns_2_s1.png",
+    "2_s2": "gadgets/thorns_2_s2.png",
+    "2_s3": "gadgets/thorns_2_s3.png",
+    "3a_s0": "gadgets/thorns_3a_s0.png",
+    "3a_s1": "gadgets/thorns_3a_s1.png",
+    "3a_s2": "gadgets/thorns_3a_s2.png",
+    "3a_s3": "gadgets/thorns_3a_s3.png",
+    "3b_s0": "gadgets/thorns_3b_s0.png",
+    "3b_s1": "gadgets/thorns_3b_s1.png",
+    "3b_s2": "gadgets/thorns_3b_s2.png",
+    "3b_s3": "gadgets/thorns_3b_s3.png"
+   }
+  },
+  "bomb": {
+   "cell": [
+    150,
+    160
+   ],
+   "origin": [
+    75,
+    118
+   ],
+   "looks": {
+    "1_s0": "gadgets/bomb_1_s0.png",
+    "1_s1": "gadgets/bomb_1_s1.png",
+    "1_s2": "gadgets/bomb_1_s2.png",
+    "1_s3": "gadgets/bomb_1_s3.png"
+   }
+  }
+ },
+ "tree": {
+  "file": "misc/tree.png",
+  "cell": [
+   200,
+   210
+  ],
+  "origin": [
+   100,
+   150
+  ],
+  "frames": 4
+ },
+ "chests": {
+  "small": {
+   "file": "misc/chest_small.png",
+   "cell": [
+    110,
+    110
+   ],
+   "origin": [
+    55,
+    70
+   ]
+  },
+  "big": {
+   "file": "misc/chest_big.png",
+   "cell": [
+    110,
+    110
+   ],
+   "origin": [
+    55,
+    70
+   ]
+  }
+ },
+ "powerups": {
+  "giant": {
+   "file": "misc/powerup_giant.png",
+   "cell": [
+    90,
+    90
+   ],
+   "origin": [
+    45,
+    55
+   ]
+  },
+  "zoom": {
+   "file": "misc/powerup_zoom.png",
+   "cell": [
+    90,
+    90
+   ],
+   "origin": [
+    45,
+    55
+   ]
+  },
+  "frenzy": {
+   "file": "misc/powerup_frenzy.png",
+   "cell": [
+    90,
+    90
+   ],
+   "origin": [
+    45,
+    55
+   ]
+  },
+  "magnet": {
+   "file": "misc/powerup_magnet.png",
+   "cell": [
+    90,
+    90
+   ],
+   "origin": [
+    45,
+    55
+   ]
+  },
+  "heart": {
+   "file": "misc/powerup_heart.png",
+   "cell": [
+    90,
+    90
+   ],
+   "origin": [
+    45,
+    55
+   ]
+  }
+ },
+ "sun": {
+  "file": "misc/sun.png",
+  "cell": [
+   80,
+   80
+  ],
+  "origin": [
+   40,
+   40
+  ]
+ },
+ "maps": {
+  "meadow": "maps/meadow.jpg",
+  "river": "maps/river.jpg",
+  "courtyard": "maps/courtyard.jpg",
+  "hollow": "maps/hollow.jpg",
+  "frosty": "maps/frosty.jpg",
+  "valley": "maps/valley.jpg"
+ },
+ "hatAnchor": {
+  "peashooter": [
+   -1,
+   -55,
+   1
+  ],
+  "sunblossom": [
+   1,
+   -55,
+   0.9
+  ],
+  "frostlotus": [
+   0,
+   -53,
+   0.9
+  ],
+  "boomshroom": [
+   1,
+   -57,
+   1
+  ],
+  "voltcactus": [
+   0,
+   -53,
+   0.85
+  ],
+  "snapdragon": [
+   1,
+   -49,
+   0.85
+  ],
+  "bubblelily": [
+   0,
+   -60,
+   0.9
+  ]
+ },
+ "structures": {
+  "tower": {
+   "file": "structures/tower.png",
+   "cell": [
+    150,
+    160
+   ],
+   "origin": [
+    75,
+    125
+   ],
+   "frames": {
+    "healthy": [
+     0,
+     4
+    ],
+    "hurt": [
+     4,
+     4
+    ]
+   }
+  },
+  "guardian": {
+   "file": "structures/guardian.png",
+   "cell": [
+    160,
+    170
+   ],
+   "origin": [
+    80,
+    135
+   ],
+   "frames": {
+    "healthy": [
+     0,
+     4
+    ],
+    "hurt": [
+     4,
+     4
+    ]
+   }
+  },
+  "gate": {
+   "file": "structures/gate.png",
+   "cell": [
+    160,
+    160
+   ],
+   "origin": [
+    80,
+    125
+   ],
+   "frames": {
+    "healthy": [
+     0,
+     4
+    ],
+    "hurt": [
+     4,
+     4
+    ]
+   }
+  },
+  "thorntower": {
+   "file": "structures/thorntower.png",
+   "cell": [
+    150,
+    160
+   ],
+   "origin": [
+    75,
+    125
+   ],
+   "frames": {
+    "healthy": [
+     0,
+     4
+    ],
+    "hurt": [
+     4,
+     4
+    ]
+   }
+  },
+  "thornguard": {
+   "file": "structures/thornguard.png",
+   "cell": [
+    160,
+    170
+   ],
+   "origin": [
+    80,
+    135
+   ],
+   "frames": {
+    "healthy": [
+     0,
+     4
+    ],
+    "hurt": [
+     4,
+     4
+    ]
+   }
+  },
+  "thorngate": {
+   "file": "structures/thorngate.png",
+   "cell": [
+    160,
+    160
+   ],
+   "origin": [
+    80,
+    125
+   ],
+   "frames": {
+    "healthy": [
+     0,
+     4
+    ],
+    "hurt": [
+     4,
+     4
+    ]
+   }
+  },
+  "thornheart": {
+   "file": "structures/thornheart.png",
+   "cell": [
+    240,
+    240
+   ],
+   "origin": [
+    120,
+    170
+   ],
+   "frames": {
+    "healthy": [
+     0,
+     4
+    ],
+    "hurt": [
+     4,
+     4
+    ]
+   }
+  }
+ }
+}

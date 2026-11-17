@@ -1,0 +1,853 @@
+extends Node
+## Game flow and local controls: title menu -> (LAN lobby) -> game.
+## Walking is predicted on this computer so it feels instant; everything else
+## comes from the simulation (run here for solo / LAN host, or received from
+## the LAN host when joining).
+
+const MOVE_SEND_INTERVAL := 0.05
+
+var world: WorldView
+var hud: Hud
+var couch: Couch  # controllers: couch co-op players on this computer
+var menu: Menu
+var host: GameHost  # set when this computer runs the simulation
+var net: Node  # NetHost or NetClient while in a LAN game
+
+var my_id := 1
+var snap: Dictionary = {}
+var playing := false
+var my_pos = null
+var my_hero_id := -1
+var my_speed := 195.0
+var move_path: Array = []
+var last_sent := {"p": Vector2.ZERO, "at": -10.0}
+var clock := 0.0
+var selected_gadget := "sentry"
+var branch_arm_until := 0.0
+var ghost_until := 0.0  # show where the selected tower would go until this time
+const TARGET_MODES := ["first", "strong", "close", "last"]
+var last_cfg: Dictionary = {}
+var snap_at := 0.0
+var snap_gap := 1.0 / 30.0
+
+# command-line options for testing: --solo --demo --hero=x --map=x --diff=x --mode=x
+# --bots=N --warp=SECONDS --shot=FILE.png --shot-after=SECONDS --quit
+var args := {}
+
+
+func _ready() -> void:
+	for a in OS.get_cmdline_user_args() + OS.get_cmdline_args():
+		if a.begins_with("--"):
+			var kv: PackedStringArray = a.substr(2).split("=", true, 1)
+			args[kv[0]] = kv[1] if kv.size() > 1 else "1"
+	get_window().title = "Bloom Bastion Heroes"
+	world = WorldView.new()
+	add_child(world)
+	var hud_layer := CanvasLayer.new()
+	hud_layer.layer = 5
+	add_child(hud_layer)
+	hud = Hud.new()
+	hud.theme = UiKit.theme()
+	hud_layer.add_child(hud)
+	var menu_layer := CanvasLayer.new()
+	menu_layer.layer = 10
+	add_child(menu_layer)
+	menu = Menu.new()
+	menu_layer.add_child(menu)
+	couch = Couch.new()
+	couch.main = self
+	couch.p1_pad = bool(Profile.load_profile().get("padP1", false))
+	add_child(couch)
+	hud.couch = couch
+	menu.play.connect(_on_menu_play)
+	menu.leave.connect(show_menu)
+	var cfg := Profile.load_profile()
+	cfg.merge({"hero": args.get("hero", cfg.hero), "map": args.get("map", cfg.map), "diff": args.get("diff", cfg.diff), "name": args.get("name", cfg.name),
+		"gameMode": args.get("mode", cfg.gameMode), "bots": int(args.get("bots", "2" if args.has("demo") else str(cfg.bots)))}, true)
+	if args.has("solo") or args.has("demo"):
+		start_local(cfg, args.has("demo"))
+	elif args.has("host"):
+		cfg.kind = "host"
+		cfg.bind = String(args.get("bind", ""))
+		_on_menu_play(cfg)
+	elif args.has("join"):
+		cfg.kind = "join"
+		cfg.address = String(args.join)
+		_on_menu_play(cfg)
+	else:
+		show_menu()
+	if args.has("shot"):
+		_screenshot_later(String(args.shot), float(args.get("shot-after", "3")))
+	if args.has("netcheck"):
+		_netcheck(float(args.netcheck))
+
+
+func show_menu() -> void:
+	_leave_game()
+	couch.reset()
+	couch.p1_pad = bool(Profile.load_profile().get("padP1", false))
+	menu.show_title()
+	hud.visible = false
+	start_attract()
+
+
+## A bot-only game plays behind the title screen
+var attract := false
+
+
+func start_attract() -> void:
+	attract = true
+	hud.visible = false
+	world.reset()
+	world.mute_audio = true
+	var clash := randf() < 0.35
+	host = GameHost.new(clash)
+	add_child(host)
+	host.snapshot_ready.connect(_on_snapshot)
+	my_id = -1
+	var types: Array = GameData.HERO_ORDER.duplicate()
+	types.shuffle()
+	for i in 4:
+		host.add_player(100 + i, ["Sprout", "Clover", "Pip", "Juniper"][i], types[i], true, ["flower", "wizard", "party", "propeller"][i], ["ladybug", "bee", "bunny", "dragon"][i])
+	var maps: Array = ["meadow", "river", "courtyard", "hollow", "frosty"]
+	host.start(maps[randi() % maps.size()], "easy", "adventure")
+	host.sim.auto_wave = true
+	host.sim.start_wave()
+	for i in 30 * (150 if clash else 25):
+		host.sim.step(SimWorld.TICK)
+	host.sim.events.clear()
+	world.my_owner = 100
+	world.zoom = 0.85
+
+
+func _leave_game() -> void:
+	playing = false
+	attract = false
+	if host:
+		host.queue_free()
+		host = null
+	if net:
+		net.close()
+		net.queue_free()
+		net = null
+	snap = {}
+	hud.snap = {}
+	my_pos = null
+	world.my_pos = null
+
+
+func _on_menu_play(cfg: Dictionary) -> void:
+	match String(cfg.kind):
+		"solo":
+			start_local(cfg, false)
+		"host":
+			_leave_game()
+			net = NetHost.new()
+			add_child(net)
+			net.main = self
+			if not net.open(cfg):
+				net.queue_free()
+				net = null
+				show_menu()
+				menu.show_error("Could not start a LAN game (port %d busy?)" % NetHost.PORT)
+				return
+			menu.show_lobby(net, true)
+			start_attract()
+		"join":
+			_leave_game()
+			net = NetClient.new()
+			add_child(net)
+			net.main = self
+			net.join(cfg)
+			menu.show_lobby(net, false)
+			start_attract()
+
+
+## Solo (or a LAN host's game, called by NetHost with its player list)
+func start_local(cfg: Dictionary, demo := false, lan_players: Array = []) -> void:
+	if not net:
+		_leave_game()
+	else:
+		playing = false
+		attract = false
+		if host:
+			host.queue_free()
+			host = null
+	world.zoom = 1.0
+	world.reset()
+	last_cfg = cfg
+	host = GameHost.new(String(cfg.get("gameMode", "")) == "clash")
+	add_child(host)
+	host.snapshot_ready.connect(_on_snapshot)
+	my_id = 1
+	host.add_player(my_id, String(cfg.get("name", "Player")), String(cfg.hero), demo, String(cfg.get("hat", "none")), String(cfg.get("pet", "none")))
+	for p in lan_players:
+		host.add_player(int(p.id), String(p.name), String(p.hero), false, String(p.get("hat", "none")), String(p.get("pet", "none")))
+	var used := [String(cfg.hero)]
+	for p in lan_players:
+		used.append(String(p.hero))
+	var sofa := couch.players()  # couch players stay in for "play again"
+	for pid in sofa:
+		var cp: Dictionary = sofa[pid]
+		host.add_player(pid, String(cp.name), String(cp.hero), false, String(cp.hat), String(cp.pet))
+		used.append(String(cp.hero))
+	for i in mini(int(cfg.get("bots", 0)), 3 - lan_players.size() - sofa.size()):
+		var pick := ""
+		for t in GameData.HERO_ORDER:
+			if not t in used:
+				pick = t
+				break
+		if pick == "":
+			pick = GameData.HERO_ORDER[randi() % GameData.HERO_ORDER.size()]
+		used.append(pick)
+		host.add_player(100 + i, ["Sprout", "Clover", "Pip", "Juniper"][i % 4], pick, true, ["flower", "cap", "party", "propeller"][i % 4], ["ladybug", "bee", "bunny", "snail"][i % 4])
+	if net:
+		net.attach_host(host)
+	_begin_play()
+	host.start(String(cfg.map), String(cfg.diff), String(cfg.gameMode))
+	if demo:
+		host.sim.auto_wave = true
+		host.sim.start_wave()
+	if args.has("wave"):  # test-only: jump to a wave
+		host.sim.wave = int(args.wave) - 1
+		host.sim.start_next_wave()
+		host.sim.auto_wave = true
+	if args.has("warp"):
+		var t := float(args.warp)
+		host.sim.auto_wave = true
+		host.sim.start_wave()
+		while t > 0 and host.sim.phase == "playing":
+			host.sim.step(SimWorld.TICK)
+			host.sim.events.clear()
+			t -= SimWorld.TICK
+		host.sim.auto_wave = demo
+
+
+## Called when a LAN client's game starts
+func start_remote(id: int) -> void:
+	if host:
+		host.queue_free()
+		host = null
+	attract = false
+	world.reset()
+	world.zoom = 1.0
+	my_id = id
+	_begin_play()
+
+
+func _begin_play() -> void:
+	hud.menu_open = false
+	menu.hide_all()
+	hud.visible = true
+	playing = true
+	my_pos = null
+	my_hero_id = -1
+	move_path = []
+	hud.my_owner = my_id
+	hud.is_host = host != null
+	world.my_owner = my_id
+	world.mute_audio = false
+	hud.banner("Defend the Bloom Tree!", "WASD or click to walk · Space starts a wave · Q special · Shift leaps")
+	if not args.has("warp"):
+		Audio.say("ann_welcome", -1, true)
+
+
+# ---------------------------------------------------------------------------
+# Snapshots (from the local host or the network)
+# ---------------------------------------------------------------------------
+func _on_snapshot(s: Dictionary) -> void:
+	snap_gap = lerpf(snap_gap, clampf(clock - snap_at, 0.01, 0.2), 0.2)
+	snap_at = clock
+	snap = s
+	world.push_snapshot(s)
+	hud.snap = s
+	_sync_my_hero()
+	for e in s.get("events", []):
+		_my_event(e)
+
+
+## Events that came on their own (reliably) over the LAN
+func handle_events(list: Array) -> void:
+	for e in list:
+		if typeof(e) == TYPE_DICTIONARY:
+			world.on_event(e)
+			_my_event(e)
+
+
+## New pests and bosses get a warning card the first time they show up
+func _pest_intro(w: int) -> void:
+	if snap.has("clash") or attract:
+		return
+	var intro: Dictionary = GameData.enemies.get("newPestIntro", {})
+	for type in intro:
+		if int(intro[type]) == w:
+			hud.pest_card(String(type))
+			return
+	var plan: Dictionary = GameData.plan_wave(w, GameData.DIFFICULTIES.get(snap.get("difficulty", "normal"), {}), maxi(1, snap.get("heroes", []).size()), bool(snap.get("endless", false)), "")
+	for g in plan.groups:
+		if g.boss:
+			hud.pest_card(String(g.type))
+			return
+
+
+func _my_hero() -> Dictionary:
+	for h in snap.get("heroes", []):
+		if h.owner == my_id:
+			return h
+	return {}
+
+
+func _sync_my_hero() -> void:
+	var h := _my_hero()
+	if h.is_empty() or _is_bot_me():
+		my_pos = null
+		world.my_pos = null
+		return
+	my_speed = GameData.compute_hero_stats(h.type, h.tierA, h.tierB, h.cards, h.level, h.buffs).moveSpeed
+	var hp := Vector2(h.x, h.y)
+	if my_hero_id != h.id or my_pos == null:
+		my_hero_id = h.id
+		my_pos = hp
+		last_sent = {"p": hp, "at": clock}
+	else:
+		var recently: bool = clock - last_sent.at < 0.4
+		if hp.distance_to(my_pos) > (90.0 if recently else 30.0) and hp.distance_to(last_sent.p) > 30:
+			my_pos = hp
+	world.my_pos = my_pos
+
+
+func _is_bot_me() -> bool:
+	for p in snap.get("players", []):
+		if p.id == my_id:
+			return p.bot
+	return false
+
+
+func _my_event(e: Dictionary) -> void:
+	couch.on_event(e)
+	var mine: bool = int(e.get("owner", -999)) == my_id
+	match String(e.type):
+		"dash", "teleport":
+			if mine and my_pos != null:
+				my_pos = Vector2(e.x, e.y)
+				move_path = []
+				last_sent = {"p": my_pos, "at": clock}
+		"wave_start":
+			var tw := ""
+			if String(e.get("twist", "")) != "":
+				tw = "🌀 " + String(GameData.TWISTS.get(e.twist, {}).get("name", ""))
+			var wn := int(e.wave)
+			hud.banner("Wave %d" % wn, tw if tw != "" else "Here they come!", Color("fde047"))
+			_pest_intro(wn)
+			if not attract:
+				Audio.play_sfx("wave_start")
+				if wn == 20 or (wn >= 25 and wn % 5 == 0):
+					Audio.play_sfx("boss_warn")
+					Audio.say("boss_monarch", -1, true)
+				elif wn == 10 or (wn >= 15 and wn % 5 == 0):
+					Audio.play_sfx("boss_warn")
+					Audio.say("boss_zep", -1, true)
+				elif wn == 5:
+					Audio.say("ann_camo", -1, true)
+				elif wn == 11:
+					Audio.say("ann_mole", -1, true)
+				elif wn == 1 or wn % 4 == 0:
+					Audio.say("ann_wave")
+		"wave_clear":
+			hud.banner("Wave %d cleared!" % int(e.wave), "+%d XP · +%d acorns" % [int(e.bonus), int(e.acorns)], Color("86efac"))
+			if not attract:
+				Audio.play_sfx("wave_clear")
+				if int(e.wave) % 5 == 0:
+					Audio.say("ann_clear", -1, true)
+		"milestone":
+			hud.banner("Milestone!", "+5 lives and a bonus card for everyone", Color("f0abfc"))
+			if not attract:
+				Audio.say("ann_milestone", -1, true)
+		"sleep_dust":
+			if not attract:
+				Audio.say("ann_sleep")
+		"gadget_fail":
+			if mine:
+				hud.toast(String(e.reason), Color("fca5a5"))
+				if not attract:
+					Audio.play_sfx("error")
+		"gadget_choose":
+			if mine:
+				var d: Dictionary = GameData.GADGETS[e.kind]
+				branch_arm_until = clock + 5.0
+				hud.toast("Pick a special power: U = %s %s, Y = %s %s" % [d.branches[0].icon, d.branches[0].name, d.branches[1].icon, d.branches[1].name], Color("fde047"), 5.0)
+		"gadget_placed":
+			if mine:
+				hud.toast("%s built!" % GameData.GADGETS[e.kind].name, Color("86efac"), 2.0)
+		"gadget_upgraded":
+			if mine:
+				hud.toast("Upgraded to level %d %s" % [int(e.level), String(e.get("branchIcon", ""))], Color("fde047"), 2.5)
+		"gadget_sold":
+			if mine:
+				hud.toast("Sold for %d acorns" % int(e.refund), Color("fcd34d"), 2.0)
+		"level_up":
+			if mine:
+				hud.toast("Level %d! Pick a card with 1, 2 or 3" % int(e.level), Color("fde047"), 3.0)
+				if not attract:
+					Audio.say_hero(String(_my_hero().get("type", "")), "level", my_id)
+		"combo":
+			hud.banner("TEAM COMBO!", "", Color("f0abfc"), 2.0)
+		"boss_enrage":
+			hud.banner("👑 %s is ENRAGED!" % e.get("name", "The boss"), "Faster, and it calls helpers more often. Focus fire!", Color("f87171"), 3.0)
+		"victory", "game_over":
+			if playing and not attract:
+				Profile.record_game(e.type == "victory", bool(snap.endless), int(snap.wave))
+				Audio.play_sfx("victory" if e.type == "victory" else "game_over", 0.0, 0.0, 500)
+				Audio.say("ann_victory" if e.type == "victory" else "ann_gameover", -1, true)
+		# --- Garden Clash
+		"clash_start":
+			hud.banner("⚔️ Garden Clash!", "Push the lanes with your Sproutlings and smash the Thorn Heart!", Color("f0abfc"), 4.0)
+			if not attract:
+				Audio.play_sfx("wave_start")
+				Audio.say("ann_welcome", -1, true)
+		"rival_spawn":
+			if e.get("first", false):
+				hud.feed("👑 %s joins the battle (Lv %d)" % [e.name, int(e.lvl)], Color("fca5a5"))
+		"rival_down":
+			hud.feed("👑 %s knocked out%s! Back in %ds" % [e.name, (" by " + String(e.by)) if String(e.by) != "" else "", int(e.back)], Color("fde047"))
+		"struct_down":
+			var foe: bool = e.team == "foe"
+			if e.get("core", false):
+				hud.banner("💜 The Thorn Heart is broken!", "", Color("f0abfc"))
+			else:
+				hud.feed(("💥 %s smashed%s!" if foe else "😢 Our %s fell!") % ([e.name, (" by " + String(e.by)) if String(e.get("by", "")) != "" else ""] if foe else [e.name]), Color("f5d0fe") if foe else Color("fca5a5"))
+				if foe and int(e.get("tier", 0)) == 3:
+					hud.banner("Gate smashed!", "Super Sprouts march down that lane now", Color("f0abfc"))
+		"hero_down":
+			hud.feed("💫 %s was knocked out%s" % [e.name, (" by " + String(e.by)) if String(e.by) != "" else ""], Color("fca5a5"))
+			if mine:
+				hud.banner("Knocked out!", "Back in %ds, or a friend can stand next to you to revive you" % int(e.respawn), Color("fca5a5"), 3.0)
+		"revive":
+			hud.feed("💚 %s revived %s" % [e.by, e.name], Color("86efac"))
+		"tower_alert":
+			hud.toast("⚠️ A %s is under attack and nobody is there!" % ("Bloom Gate" if e.kind == "gate" else ("Tree Guardian" if e.kind == "guardian" else ("Bloom Tree" if e.kind == "tree" else "Bloom Tower"))), Color("fca5a5"), 4.0)
+		"camp_up":
+			if e.get("epic", false):
+				hud.feed("🐸 %s woke up in the jungle!" % e.name, Color("86efac"))
+		"camp_down":
+			if e.get("epic", false):
+				hud.banner("🐸 Toad Power!", "Your Sproutlings grow big and strong for a while", Color("86efac"))
+		"gate_regrow":
+			hud.feed(("🌱 Our Bloom Gate grew back" if e.side == "ally" else "🌿 A Thorn Gate grew back"), Color("bbf7d0"))
+		"recall_cancel":
+			if mine:
+				hud.toast("Going home stopped: stand still for 3 seconds", Color("fca5a5"), 2.0)
+		"recall_start":
+			if mine:
+				move_path = []
+		"item_bought":
+			if mine:
+				var info: Dictionary = GameData.clash_item(String(e.item))
+				hud.toast("%s %s!" % [info.get("icon", "🧃"), info.get("name", "Berry Juice")], Color("fde047"), 2.0)
+		"powerup_get":
+			if mine:
+				var pu: Dictionary = GameData.POWERUPS.get(e.get("kind", ""), {})
+				if not pu.is_empty():
+					hud.toast("%s %s!" % [pu.get("icon", ""), pu.get("name", "")], Color("fde047"), 2.5)
+
+
+# ---------------------------------------------------------------------------
+# Sending actions
+# ---------------------------------------------------------------------------
+func send(a: Dictionary) -> void:
+	if host:
+		host.apply(my_id, a)
+	elif net and net.has_method("send_action"):
+		net.send_action(a)
+
+
+func _process(delta: float) -> void:
+	clock += delta
+	if attract and host and host.sim.phase != "playing":
+		host.queue_free()
+		host = null
+		start_attract()
+	if host:
+		world.tick_alpha = host.alpha()
+	else:
+		world.tick_alpha = clampf((clock - snap_at) / maxf(snap_gap, 0.016), 0, 1.5)
+	_update_movement(delta)
+	var preview := playing and not snap.is_empty() and not snap.has("clash") and (clock < ghost_until or hud.over_build_bar())
+	world.ghost = selected_gadget if preview else ""
+	hud.selected_gadget = selected_gadget
+	# frame every local hero (couch co-op) with the camera
+	var follow: Array = []
+	if playing and couch:
+		var sofa := couch.players()
+		for x in snap.get("heroes", []):
+			if sofa.has(x.owner) and not x.get("dead", false):
+				follow.append(x.id)
+	world.follow_ids = follow
+	hud.show_stats = playing and (Input.is_physical_key_pressed(KEY_TAB) or args.has("stats"))
+
+
+func _move_input() -> Vector2:
+	var v := Vector2.ZERO
+	if Input.is_physical_key_pressed(KEY_W) or Input.is_physical_key_pressed(KEY_UP):
+		v.y -= 1
+	if Input.is_physical_key_pressed(KEY_S) or Input.is_physical_key_pressed(KEY_DOWN):
+		v.y += 1
+	if Input.is_physical_key_pressed(KEY_A) or Input.is_physical_key_pressed(KEY_LEFT):
+		v.x -= 1
+	if Input.is_physical_key_pressed(KEY_D) or Input.is_physical_key_pressed(KEY_RIGHT):
+		v.x += 1
+	if v == Vector2.ZERO and couch:
+		v = couch.p1_stick()  # a controller playing as P1
+	return v
+
+
+func _update_movement(dt: float) -> void:
+	if not playing or my_pos == null or snap.is_empty() or snap.phase != "playing" or snap.paused:
+		return
+	if _my_hero().get("dead", false):
+		move_path = []
+		return
+	var dir := _move_input()
+	var step: float = my_speed * float(snap.speed) * dt
+	if dir != Vector2.ZERO:
+		move_path = []
+	elif move_path.size() > 0:
+		var wp: Vector2 = move_path[0]
+		var d: float = wp.distance_to(my_pos)
+		while d < 4 and move_path.size() > 1:
+			move_path.pop_front()
+			wp = move_path[0]
+			d = wp.distance_to(my_pos)
+		if d < 3:
+			move_path = []
+		else:
+			dir = wp - my_pos
+			step = minf(step, d)
+	if dir != Vector2.ZERO:
+		var n: Vector2 = my_pos + dir.normalized() * step
+		var map_id: String = snap.map
+		if GameData.is_walkable(map_id, n.x, n.y):
+			my_pos = n
+		elif GameData.is_walkable(map_id, n.x, my_pos.y):
+			my_pos = Vector2(n.x, my_pos.y)
+		elif GameData.is_walkable(map_id, my_pos.x, n.y):
+			my_pos = Vector2(my_pos.x, n.y)
+		else:
+			move_path = []
+		world.my_pos = my_pos
+	if clock - last_sent.at > MOVE_SEND_INTERVAL and my_pos.distance_to(last_sent.p) > 0.5:
+		send({"t": "move", "x": snappedf(my_pos.x, 0.1), "y": snappedf(my_pos.y, 0.1)})
+		last_sent = {"p": my_pos, "at": clock}
+
+
+func walk_to(target: Vector2) -> void:
+	if my_pos == null or snap.is_empty():
+		return
+	var tx := clampf(target.x, 16, GameData.W - 16)
+	var ty := clampf(target.y, 16, GameData.H - 16)
+	# clicking near a Sun orb walks right onto it
+	for s in snap.get("suns", []):
+		if Vector2(s.x, s.y).distance_to(target) < 40:
+			tx = s.x
+			ty = s.y
+	move_path = GameData.find_path(snap.map, my_pos.x, my_pos.y, tx, ty)
+	if move_path.size() > 0:
+		world.click_marker(move_path[move_path.size() - 1])
+
+
+func dash() -> void:
+	var h := _my_hero()
+	if h.is_empty() or my_pos == null:
+		return
+	if h.dashCd > 0:
+		hud.toast("💨 Leaf Leap recharging (%ds)" % ceili(h.dashCd), Color("fca5a5"), 1.5)
+		return
+	var dir := _move_input()
+	if dir == Vector2.ZERO and move_path.size() > 0:
+		dir = Vector2(move_path[0]) - my_pos
+	if dir == Vector2.ZERO:
+		dir = world.get_global_mouse_position() - my_pos
+	if dir.length() < 1:
+		dir = Vector2(h.facing, 0)
+	send({"t": "move", "x": snappedf(my_pos.x, 0.1), "y": snappedf(my_pos.y, 0.1)})
+	send({"t": "dash", "dx": dir.x, "dy": dir.y})
+	move_path = []
+
+
+func upgrade_key(branch: int) -> void:
+	var g := _my_gadget_near()
+	if g.is_empty():
+		if branch == 0:
+			send({"t": "upgrade"})
+		return
+	var def: Dictionary = GameData.GADGETS[g.kind]
+	if def.has("branches") and int(g.level) == 2:
+		if branch == 1 or clock < branch_arm_until:
+			branch_arm_until = 0.0
+			send({"t": "upgrade", "id": g.id, "branch": branch})
+		else:
+			send({"t": "upgrade", "id": g.id})  # asks the sim to offer the choice
+		return
+	if branch == 0:
+		send({"t": "upgrade", "id": g.id})
+
+
+func _my_gadget_near() -> Dictionary:
+	var best := {}
+	var bd := 110.0
+	if my_pos == null:
+		return best
+	for g in snap.get("gadgets", []):
+		if g.owner != my_id:
+			continue
+		var d: float = Vector2(g.x, g.y).distance_to(my_pos)
+		if d <= bd:
+			bd = d
+			best = g
+	return best
+
+
+func do_hud_action(a: Dictionary) -> void:
+	match String(a.t):
+		"mute":
+			var m := Audio.toggle_mute()
+			hud.toast("🔇 Sound Muted" if m else "🔊 Sound On", Color("fde047"), 1.5)
+			if not m:
+				Audio.play_sfx("ui_click")
+		"select_gadget":
+			Audio.play_sfx("ui_click", -3.0)
+			if selected_gadget == a.kind:
+				send({"t": "plant", "kind": selected_gadget})
+				ghost_until = clock + 1.2
+			else:
+				ghost_until = clock + 3.0
+			selected_gadget = a.kind
+		"target":
+			Audio.play_sfx("ui_click", -3.0)
+			cycle_target()
+		"resume":
+			Audio.play_sfx("ui_click")
+			close_pause_menu()
+		"dash_ui":
+			dash()
+		"again":
+			Audio.play_sfx("ui_click")
+			if host and not net:
+				start_local(last_cfg)
+			elif net and net.has_method("restart"):
+				net.restart()
+		"menu":
+			Audio.play_sfx("ui_click")
+			hud.menu_open = false
+			show_menu()
+		"card":
+			Audio.play_sfx("card_pick")
+			send(a)
+		_:
+			Audio.play_sfx("ui_click", -4.0)
+			send(a)
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if not playing:
+		return
+	if event is InputEventMouseButton and event.pressed:
+		var mb := event as InputEventMouseButton
+		if mb.button_index == MOUSE_BUTTON_WHEEL_UP:
+			world.zoom_by(1.1)
+		elif mb.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+			world.zoom_by(1.0 / 1.1)
+		elif mb.button_index == MOUSE_BUTTON_LEFT or mb.button_index == MOUSE_BUTTON_RIGHT:
+			var a := hud.click(hud.get_local_mouse_position())
+			if not a.is_empty():
+				do_hud_action(a)
+			elif not hud.over_ui(hud.get_local_mouse_position()) and not snap.is_empty() and snap.phase == "playing" and not snap.paused:
+				walk_to(world.get_global_mouse_position())
+		get_viewport().set_input_as_handled()
+		return
+	if not (event is InputEventKey) or not event.pressed or event.echo:
+		return
+	var k := (event as InputEventKey).physical_keycode
+	if snap.is_empty():
+		return
+	if snap.phase != "playing":
+		if k == KEY_ENTER or k == KEY_KP_ENTER:
+			do_hud_action({"t": "again"})
+		elif k == KEY_ESCAPE:
+			show_menu()
+		return
+	if hud.menu_open:
+		if k == KEY_ESCAPE or k == KEY_P:
+			close_pause_menu()
+		elif k == KEY_M:
+			do_hud_action({"t": "mute"})
+		return
+	match k:
+		KEY_P:
+			send({"t": "pause"})
+		KEY_M:
+			do_hud_action({"t": "mute"})
+		KEY_ESCAPE:
+			open_pause_menu()
+			return
+		KEY_Z:
+			world.toggle_overview()
+		KEY_EQUAL, KEY_KP_ADD:
+			world.zoom_by(1.15)
+		KEY_MINUS, KEY_KP_SUBTRACT:
+			world.zoom_by(0.87)
+	if snap.paused:
+		return
+	match k:
+		KEY_SPACE:
+			if not snap.waveActive:
+				send({"t": "wave"})
+		KEY_SHIFT:
+			dash()
+		KEY_Q, KEY_E:
+			send({"t": "special"})
+		KEY_H, KEY_B:
+			send({"t": "home"})
+			if not snap.has("clash"):
+				move_path = []
+		KEY_R:
+			if snap.has("clash"):
+				send({"t": "potion"})
+		KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6:
+			# 1-3 pick a level-up card; with no cards waiting, 1-6 pick a tower
+			var cards: bool = int(_my_hero().get("pending", 0)) > 0 and _my_hero().get("offer", []).size() > 0
+			if cards and k <= KEY_3:
+				Audio.play_sfx("card_pick")
+				send({"t": "card", "i": k - KEY_1})
+			elif not cards and not snap.has("clash") and k - KEY_1 < GameData.GADGET_ORDER.size():
+				pick_gadget(GameData.GADGET_ORDER[k - KEY_1])
+		KEY_F:
+			send({"t": "plant", "kind": selected_gadget})
+			ghost_until = clock + 1.2
+		KEY_G when not snap.has("clash"):
+			var i := GameData.GADGET_ORDER.find(selected_gadget)
+			pick_gadget(GameData.GADGET_ORDER[(i + 1) % GameData.GADGET_ORDER.size()])
+		KEY_T when not snap.has("clash"):
+			cycle_target()
+		KEY_U:
+			upgrade_key(0)
+		KEY_Y:
+			upgrade_key(1)
+		KEY_X:
+			send({"t": "sell"})
+		KEY_TAB:
+			pass
+
+
+func pick_gadget(kind: String) -> void:
+	Audio.play_sfx("ui_click", -3.0)
+	selected_gadget = kind
+	ghost_until = clock + 3.0
+	var d: Dictionary = GameData.GADGETS[kind]
+	hud.toast("%s %s selected (%d acorns). Press F to build it here." % [d.icon, d.name, int(d.cost)], Color("bbf7d0"), 2.5)
+
+
+## T: which pest does my hero shoot first?
+func cycle_target() -> void:
+	var h := _my_hero()
+	if h.is_empty():
+		return
+	var i := TARGET_MODES.find(String(h.get("targetMode", "first")))
+	var next: String = TARGET_MODES[(i + 1) % TARGET_MODES.size()]
+	send({"t": "target", "mode": next})
+	var what: String = {"first": "the pest closest to the Bloom Tree", "strong": "the toughest pest", "close": "the pest closest to you", "last": "the pest furthest back"}[next]
+	hud.toast("🎯 Your hero now shoots %s first" % what, Color("bae6fd"), 2.2)
+
+
+## Esc: Resume / Restart / Leave to menu. Solo and LAN hosts also pause the game.
+var _paused_by_menu := false
+
+
+func open_pause_menu() -> void:
+	hud.menu_open = true
+	move_path = []
+	_paused_by_menu = false
+	if host and not snap.paused:
+		send({"t": "pause"})
+		_paused_by_menu = true
+
+
+func close_pause_menu() -> void:
+	hud.menu_open = false
+	if host and snap.paused and _paused_by_menu:
+		send({"t": "pause"})
+	_paused_by_menu = false
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_CLOSE_REQUEST and net:
+		net.close()
+
+
+# ---------------------------------------------------------------------------
+# Testing helpers
+# ---------------------------------------------------------------------------
+## LAN test: the host auto-starts once N friends joined; the client walks a
+## little; after SECS both print what they see and quit.
+func _netcheck(secs: float) -> void:
+	var t0 := clock
+	var walked := false
+	var start_x := 0.0
+	while clock - t0 < secs:
+		await get_tree().process_frame
+		if net is NetHost and not net.in_game and net.lobby.size() >= int(args.get("autostart", "1")):
+			net.start_game()
+		if net is NetClient and playing and my_pos != null and not walked:
+			walked = true
+			start_x = my_pos.x
+			move_path = [my_pos + Vector2(90, 0)]
+			if snap.has("clash"):
+				send({"t": "buy", "item": "sword"})
+			elif not snap.waveActive:
+				send({"t": "wave"})
+	var out := {"role": "host" if net is NetHost else "client", "status": net.status if net else "", "playing": playing, "my_id": my_id}
+	if net is NetHost and host:
+		out.players = []
+		for h in host.sim.heroes:
+			out.players.append({"owner": h.owner, "type": h.type, "x": roundf(h.x), "y": roundf(h.y)})
+		out.wave = host.sim.wave
+	elif net is NetClient:
+		out.packets = net.packets
+		out.kb_per_snap = 0
+		var h := _my_hero()
+		out.my_hero = h.get("type", "none")
+		out.moved = roundf(float(h.get("x", 0)) - start_x) if walked else 0
+		out.enemies = snap.get("enemies", []).size()
+		out.wave = snap.get("wave", -1)
+		out.heroes = snap.get("heroes", []).size()
+		if snap.has("clash"):
+			out.items = h.get("items", [])
+			out.hp = h.get("hp", 0)
+			out.allies = snap.clash.allies.size()
+			out.buildings = snap.clash.allyTowers.size() + snap.clash.foeTowers.size()
+	print("NETCHECK ", JSON.stringify(out))
+	get_tree().quit()
+
+
+# Save a screenshot after a delay (and optionally quit)
+# ---------------------------------------------------------------------------
+func _screenshot_later(path: String, after: float) -> void:
+	# test-only staging: --plant=KIND (build next to me), --ghost=KIND (show the build preview), --pausemenu
+	if args.has("plant") and playing:
+		host.sim.players[my_id].acorns += 500
+		send({"t": "plant", "kind": String(args.plant)})
+		send({"t": "move", "x": my_pos.x + 40, "y": my_pos.y + 10})
+		my_pos = Vector2(my_pos.x + 40, my_pos.y + 10)
+	if args.has("ghost") and playing:
+		selected_gadget = String(args.ghost)
+		ghost_until = clock + 999.0
+	await get_tree().create_timer(maxf(0.1, after - 0.4)).timeout
+	if args.has("pausemenu") and playing:
+		open_pause_menu()
+	await get_tree().create_timer(0.4).timeout
+	await RenderingServer.frame_post_draw
+	var img := get_viewport().get_texture().get_image()
+	img.save_png(path)
+	print("screenshot saved: ", path)
+	if args.has("quit"):
+		get_tree().quit()

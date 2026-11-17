@@ -1,0 +1,50 @@
+{
+  "game": "Bloom Bastion Heroes",
+  "version": "1.0.0",
+  "exportedAt": "2026-11-17T01:30:26.166Z",
+  "simTickHz": 30,
+  "stateBroadcastHz": 20,
+  "grid": {
+    "cols": 36,
+    "rows": 22,
+    "tileSize": 60,
+    "arenaWidth": 2160,
+    "arenaHeight": 1320
+  },
+  "view": {
+    "width": 1200,
+    "height": 720
+  },
+  "playerColors": [
+    {
+      "id": 0,
+      "name": "Coral",
+      "hex": "#FF5A5F",
+      "light": "#FFE3E4",
+      "glow": "rgba(255, 90, 95, 0.45)"
+    },
+    {
+      "id": 1,
+      "name": "Sky",
+      "hex": "#38BDF8",
+      "light": "#E0F2FE",
+      "glow": "rgba(56, 189, 248, 0.45)"
+    },
+    {
+      "id": 2,
+      "name": "Amber",
+      "hex": "#FBBF24",
+      "light": "#FEF3C7",
+      "glow": "rgba(251, 191, 36, 0.45)"
+    },
+    {
+      "id": 3,
+      "name": "Violet",
+      "hex": "#C084FC",
+      "light": "#F3E8FF",
+      "glow": "rgba(192, 132, 252, 0.45)"
+    }
+  ],
+  "maxPlayers": 4,
+  "notes": "All numbers are tuned against the Node.js version (the balance oracle). Distances are in pixels, times in seconds, speeds in pixels per second."
+}
