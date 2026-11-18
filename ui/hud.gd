@@ -399,10 +399,13 @@ func _draw_build_bar(me: Dictionary, W: float, H: float) -> void:
 		var afford: bool = acorns >= int(def.cost)
 		var hover := cr.has_point(get_local_mouse_position())
 		draw_style_box(UiKit.box(Color(0.1, 0.25, 0.15, 0.95) if sel else Color(0.04, 0.09, 0.06, 0.9), Color("fde047") if sel else Color(1, 1, 1, 0.35 if hover else 0.15), 10, 2 if sel else 1, 0), cr)
-		var t: Texture2D = Sprites.gadget_tex(kind, 1, -1, 0)
-		var e: Dictionary = Sprites.atlas.gadgets.get(kind, {})
+		var t: Texture2D = Sprites.gadget_tex(kind, 1, -1, int(me.get("slot", 0)))
 		if t:
-			Sprites.draw_frame(self, t, e, 0, cr.position + Vector2(cw / 2, 40), false, 0.34, Color.WHITE if afford else Color(1, 1, 1, 0.45), Sprites.scale)
+			# Frame the plant above its rank badge at toolbar size.
+			var source := Rect2(44, 126, 137, 66) if kind == "thorns" else Rect2(65, 90, 95, 102)
+			var extent := source.size * minf((cw - 8.0) / source.size.x, 36.0 / source.size.y)
+			var at := cr.position + Vector2((cw - extent.x) / 2.0, 22.0 - extent.y / 2.0)
+			draw_texture_rect_region(t, Rect2(at, extent), source, Color.WHITE if afford else Color(1, 1, 1, 0.45))
 		txt(Vector2(cr.get_center().x, cr.end.y - 3), "%d" % int(def.cost), 12, Color("fcd34d") if afford else Color("fca5a5"), HORIZONTAL_ALIGNMENT_CENTER, -1, 3)
 		txt(cr.position + Vector2(6, 13), str(i + 1), 10, Color(1, 1, 1, 0.55))
 		_buttons.append([cr, {"t": "select_gadget", "kind": kind}])

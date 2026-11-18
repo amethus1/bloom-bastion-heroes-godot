@@ -5,11 +5,11 @@ extends RefCounted
 static var _font: Font
 static var _theme: Theme
 
-const GREEN := Color("4ade80")
-const GREEN_DARK := Color("166534")
-const GOLD := Color("facc15")
-const PANEL := Color(0.05, 0.1, 0.07, 0.86)
-const PANEL_EDGE := Color(0.53, 0.94, 0.67, 0.35)
+const GREEN := Color("abbf83")
+const GREEN_DARK := Color("344b3c")
+const GOLD := Color("f4c875")
+const PANEL := Color("202e27ed")
+const PANEL_EDGE := Color("ad925eb0")
 
 
 static func font() -> Font:
@@ -55,29 +55,29 @@ static func theme() -> Theme:
 	var t := Theme.new()
 	t.default_font = font()
 	t.default_font_size = 18
-	t.set_stylebox("normal", "Button", box(Color("15803d"), Color("4ade80"), 14, 2, 10))
-	t.set_stylebox("hover", "Button", box(Color("16a34a"), Color("bbf7d0"), 14, 2, 10))
-	t.set_stylebox("pressed", "Button", box(Color("166534"), Color("facc15"), 14, 3, 10))
+	t.set_stylebox("normal", "Button", box(Color("3d5846"), Color("abbf83"), 14, 2, 10))
+	t.set_stylebox("hover", "Button", box(Color("506f51"), Color("e4d7a9"), 14, 2, 10))
+	t.set_stylebox("pressed", "Button", box(Color("344b3c"), Color("f4c875"), 14, 3, 10))
 	t.set_stylebox("disabled", "Button", box(Color(0.2, 0.25, 0.22, 0.8), Color(1, 1, 1, 0.1), 14, 2, 10))
-	t.set_stylebox("focus", "Button", box(Color(0, 0, 0, 0), Color("fde047"), 14, 2, 10))
+	t.set_stylebox("focus", "Button", box(Color(0, 0, 0, 0), Color("f5cb7c"), 14, 2, 10))
 	t.set_color("font_color", "Button", Color.WHITE)
 	t.set_color("font_hover_color", "Button", Color.WHITE)
 	t.set_color("font_pressed_color", "Button", Color("fef9c3"))
 	for k in ["normal", "hover", "pressed", "focus"]:
-		var sb := box(Color(0.08, 0.16, 0.11, 0.95), Color(0.53, 0.94, 0.67, 0.5 if k != "hover" else 0.9), 10, 2, 8)
+		var sb := box(Color(0.08, 0.16, 0.11, 0.95), Color(0.71, 0.65, 0.46, 0.5 if k != "hover" else 0.9), 10, 2, 8)
 		t.set_stylebox(k, "OptionButton", sb)
-	t.set_stylebox("panel", "PopupMenu", box(Color(0.06, 0.13, 0.09, 0.98), Color("4ade80"), 10, 2, 6))
-	t.set_stylebox("hover", "PopupMenu", box(Color("15803d"), Color(0, 0, 0, 0), 6, 0, 4))
-	t.set_stylebox("normal", "LineEdit", box(Color(0.03, 0.07, 0.05, 0.95), Color(0.53, 0.94, 0.67, 0.5), 10, 2, 8))
-	t.set_stylebox("focus", "LineEdit", box(Color(0, 0, 0, 0), Color("fde047"), 10, 2, 8))
+	t.set_stylebox("panel", "PopupMenu", box(Color(0.06, 0.13, 0.09, 0.98), Color("abbf83"), 10, 2, 6))
+	t.set_stylebox("hover", "PopupMenu", box(Color("3d5846"), Color(0, 0, 0, 0), 6, 0, 4))
+	t.set_stylebox("normal", "LineEdit", box(Color(0.03, 0.07, 0.05, 0.95), Color(0.71, 0.65, 0.46, 0.5), 10, 2, 8))
+	t.set_stylebox("focus", "LineEdit", box(Color(0, 0, 0, 0), Color("f5cb7c"), 10, 2, 8))
 	t.set_stylebox("panel", "PanelContainer", box(PANEL, PANEL_EDGE, 18, 2, 18))
 	t.set_stylebox("panel", "Panel", box(PANEL, PANEL_EDGE, 18, 2, 18))
 	t.set_color("font_color", "Label", Color("ecfdf5"))
 	t.set_constant("outline_size", "Label", 0)
-	t.set_stylebox("normal", "ItemList", box(Color(0.03, 0.07, 0.05, 0.9), Color(0.53, 0.94, 0.67, 0.4), 10, 2, 6))
-	t.set_stylebox("selected", "ItemList", box(Color("15803d"), Color(0, 0, 0, 0), 6, 0, 4))
-	t.set_stylebox("selected_focus", "ItemList", box(Color("15803d"), Color("fde047"), 6, 2, 4))
-	t.set_stylebox("panel", "TooltipPanel", box(Color(0.05, 0.1, 0.07, 0.95), Color("4ade80"), 8, 1, 8))
+	t.set_stylebox("normal", "ItemList", box(Color(0.03, 0.07, 0.05, 0.9), Color(0.71, 0.65, 0.46, 0.4), 10, 2, 6))
+	t.set_stylebox("selected", "ItemList", box(Color("3d5846"), Color(0, 0, 0, 0), 6, 0, 4))
+	t.set_stylebox("selected_focus", "ItemList", box(Color("3d5846"), Color("f5cb7c"), 6, 2, 4))
+	t.set_stylebox("panel", "TooltipPanel", box(Color(0.05, 0.1, 0.07, 0.95), Color("abbf83"), 8, 1, 8))
 	_theme = t
 	return t
 
@@ -128,7 +128,7 @@ static func icon_tree(ci: CanvasItem, c: Vector2, s: float) -> void:
 	var k := s / 22.0
 	ci.draw_rect(Rect2(c + Vector2(-2.5, 1) * k, Vector2(5, 10) * k), Color("854d0e"))
 	for b in [[Vector2(0, -5), 8.5], [Vector2(-6, -1), 6.5], [Vector2(6, -1), 6.5], [Vector2(0, -10), 6.0]]:
-		ci.draw_circle(c + b[0] * k, b[1] * k, Color("16a34a"))
+		ci.draw_circle(c + b[0] * k, b[1] * k, Color("506f51"))
 	ci.draw_circle(c + Vector2(-2, -8) * k, 2.2 * k, Color("f9a8d4"))
 	ci.draw_circle(c + Vector2(4, -3) * k, 2.0 * k, Color("f9a8d4"))
 	ci.draw_circle(c + Vector2(0, -3) * k, 2.4 * k, Color("f43f5e"))

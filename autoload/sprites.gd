@@ -1,5 +1,5 @@
 extends Node
-## Sprite sheets exported from the original game's renderer (art/atlas.json).
+## Painted sprite sheets and their frame layouts (art/atlas.json).
 ## Autoloaded as `Sprites`. Every sheet is drawn at 1/scale (they are rendered
 ## at 1.5x for crisp edges).
 
@@ -35,6 +35,10 @@ var _warming := {}
 ## (called at the title screen), so a new kind of pest walking on screen
 ## mid-fight never makes the game stutter while its picture loads.
 func warm_up() -> void:
+	# The headless renderer has no visible frames to prefetch for. Load on demand
+	# there so its dummy texture storage is only accessed by the main thread.
+	if DisplayServer.get_name() == "headless":
+		return
 	if not _warming.is_empty() or _tex.size() > 40:
 		return
 	var files: Array = []

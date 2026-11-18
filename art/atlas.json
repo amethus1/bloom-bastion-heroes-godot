@@ -842,7 +842,7 @@
    "frames": 8
   },
   "thorntoad": {
-   "file": "pests/rumbletoad.png",
+   "file": "pests/thorntoad.png",
    "cell": [
     176,
     193.60000000000002
@@ -851,12 +851,7 @@
     88,
     149.6
    ],
-   "frames": 8,
-   "tint": [
-    0.82,
-    0.72,
-    0.56
-   ]
+   "frames": 8
   }
  },
  "pets": {
