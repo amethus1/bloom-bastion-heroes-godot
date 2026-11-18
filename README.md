@@ -161,19 +161,14 @@ The game uses UDP ports **24680** (ENet game traffic) and **24681** (discovery).
 | `sim/map_features.gd` | One gimmick per Adventure map |
 | `ui/` | HUD, menus (title, Garden Rules, Garden Guide, settings) and lobby, save profile (`user://profile.cfg`), shared theme |
 | `main.gd` | Game flow and local input. Your walking is predicted locally so it feels instant |
-| `art/` | Every sprite drawn by the real browser renderer and exported as PNG strips. The Bloom Pot, Sap Pitcher and Gust Blossom pictures and the app icon are drawn by `tools/gen_gadget_art.py` and `tools/gen_icon.py` |
+| `art/` | Painted sprite strips, battlefield backgrounds and interface art. Frame sizes and anchors live in `atlas.json`. Regenerate the app icon from the hero and tree sprites with `tools/gen_icon.py` |
 | `fonts/` | Nunito (SIL Open Font License), used on Windows and Linux |
 | `tools/` | `run_tests.sh`, `export_all.sh`, and the art/audio generators |
 | `.github/workflows/tests.yml` | GitHub runs every test suite on each push |
 
-### Re-exporting the art or data after changing the browser game
+### Updating game data from the browser version
 
-```bash
-cd ../bloom-bastion-heroes && npm run export-data && cp export/data/*.json ../bloom-bastion-heroes-godot/data/
-cd ../bloom-bastion-heroes && node tools/sprite-server.js   # then open http://localhost:3011 and press "Export all"
-```
-
-Careful: some things exist only in this Godot version and are not in the browser game's export: the Thornback Toad (`thorntoad` in `data/enemies.json`), the Bloom Pot, Sap Pitcher and Gust Blossom (`pot`, `sap`, `gust` in `data/gadgets.json`, including `order` and `costs`), and their `atlas.json` entries (run `python3 tools/gen_gadget_art.py` again). Copy those back in after re-exporting.
+Run `npm run export-data` in the browser project and merge its JSON changes into `data/`. Keep the Godot-specific Thornback Toad, Bloom Pot, Sap Pitcher and Gust Blossom definitions when merging. The painted Godot artwork and its frame metadata are maintained in `art/`.
 
 ## Tests (all headless)
 

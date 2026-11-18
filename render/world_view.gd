@@ -508,7 +508,7 @@ func _draw_world() -> void:
 		draw_flags(clash)
 		_draw_raid(clash)
 	for s in snap.get("spikes", []):
-		draw_colored_polygon(PackedVector2Array([Vector2(s.x - 8, s.y + 5), Vector2(s.x, s.y - 9), Vector2(s.x + 8, s.y + 5)]), GameData.player_color(s.slot))
+		_draw_shot(2, Vector2(s.x, s.y - 2), Vector2.UP, 8.0, GameData.player_color(s.slot).lightened(0.35))
 	# depth-sorted things (anything well off screen is skipped)
 	var vr := _view_rect().grow(160)
 	var list: Array = []
@@ -561,7 +561,7 @@ func _draw_world() -> void:
 	for w in snap.get("wisps", []):
 		var p := pos_of(w.id, Vector2(w.x, w.y))
 		glow(p, 12, Color(1, 0.6, 0.2, 0.6))
-		disc(p, 5, Color("fdba74"))
+		_draw_shot(8, p, Vector2.UP, 5.0)
 	draw_projectiles()
 	if not clash.is_empty():
 		draw_camps(clash)
@@ -569,6 +569,7 @@ func _draw_world() -> void:
 	for s in snap.get("suns", []):
 		var e: Dictionary = Sprites.atlas.get("sun", {})
 		Sprites.draw_frame(self, Sprites.tex(e.get("file", "")), e, 0, Vector2(s.x, s.y + sin(time * 3 + s.x) * 3), false, 1.0, Color.WHITE, Sprites.scale)
+		text(Vector2(s.x, s.y + 19), "+%d" % int(s.amount), 11, Color("ffe7a0"), 2)
 	draw_fx()
 	_draw_ambient()
 	_draw_pings()
@@ -1097,6 +1098,21 @@ const PROJ_COLORS := {"pea": "4ade80", "megapea": "fde047", "thorn": "7dd3fc", "
 	"bomb": "fb7185", "rocket": "fb923c", "cluster": "fda4af", "ember": "fb923c", "sunseed": "fde047", "bubble": "93c5fd"}
 
 
+const SHOTS := preload("res://art/world/shots.png")
+const SHOT_FRAMES := {"pea": 0, "megapea": 1, "thorn": 2, "needle": 3, "icicle": 4,
+	"snowball": 5, "bomb": 6, "cluster": 6, "rocket": 7, "ember": 8, "sunseed": 9, "bubble": 10}
+const CLASH_SHOT_FRAMES := {"pea": 0, "pumpkin": 11, "bloom": 9, "treebolt": 1,
+	"sting": 9, "bigsting": 1, "spore": 0, "thorn": 3, "heartbolt": 6, "shell": 11, "spit": 10}
+
+
+func _draw_shot(frame: int, at: Vector2, velocity: Vector2, radius: float, mod := Color.WHITE) -> void:
+	var diameter := radius * 2.8
+	draw_set_transform(at, velocity.angle(), Vector2.ONE)
+	draw_texture_rect_region(SHOTS, Rect2(-diameter / 2.0, -diameter / 2.0, diameter, diameter),
+		Rect2(frame * 64, 0, 64, 64), mod)
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+
 func draw_projectiles() -> void:
 	_lit_shots.clear()
 	var vr := _view_rect().grow(30)
@@ -1123,12 +1139,7 @@ func draw_projectiles() -> void:
 			_lit_shots.append([at, col, r])
 		else:
 			glow(at, r * 2.2, Color(col.r, col.g, col.b, 0.35))
-		if p.kind == "bubble":
-			disc(at, r, Color(0.58, 0.77, 0.99, 0.4))
-			ellipse_line(at, r, r, Color.WHITE, 1.4)
-		else:
-			disc(at, r + 1.0, Color(0, 0, 0, 0.45))
-			disc(at, r, col)
+		_draw_shot(SHOT_FRAMES.get(p.kind, 0), at, Vector2(p.vx, p.vy), r)
 
 
 func _player(id: int) -> Dictionary:
@@ -2044,17 +2055,7 @@ func draw_clash_shots(clash: Dictionary) -> void:
 		var dir := Vector2(s.vx, s.vy).normalized()
 		draw_line(at - dir * r * 3, at, Color(c.r, c.g, c.b, 0.4), r * 1.1, true)
 		disc(at, r * 2.2, Color(c.r, c.g, c.b, 0.2))
-		if s.kind == "thorn":
-			var n := dir.orthogonal()
-			draw_colored_polygon(PackedVector2Array([at + dir * 10, at - dir * 7 + n * 5, at - dir * 4, at - dir * 7 - n * 5]), Color("c084fc"))
-		elif s.kind == "sting" or s.kind == "bigsting":
-			var m := 1.6 if s.kind == "bigsting" else 1.0
-			var n := dir.orthogonal()
-			draw_colored_polygon(PackedVector2Array([at + dir * 12 * m, at + n * 3 * m, at - dir * 7 * m, at - n * 3 * m]), Color("facc15"))
-			draw_line(at - dir * 2 * m + n * 3 * m, at - dir * 2 * m - n * 3 * m, Color("1c1917"), 2 * m)
-		else:
-			disc(at, r * 0.75, c)
-			disc(at - Vector2(r, r) * 0.2, r * 0.28, Color(1, 1, 1, 0.8))
+		_draw_shot(CLASH_SHOT_FRAMES.get(s.kind, 0), at, dir, r, Color.WHITE.lerp(c, 0.3))
 
 
 # ---------------------------------------------------------------------------
@@ -2137,54 +2138,47 @@ func evolve_fx(p: Vector2, tier: int) -> void:
 
 
 ## The map's little gimmicks (sunflowers, lily pads, the obelisk, leaf piles, geysers)
+const FEATURE_ART := {
+	"sunflower": preload("res://art/world/sunflower.png"), "lilypad": preload("res://art/world/lilypad.png"),
+	"obelisk": preload("res://art/world/obelisk.png"), "leafpile": preload("res://art/world/leafpile.png"),
+	"geyser": preload("res://art/world/geyser.png"),
+}
+const FEATURE_WIDTH := {"sunflower": 47.0, "lilypad": 60.0, "obelisk": 70.0, "leafpile": 58.0, "geyser": 52.0}
+
+
 func _draw_features() -> void:
 	for f in snap.get("features", []):
+		var kind := String(f.kind)
+		var tex: Texture2D = FEATURE_ART.get(kind)
+		if tex == null:
+			continue
 		var p := Vector2(f.x, f.y)
-		var k: float = f.ready
+		var k := clampf(f.ready, 0, 1)
 		var ready := k >= 0.999
-		match String(f.kind):
-			"sunflower":
-				ellipse(p + Vector2(0, 8), 26, 9, Color(0, 0, 0, 0.2))
-				draw_line(p + Vector2(0, 8), p - Vector2(0, 22), Color("15803d"), 4)
-				var head := p - Vector2(0, 30)
-				var grow := 0.55 + 0.45 * k
-				if ready:
-					disc(head, 30, Color(0.99, 0.88, 0.28, 0.18 + 0.1 * sin(time * 4)))
-				for i in 10:
-					var a := TAU * i / 10 + time * 0.3
-					disc(head + Vector2(cos(a), sin(a)) * 13 * grow, 7 * grow, Color("facc15") if ready else Color("ca8a04"))
-				disc(head, 8 * grow, Color("92400e"))
+		var bottom := 9.0
+		var width := float(FEATURE_WIDTH[kind])
+		match kind:
+			"sunflower", "leafpile":
+				width *= lerpf(0.64, 1.0, k)
 			"lilypad":
-				var col := Color("4ade80") if ready else Color("166534")
-				ellipse(p, 30, 15, Color(col.r, col.g, col.b, 0.9))
-				draw_colored_polygon(PackedVector2Array([p, p + Vector2(30, -4), p + Vector2(30, 6)]), Color(0.2, 0.5, 0.8, 0.6))
-				disc(p + Vector2(-8, -3), 4, Color("f9a8d4"))
+				bottom = 18.0
 				if ready:
 					ellipse_line(p, 36, 19, Color(0.73, 0.97, 0.82, 0.4 + 0.3 * sin(time * 5)), 2)
 			"obelisk":
-				ellipse(p + Vector2(0, 10), 30, 10, Color(0, 0, 0, 0.3))
-				var glow := Color(0.65, 0.55, 0.98, 0.15 + 0.5 * k)
 				if ready:
-					disc(p - Vector2(0, 40), 46, Color(0.77, 0.71, 0.99, 0.18 + 0.12 * sin(time * 6)))
-				draw_colored_polygon(PackedVector2Array([p + Vector2(-14, 8), p + Vector2(-9, -60), p + Vector2(0, -84), p + Vector2(9, -60), p + Vector2(14, 8)]), Color("4c1d95"))
-				draw_colored_polygon(PackedVector2Array([p + Vector2(-9, -2), p + Vector2(-5, -56), p + Vector2(0, -72), p + Vector2(5, -56), p + Vector2(9, -2)]), glow.lightened(0.3))
+					glow(p - Vector2(0, 36), 46, Color(0.77, 0.71, 0.99, 0.18 + 0.12 * sin(time * 6)))
 				bar(p + Vector2(0, 18), 50, 5, k, Color("a78bfa"))
 				if ready:
-					text(p + Vector2(0, -96), "✨ Stand here!", 13, Color("e9d5ff"), 3)
-			"leafpile":
-				var n := 9 if ready else 4
-				for i in n:
-					var a := TAU * i / n
-					var lp := p + Vector2(cos(a) * 18, sin(a) * 8)
-					disc(lp, 9, [Color("ea580c"), Color("f59e0b"), Color("b45309")][i % 3])
-				disc(p, 10 if ready else 6, Color("dc2626"))
-			"geyser":
-				ellipse(p, 28, 12, Color("475569"))
-				ellipse(p, 18, 7, Color(0.73, 0.9, 0.99, 0.5 + 0.4 * k))
-				if k > 0.85:
-					for i in 3:
-						var a := time * 6 + i * 2.1
-						disc(p + Vector2(cos(a) * 8, -12 - fmod(time * 30 + i * 10, 30)), 3, Color(0.88, 0.95, 1.0, 0.7))
+					text(p + Vector2(0, -84), "✨ Stand here!", 13, Color("e9d5ff"), 3)
+		var extent := tex.get_size() * (width / tex.get_width())
+		draw_texture_rect(tex, Rect2(p + Vector2(-width / 2.0, bottom - extent.y), extent), false,
+			Color("a0a18a").lerp(Color.WHITE, k))
+		if kind == "geyser" and k > 0.85:
+			for i in 3:
+				var a := time * 6 + i * 2.1
+				disc(p + Vector2(cos(a) * 8, -18 - fmod(time * 30 + i * 10, 30)), 3, Color(0.88, 0.95, 1.0, 0.7))
+		if kind == "sunflower" and ready:
+			glow(p - Vector2(0, 23), 25, Color(1.0, 0.82, 0.22, 0.13 + 0.07 * sin(time * 4)))
 
 
 # ---------------------------------------------------------------------------

@@ -80,12 +80,24 @@ func _label(text: String, size := 18, col := Color("ecfdf5"), align := HORIZONTA
 
 
 func _title(v: VBoxContainer, text: String, sub: String) -> void:
-	var t := _label(text, 40, Color("fde047"), HORIZONTAL_ALIGNMENT_CENTER)
-	t.add_theme_constant_override("outline_size", 10)
-	t.add_theme_color_override("font_outline_color", Color("14532d"))
-	v.add_child(t)
+	var header := PanelContainer.new()
+	var illustration := StyleBoxTexture.new()
+	illustration.texture = preload("res://art/world/menu.jpg")
+	header.add_theme_stylebox_override("panel", illustration)
+	header.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	v.add_child(header)
+	var captions := VBoxContainer.new()
+	captions.add_theme_constant_override("separation", 0)
+	header.add_child(captions)
+	var t := _label(text, 40, Color("ffdf9a"), HORIZONTAL_ALIGNMENT_CENTER)
+	t.add_theme_constant_override("outline_size", 6)
+	t.add_theme_color_override("font_outline_color", Color("253729"))
+	captions.add_child(t)
 	if sub != "":
-		v.add_child(_label(sub, 16, Color("bbf7d0"), HORIZONTAL_ALIGNMENT_CENTER))
+		var subtitle := _label(sub, 16, Color("fff3d9"), HORIZONTAL_ALIGNMENT_CENTER)
+		subtitle.add_theme_constant_override("outline_size", 4)
+		subtitle.add_theme_color_override("font_outline_color", Color("253729"))
+		captions.add_child(subtitle)
 
 
 func _option(parent: Control, label: String, items: Array, current: String, on_pick: Callable) -> OptionButton:
@@ -132,7 +144,7 @@ func show_title() -> void:
 	if not Profile.is_unlocked(profile, "pets", profile.pet):
 		profile.pet = "none"
 	var v := _frame()
-	_title(v, "🌸 Bloom Bastion Heroes 🌸", "Team up with up to 4 friends on the same Wi-Fi to protect the Bloom Tree from garden pests!")
+	_title(v, "Bloom Bastion Heroes", "Team up with up to 4 friends on the same Wi-Fi to protect the Bloom Tree from garden pests!")
 	var cols := HBoxContainer.new()
 	cols.add_theme_constant_override("separation", 28)
 	v.add_child(cols)

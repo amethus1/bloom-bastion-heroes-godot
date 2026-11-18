@@ -1,5 +1,5 @@
 extends Node
-## Sprite sheets exported from the original game's renderer (art/atlas.json).
+## Painted sprite sheets and their frame layouts (art/atlas.json).
 ## Autoloaded as `Sprites`. Every sheet is drawn at 1/scale (they are rendered
 ## at 1.5x for crisp edges).
 
