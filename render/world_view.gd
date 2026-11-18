@@ -806,8 +806,8 @@ func draw_hero(h: Dictionary) -> void:
 	var hat: String = h.get("hat", "none")
 	if hat != "none" and Sprites.atlas.hats.has(hat):
 		var anchor: Array = Sprites.atlas.hatAnchor.get(h.type, [0, -55, 1])
-		var bob := (sin(time * 2.6) * 0.03 * 10.0) if not moving else -absf(sin(a.walk)) * 3.2
-		var hp := feet + Vector2(anchor[0] * face, anchor[1] + bob) * lv_scale
+		var offset := Sprites.hero_hat_offset(h.type, mini(h.tierA, 4), mini(h.tierB, 4), frame)
+		var hp := feet + Vector2(offset.x * face, offset.y) * lv_scale
 		Sprites.draw_frame(self, Sprites.tex(Sprites.atlas.hats[hat].file), Sprites.atlas.hats[hat], 0, hp, face < 0, anchor[2] * lv_scale, Color.WHITE, Sprites.scale)
 	if h.dazed:
 		for k in 3:

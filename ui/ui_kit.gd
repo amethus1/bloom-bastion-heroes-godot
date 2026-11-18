@@ -96,10 +96,13 @@ static func frame_tex(file: String, entry: Dictionary, frame := 0) -> AtlasTextu
 
 static func hero_icon(type: String, a := 0, b := 0) -> AtlasTexture:
 	var e: Dictionary = Sprites.hero_entry(type)
-	var t := frame_tex(e.get("variants", {}).get("%d%d" % [a, b], e.get("variants", {}).get("00", "")), e, 0)
-	if t:  # crop to the hero itself (the cell has room for big upgrades)
-		var s := Sprites.scale
-		t.region = Rect2(t.region.position + Vector2(24, 30) * s, Vector2(72, 80) * s)
+	var key := "%d%d" % [a, b]
+	var t := frame_tex(e.get("variants", {}).get(key, e.get("variants", {}).get("00", "")), e, 0)
+	var layouts: Dictionary = e.get("layout", {})
+	var layout: Dictionary = layouts.get(key, layouts.get("00", {}))
+	if t and layout.has("portrait"):
+		var rect: Array = layout.portrait
+		t.region = Rect2(rect[0], rect[1], rect[2], rect[3])
 	return t
 
 

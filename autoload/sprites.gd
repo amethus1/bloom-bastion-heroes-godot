@@ -91,6 +91,17 @@ func hero_tex(type: String, tier_a: int, tier_b: int) -> Texture2D:
 	return tex(e.get("variants", {}).get(key, e.get("variants", {}).get("00", "")))
 
 
+## Hat offsets are relative to the feet, in sheet pixels, for each animation frame.
+func hero_hat_offset(type: String, tier_a: int, tier_b: int, frame: int) -> Vector2:
+	var layouts: Dictionary = hero_entry(type).get("layout", {})
+	var layout: Dictionary = layouts.get("%d%d" % [tier_a, tier_b], layouts.get("00", {}))
+	var offsets: Array = layout.get("hat", [])
+	if frame >= 0 and frame * 2 + 1 < offsets.size():
+		return Vector2(offsets[frame * 2], offsets[frame * 2 + 1]) / scale
+	var anchor: Array = atlas.hatAnchor.get(type, [0, -55, 1])
+	return Vector2(anchor[0], anchor[1])
+
+
 func pest_entry(type: String) -> Dictionary:
 	return atlas.get("pests", {}).get(type, {})
 
