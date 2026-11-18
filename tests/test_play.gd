@@ -54,6 +54,7 @@ func run() -> void:
 	Prof = load("res://ui/profile.gd")
 	Prof.path = "user://test_profile.cfg"  # never touch the real profile
 	var cf := ConfigFile.new()
+	cf.set_value("profile", "autoCards", false)  # these checks pick every level-up card by hand (test_features tries Automatic)
 	cf.save(Prof.path)  # start from a fresh test profile
 	main = load("res://main.tscn").instantiate()
 	root.add_child(main)
@@ -196,11 +197,15 @@ func clash_part() -> void:
 	var h: Dictionary = main._my_hero()
 	check(h.get("canShop", false), "you can shop at the start")
 	var acorns: int = sim.players[1].acorns
+	var shown: Array = main.hud._buttons.filter(func(b): return b[1].get("t", "") == "buy").map(func(b): return String(b[1].item))
+	check(shown == ["bark", "rose", "juice"], "the shop suggests two items for Snapdragon (%s)" % [shown])
+	main.do_hud_action({"t": "shop_all"})
+	await ticks()
 	var a: Dictionary = {}
 	for b in main.hud._buttons:
 		if b[1].get("t", "") == "buy" and b[1].get("item", "") == "sword":
 			a = b[1]
-	check(not a.is_empty(), "the shop shows a Thorn Sword button")
+	check(not a.is_empty(), "Browse all shows a Thorn Sword button")
 	main.do_hud_action(a)
 	await ticks()
 	check(main._my_hero().items == ["sword"] and sim.players[1].acorns == acorns - 300, "clicking it buys the Thorn Sword")

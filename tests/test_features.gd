@@ -2,7 +2,8 @@ extends SceneTree
 ## The newer gameplay features: aiming towers with the mouse, marking pests,
 ## card rerolls, rare capstone cards, the Bloom Pot / Sap Pitcher / Gust
 ## Blossom, the Thornback Toad mini-boss, Garden Rules, acorn gifts, and the
-## Practice Garden + Garden Guide screens.
+## Practice Garden + Garden Guide screens, and the UI size / messages / chatter
+## settings with the "Your towers" list.
 ## Run: godot --headless --path . -s tests/test_features.gd
 
 var fails := 0
@@ -72,7 +73,13 @@ func run() -> void:
 	toad()
 	rules()
 	gifts()
+	tower_shots()
+	review_fixes()
+	clash_living()
+	clash_quick()
 	await screens()
+	await hud_settings()
+	await clash_shop()
 	D.free()
 	print("feature tests: %s" % ("all passed" if fails == 0 else "%d FAILED" % fails))
 	quit(1 if fails else 0)
@@ -95,6 +102,27 @@ func aiming() -> void:
 	sim.plant(1, "fern", spot + Vector2(0, 900))
 	var g2 = sim.gadgets[-1]
 	check(g2 != g and Vector2(g2.x, g2.y).distance_to(spot) <= SimWorld.AIM_REACH + 60, "aiming far away is pulled back to within reach of my hero")
+
+
+## Towers tell the screen each time they fire (it bounces the picture and flashes)
+func tower_shots() -> void:
+	print("Towers report their shots")
+	var sim := new_sim()
+	var spot := beside_trail(sim, 0.5)
+	var h: Dictionary = sim.hero_of(1)
+	h.x = spot.x
+	h.y = spot.y
+	sim.players[1].acorns = 1000
+	sim.plant(1, "sentry")
+	var g: Dictionary = sim.gadgets[-1]
+	var before := int(sim.snapshot().gadgets[-1].get("shots", -1))
+	pest_at(sim, "sprout", 0.5)
+	for i in 30:
+		sim.update_gadgets(SimWorld.TICK)
+	var after := int(sim.snapshot().gadgets[-1].get("shots", -1))
+	check(before == 0 and after > 0 and after < 8, "a tower's shot count goes up as it fires (%d -> %d)" % [before, after])
+	g.shots = 15
+	check(int(sim.snapshot().gadgets[-1].shots) == 7, "...and stays one small number in the snapshot (kept small for LAN games)")
 
 
 func marks() -> void:
@@ -359,3 +387,469 @@ func screens() -> void:
 	check(btns.any(func(t): return t.begins_with("🎲 Garden Rules")) and btns.any(func(t): return t.contains("Practice")) and btns.has("📖"), "the title screen has Garden Rules, Practice and the Guide")
 	main.queue_free()
 	await secs(0.3)
+
+
+## UI size, fewer messages, quieter chatter, and upgrading from the "Your towers" list
+func hud_settings() -> void:
+	print("UI size, messages, chatter and Your towers")
+	var Prof = load("res://ui/profile.gd")
+	Prof.path = "user://test_profile.cfg"
+	var cf := ConfigFile.new()
+	cf.set_value("profile", "dialogMode", "key")
+	cf.save(Prof.path)
+	check(String(Prof.load_profile().chatter) == "few", "the old 'key moments' chatter setting carries over as 'Big moments only'")
+	cf = ConfigFile.new()
+	cf.save(Prof.path)
+	var p: Dictionary = Prof.load_profile()
+	check(is_equal_approx(float(p.uiScale), 0.8) and p.msgs == "fewer" and p.chatter == "some", "new defaults: UI size 80%, fewer messages, some chatter")
+	check(is_equal_approx(Prof.step_ui_scale(0.8, 1), 0.9) and is_equal_approx(Prof.step_ui_scale(1.3, 1), 1.3) and is_equal_approx(Prof.step_ui_scale(0.6, -1), 0.6), "UI size steps up and down and stops at the ends")
+	var audio = root.get_node("/root/Audio")
+	var was: String = audio.dialog_mode
+	audio.dialog_mode = "few"
+	check(audio.chatter_allows("boss_monarch") and not audio.chatter_allows("ann_wave"), "Big moments only: bosses still talk, the everyday wave line doesn't")
+	audio.dialog_mode = "off"
+	check(not audio.chatter_allows("boss_monarch"), "chatter off: nobody talks")
+	audio.dialog_mode = "lots"
+	check(audio.chatter_allows("ann_wave", true), "Lots: every line")
+	audio.dialog_mode = was
+
+	var main: Node = load("res://main.tscn").instantiate()
+	root.add_child(main)
+	await secs(0.3)
+	main.start_local({"hero": "peashooter", "map": "meadow", "diff": "normal", "gameMode": "adventure", "bots": 0, "name": "Tester", "hat": "none", "pet": "none"})
+	await secs(0.3)
+	var hud = main.hud
+	hud.msg_level = 1
+	hud._toasts = []
+	hud.toast("small news", Color.WHITE, 2.0, 2)
+	hud.toast("you can't do that", Color.WHITE, 2.0, 0)
+	hud.toast("you can't do that", Color.WHITE, 2.0, 0)
+	check(hud._toasts.size() == 1 and int(hud._toasts[0].n) == 2, "Messages: Fewer hides small news, and a repeated message counts up instead of stacking")
+
+	var sim = main.host.sim
+	var me: int = main.my_id
+	sim.players[me].acorns = 3000
+	var h: Dictionary = sim.hero_of(me)
+	for i in 24:
+		if sim.gadgets.any(func(x): return x.owner == me):
+			break
+		sim.plant(me, "sentry", Vector2(h.x, h.y) + Vector2.from_angle(i * TAU / 12.0) * (70.0 + 50.0 * (i / 12)))
+	var mine: Array = sim.gadgets.filter(func(x): return x.owner == me)
+	check(not mine.is_empty(), "built a tower to try it on")
+	if mine.is_empty():
+		main.queue_free()
+		await secs(0.2)
+		return
+	var g: Dictionary = mine[0]
+	var put := func(at: Vector2) -> void:
+		h.x = at.x
+		h.y = at.y
+		main.my_pos = at
+		main.move_path = []
+	var far := Vector2(D.W / 2.0, D.H / 2.0)
+	if far.distance_to(Vector2(g.x, g.y)) < 300:
+		far = Vector2(200, 200)
+	put.call(far)
+	await secs(0.2)
+	check(hud._buttons.any(func(b): return b[1].get("t", "") == "tower_up" and int(b[1].get("id", -1)) == int(g.id)), "Your towers lists it, with an upgrade button")
+	main.do_hud_action({"t": "tower_up", "id": int(g.id)})
+	await secs(0.15)
+	check(int(g.level) == 1 and hud._toasts.any(func(t): return String(t.text).contains("Walk next to")), "too far away: Upgrade says to walk over, and nothing changes")
+	check(hud.selected_tower == int(g.id), "...and it opens that tower's details")
+	main.host.apply(me, {"t": "upgrade", "id": int(g.id)})
+	main.host.apply(me, {"t": "sell", "id": int(g.id)})
+	check(int(g.level) == 1 and sim.gadgets.has(g), "the game itself refuses upgrading or selling from far away (LAN friends too)")
+	main.do_hud_action({"t": "tower_go", "id": int(g.id)})
+	check(main.move_path.size() > 0, "Go there walks my hero to it")
+	put.call(Vector2(g.x + 30, g.y))
+	await secs(0.15)
+	main.do_hud_action({"t": "tower_up", "id": int(g.id)})
+	await secs(0.15)
+	check(int(g.level) == 2, "standing next to it, the upgrade button works")
+	main.do_hud_action({"t": "tower_up", "id": int(g.id)})
+	await secs(0.15)
+	check(int(g.level) == 2, "at level 2 the button shows the two special powers instead of guessing one")
+	main.do_hud_action({"t": "tower_up", "id": int(g.id), "branch": 1})
+	await secs(0.15)
+	check(int(g.level) == 3 and int(g.branch) == 1, "picking a special power upgrades it to level 3")
+	check(main._my_tower_at(Vector2(g.x, g.y - 12)) == int(g.id) and main._my_tower_at(Vector2(g.x + 200, g.y)) == -1, "clicking the tower in the garden picks it")
+	var out: Dictionary = main.world.build_outcome("sentry", Vector2(g.x, g.y))
+	check(not out.up.is_empty() and String(out.text).contains("max level"), "build preview: a Sentry on top of my level-3 Sentry says it's maxed, not 'build here' (%s)" % out.text)
+	var free_spot := Vector2(g.x, g.y)
+	main.do_hud_action({"t": "tower_sell", "id": int(g.id)})
+	await secs(0.15)
+	check(not sim.gadgets.has(g), "Sell works when I'm next to it")
+	var real_snap: Dictionary = main.world.snap
+	var fake := real_snap.duplicate()
+	fake.players = [{"id": me, "acorns": 999}]
+	fake.gadgets = []
+	for i in 5:
+		fake.gadgets.append({"id": 900 + i, "owner": me, "kind": "fern", "x": 40.0 + i * 50, "y": 40.0, "level": 1, "branch": -1})
+	main.world.snap = fake
+	var lim: Dictionary = main.world.build_outcome("sentry", free_spot)
+	fake.gadgets = []
+	fake.players = [{"id": me, "acorns": 10}]
+	var poor: Dictionary = main.world.build_outcome("sentry", free_spot)
+	fake.players = [{"id": me, "acorns": 999}]
+	var good: Dictionary = main.world.build_outcome("sentry", free_spot)
+	main.world.snap = real_snap
+	check(not lim.ok and String(lim.text).contains("limit"), "build preview: tower limit reached (%s)" % lim.text)
+	check(not poor.ok and String(poor.text).contains("needs"), "build preview: not enough acorns (%s)" % poor.text)
+	check(good.ok and String(good.text).begins_with("Build Sprout Sentry"), "build preview: Build Sprout Sentry · 60 (%s)" % good.text)
+
+	# hiding the cards gives the number keys back to the build bar
+	hud.auto_cards = false
+	main.selected_gadget = "sentry"
+	var hero0: Dictionary = sim.hero_of(me)
+	while int(hero0.pending) == 0:
+		sim.grant_xp(me, 10.0)
+	await secs(0.2)
+	hud.cards_hidden = true
+	var pend0: int = int(hero0.pending)
+	var k2 := InputEventKey.new()
+	k2.physical_keycode = KEY_2
+	k2.pressed = true
+	main._unhandled_input(k2)
+	await secs(0.15)
+	check(int(hero0.pending) == pend0 and main.selected_gadget == D.GADGET_ORDER[1], "cards tucked away (C): 2 picks the second tower, not a hidden card")
+	hud.cards_hidden = false
+	hud.auto_cards = true
+	check(main.wave_ready(), "between waves, Start on a controller starts the wave (the same check)")
+	main.practicing = true
+	var nc: Dictionary = main._next_cfg()
+	main.practicing = false
+	check(nc.get("map", "") == "meadow" and int(nc.get("bots", 0)) >= 1 and nc.get("gameMode", "") == "adventure", "after Practice, the next game is Sunny Meadow with a Bot Buddy")
+	hud._feed = []
+	hud.guide_pages(["Grub Sprout"])
+	hud.guide_pages(["Zoom Wasp", "Shell Beetle"])
+	check(hud._feed.size() == 1 and String(hud._feed[0].text).contains("3"), "new Garden Guide pages share one line that counts up (%s)" % hud._feed[0].text)
+	var hs: Dictionary = hud.snap
+	hud.snap = {"players": [{"id": 1, "name": "Ann", "pops": 120, "damage": 900, "sun": 40, "built": 3, "combos": 0},
+		{"id": 2, "name": "Bo", "pops": 20, "damage": 100, "sun": 2, "built": 0, "combos": 2}]}
+	var aw: Array = hud._awards()
+	hud.snap = {"comboOpen": {"owner": 2, "hero": 77, "x": 500.0, "y": 500.0, "left": 2.2}, "heroes": [{"id": 77, "owner": 2, "type": "bubblelily", "slot": 1, "x": 500.0, "y": 500.0}],
+		"players": [{"id": 2, "name": "Lily"}]}
+	var was_at = hud.hero_at
+	hud.hero_at = Vector2(700, 500)
+	var inv: Dictionary = hud.combo_invite({"id": 5, "owner": me, "type": "voltcactus", "specialCd": 0.0, "x": 700.0, "y": 500.0})
+	var busy: Dictionary = hud.combo_invite({"id": 5, "owner": me, "type": "voltcactus", "specialCd": 4.0, "x": 700.0, "y": 500.0})
+	hud.hero_at = was_at
+	hud.snap = hs
+	check(aw.size() >= 2 and String(aw[0]).begins_with("🤝 Combo Buddy: Bo") and String(aw[1]).contains("Ann"), "end screen: Combo Buddy leads, and everyone gets an award before anyone gets two (%s)" % ", ".join(aw))
+	check(inv.get("near", false) and String(inv.get("what", "")).contains("STORM SURGE") and busy.is_empty(), "combo invite: Lily just cast nearby, so my Volt Cactus is asked for STORM SURGE (only when my special is ready)")
+	await secs(0.1)
+	check(hud.selected_tower == -1, "...and its details close")
+
+	# Automatic level-ups: stat cards pick themselves, path upgrades wait in the side bar
+	hud.auto_cards = true
+	await secs(0.1)
+	var hero: Dictionary = sim.hero_of(me)
+	check(sim.players[me].auto_cards, "the game knows my level-ups are on Automatic")
+	while int(hero.level) < 2:  # level 2: a path level
+		sim.grant_xp(me, 10.0)
+	await secs(1.0)
+	check(int(hero.level) >= 2 and int(hero.pending) == 1 and D.path_waiting(hero.tierA, hero.tierB, hero.level, hero.pending) == 1, "level 2 waits for me to pick a path upgrade (level %d, %d waiting)" % [int(hero.level), int(hero.pending)])
+	var evo := -1
+	for b in hud._buttons:
+		if b[1].get("t", "") == "card" and hero.offer[int(b[1].i)].kind == "path":
+			evo = int(b[1].i)
+	check(evo >= 0 and not hud._buttons.any(func(b): return b[1].get("t", "") == "reroll"), "the side bar shows the path upgrades (and no big cards)")
+	if evo >= 0:
+		main.do_hud_action({"t": "card", "i": evo})
+		await secs(0.2)
+	check(int(hero.tierA) + int(hero.tierB) == 1 and int(hero.pending) == 0, "clicking one evolves my hero")
+	var cards_before: int = hero.cards.values().reduce(func(a, v): return a + int(v), 0)
+	while int(hero.level) < 3:
+		sim.grant_xp(me, 10.0)
+	await secs(1.2)
+	var cards_after: int = hero.cards.values().reduce(func(a, v): return a + int(v), 0)
+	check(int(hero.pending) == 0 and cards_after == cards_before + 1 and int(hero.tierA) + int(hero.tierB) == 1, "level 3 isn't a path level: my hero picks a stat card by itself")
+	hud.auto_cards = false
+	await secs(0.1)
+	check(not sim.players[me].auto_cards, "...and Pick every card turns that off")
+
+	hud.ui_scale = 1.3
+	await secs(0.1)
+	var vp: Vector2 = hud.get_viewport_rect().size
+	check(is_equal_approx(hud.scale.x, 1.3), "UI size 130% draws the HUD 1.3 times bigger")
+	check(hud._hero_bar_rect(vp.x / 1.3, vp.y / 1.3).position.x <= 12.0 and hud._hero_bar_rect(vp.x / 0.8, vp.y / 0.8).position.x > 12.0, "with no room beside the build bar the hero panel sits on top of it (only at big sizes)")
+	main.queue_free()
+	await secs(0.3)
+
+
+## The design review's game changes: combo invites (and Bot Buddies answering
+## them), leak notes, Auto Wave waiting for evolutions, the Short Adventure
+func review_fixes() -> void:
+	print("Combo invites, leak notes, Auto Wave waits, Short Adventure")
+	var sim := new_sim()
+	var a: Dictionary = sim.hero_of(1)
+	var b: Dictionary = sim.hero_of(2)
+	b.x = a.x + 200
+	b.y = a.y
+	a.special_cd = 0.0
+	b.special_cd = 0.0
+	sim.use_special(1)
+	var co: Dictionary = sim.snapshot().comboOpen
+	check(not co.is_empty() and int(co.owner) == 1, "a special opens a Team Combo window everyone can see")
+	check(sim.combo_invite(b) and not sim.combo_invite(a), "...for my friend close by, not for me")
+	var combos: int = sim.players[2].combos
+	sim.use_special(2)
+	check(sim.players[2].combos == combos + 1 and sim.snapshot().comboOpen.is_empty(), "answering it in time makes the Team Combo and closes the window")
+
+	var sb := SimWorld.new(D)
+	sb.add_player(1, "Me", "bubblelily")
+	sb.add_player(100, "Bot", "voltcactus", true)
+	sb.start("meadow", "normal", "adventure")
+	var me: Dictionary = sb.hero_of(1)
+	var bot: Dictionary = sb.hero_of(100)
+	bot.x = me.x + 120
+	bot.y = me.y
+	me.special_cd = 0.0
+	bot.special_cd = 0.0
+	sb.use_special(1)
+	for i in 75:
+		sb.step(SimWorld.TICK)
+	check(int(sb.players[100].combos) == 1, "a Bot Buddy answers my special with its own: Team Combo")
+
+	var sl := new_sim()
+	sl.start_next_wave()
+	sl.spawn_queue.clear()
+	sl.enemies.clear()
+	pest_at(sl, "wasp", 0.97)
+	for i in 300:
+		sl.step(SimWorld.TICK)
+		if not sl.wave_active:
+			break
+	check(not sl.wave_active and sl.last_leaks.size() == 1 and sl.last_leaks[0].type == "wasp" and int(sl.last_leaks[0].n) == 1, "the game remembers which trail a pest got through (%s)" % str(sl.last_leaks))
+	check(D.trail_name("meadow", int(sl.last_leaks[0].path) if not sl.last_leaks.is_empty() else 0).begins_with("the "), "trails get a name kids can find: %s" % D.trail_name("meadow", 0))
+
+	var sa := new_sim()
+	sa.auto_wave = true
+	sa.start_next_wave()
+	sa.spawn_queue.clear()
+	sa.enemies.clear()
+	var ha: Dictionary = sa.hero_of(1)
+	sa.step(SimWorld.TICK)
+	ha.level = 2
+	ha.pending = 1
+	ha.offer = []
+	for i in 150:
+		sa.step(SimWorld.TICK)
+	check(sa.wave == 1 and not sa.wave_active and sa.snapshot().get("autoHold", false), "Auto Wave waits while a player picks an evolution")
+	ha.pending = 0
+	for i in 60:
+		sa.step(SimWorld.TICK)
+	check(sa.wave == 2, "...and goes on once it's picked")
+
+	var ss := SimWorld.new(D)
+	ss.add_player(1, "Me", "peashooter")
+	ss.start("meadow", "normal", "short")
+	check(ss.max_wave == 6 and int(ss.players[1].acorns) == D.SHORT_ACORNS, "Short Adventure: 6 waves and %d acorns to start" % D.SHORT_ACORNS)
+	var types: Array = D.plan_wave(3, D.DIFFICULTIES.normal, 1, false, "", true).groups.map(func(g): return g.type)
+	check(types.has("camopuff") and D.mini_boss_wave(6, false, true) and not D.mini_boss_wave(13, false, true), "wave 3 brings Camo pests and wave 6 ends with the Thornback Toad")
+
+
+## Garden Clash as a living battlefield: Garden Plots, "cover me", Rival Raids,
+## Sproutling Captains and Thorn Tower lock-on warnings
+func clash_living() -> void:
+	print("Garden Clash: plots, cover, raids, captains, tower lock-on")
+	var sim := ClashWorld.new(D)
+	sim.add_player(1, "Me", "peashooter")
+	sim.add_player(100, "Bot", "frostlotus", true)
+	sim.start("valley", "normal", "clash")
+	check(sim.cl.plots.size() == 3 and sim.cl.plots.all(func(pl): return D.is_walkable(sim.map_id, pl.x, pl.y)), "a Garden Plot beside each of the 3 lanes, on open ground")
+	var me: Dictionary = sim.hero_of(1)
+	var pl: Dictionary = sim.cl.plots[1]
+	me.x = pl.x
+	me.y = pl.y
+	for i in 100:
+		sim.update_plots(SimWorld.TICK)
+	check(pl.state == "ready", "standing on an empty plot for 3 seconds claims it")
+	sim.grow_plot(1, pl.id, "berry")
+	me.hp = 100.0
+	for i in 30:
+		sim.update_plots(SimWorld.TICK)
+	check(pl.state == "berry" and me.hp > 100.0, "a Berry Bush heals heroes next to it")
+	var pest := sim.make_foe("grunt", pl.x + 20, pl.y, 300.0)
+	pest.minion = true
+	sim.enemies.append(pest)
+	me.x = pl.x + 600
+	for i in 150:
+		sim.update_plots(SimWorld.TICK)
+	check(pl.state == "empty", "pests standing on it with no hero around trample it")
+	sim.enemies.erase(pest)
+	pl.state = "vine"
+	pl.spring = {}
+	me.x = pl.x
+	me.y = pl.y
+	sim.events.clear()
+	sim.update_plots(SimWorld.TICK)
+	check(Vector2(me.x, me.y).distance_to(Vector2(pl.x, pl.y)) > 300 and sim.events.any(func(e): return e.type == "spring"), "a Spring Vine flings a hero down the lane")
+
+	# going home to shop asks a teammate to cover my lane; a Bot Buddy says yes
+	me.x = 1000.0
+	me.y = 820.0
+	me.dead = false
+	sim.update_bots(SimWorld.TICK)  # the bot gets its brain
+	sim.teleport_home(1)
+	check(sim.cl.covers.size() == 1 and int(sim.cl.covers[0].by) == 100 and int(sim.players[100].brain.lane) == int(sim.cl.covers[0].lane), "going home asks for cover, and the Bot Buddy takes over that lane")
+	var tree: Vector2 = D.sanctuary(sim.map_id)
+	me.x = tree.x
+	me.y = tree.y
+	sim.update_covers(0.1)
+	me.x = tree.x + 700
+	me.y = tree.y - 200
+	sim.update_covers(0.1)
+	check(sim.cl.covers.is_empty(), "...and the cover ends once I'm back out of base")
+
+	# Rival Raids: two rivals announce which tower they're coming for
+	var sr := ClashWorld.new(D)
+	sr.add_player(1, "Me", "peashooter")
+	sr.add_player(2, "Pal", "snapdragon")
+	sr.start("valley", "normal", "clash")
+	for i in 30 * 25:
+		sr.step(SimWorld.TICK)
+		if sr.enemies.filter(func(e): return e.rival and e.state == "lane").size() >= 2:
+			break
+	sr.cl.raid_t = 999.0
+	sr.start_raid()
+	var raid: Dictionary = sr.cl.raid
+	check(not raid.is_empty() and raid.names.size() == 2 and raid.phase == "warn", "a Rival Raid is announced with two rivals and a few seconds' warning (%s)" % str(raid.get("names", [])))
+	var acorns: int = sr.players[1].acorns
+	if not raid.is_empty():
+		for id in raid.ids:
+			var e = sr.resolve({"t": "foe", "id": id})
+			if e:
+				e.hp = 0.0
+		sr.update_raid(SimWorld.TICK)
+	check(sr.cl.raid.is_empty() and sr.players[1].acorns == acorns + 60, "stopping the raiders ends the raid with 60 acorns for everyone")
+
+	# Sproutling Captains and their rally flags
+	var sc := ClashWorld.new(D)
+	sc.add_player(1, "Me", "peashooter")
+	sc.start("valley", "normal", "clash")
+	sc.wave = 1
+	sc.spawn_wave()
+	for i in 30:
+		sc.clash_update(SimWorld.TICK)
+	var cap = null
+	for u in sc.cl.allies:
+		if u.captain != "":
+			cap = u
+	check(cap != null and not sc.cl.captain.is_empty() and cap.max_hp > 3.0 * D.clash.allies.budling.hp * 0.9, "wave 2: a named Captain leads a lane (%s)" % (cap.captain if cap else "none"))
+	if cap:
+		var tw = null
+		for e in sc.enemies:
+			if e.structure and e.lane == cap.lane and not e.sheltered:
+				tw = e
+		if tw:
+			cap.x = tw.x - 150
+			cap.y = tw.y
+			sc.update_captain(SimWorld.TICK)
+		check(sc.cl.flags.size() == 1 and sc.cl.captain.planted, "reaching a Thorn Tower, the Captain plants a rally flag")
+		var u: Dictionary = sc.cl.allies[0]
+		u.x = sc.cl.flags[0].x
+		u.y = sc.cl.flags[0].y
+		check(sc.rallied(u), "Sproutlings by the flag are rallied")
+
+	# Thorn Towers lock on: the snapshot says whom, and how many shots in a row
+	var tw2 = null
+	for e in sc.enemies:
+		if e.structure and e.range > 0 and not e.sheltered and not e.core:
+			tw2 = e
+			break
+	var hero: Dictionary = sc.hero_of(1)
+	sc.cl.allies.clear()
+	hero.x = tw2.x
+	hero.y = tw2.y + 60
+	for i in 3:
+		tw2.cd = 0.0
+		sc.structure_act(tw2)
+	var snap_e := {}
+	var s2: Dictionary = sc.snapshot()
+	for i in sc.enemies.size():
+		if sc.enemies[i] == tw2:
+			snap_e = s2.enemies[i]
+	check(int(snap_e.get("lock", -1)) == int(hero.id) and int(snap_e.get("streak", 0)) == 2, "a Thorn Tower locked on me shows in the snapshot, with its 3-shot streak")
+
+
+func clash_quick() -> void:
+	print("Quick Clash, shop picks, the match story")
+	check(D.clash_mode("clash") and D.clash_mode("quickclash") and not D.clash_mode("short"), "both Clash modes count as Garden Clash")
+	var sim := ClashWorld.new(D)
+	sim.add_player(1, "Me", "snapdragon")
+	sim.add_player(100, "Bot", "peashooter", true)
+	sim.start("valley", "normal", "quickclash")
+	check(sim.quick and sim.cl.ally_towers.filter(func(t): return t.kind == "tower").size() == 3, "Quick Clash: one Bloom Tower before each gate")
+	check(sim.enemies.filter(func(e): return e.structure and e.tier == 1).is_empty() and sim.enemies.filter(func(e): return e.structure and e.tier == 2).size() == 3, "...and one Thorn Tower before each pest gate")
+	check(sim.hero_of(1).items == ["bark"] and sim.hero_of(100).items == ["bow"], "everyone starts with the first item picked for their hero")
+	sim.spawn_wave()
+	check(sim.cl.spawn_q.any(func(q): return q.kind == "pumpkin"), "Pumpkin Cannons march from the first wave")
+	check(sim.snapshot().clash.get("quick", false), "the snapshot says it's Quick Clash")
+	var full := ClashWorld.new(D)
+	full.add_player(1, "Me", "snapdragon")
+	full.start("valley", "normal", "clash")
+	check(not full.quick and full.hero_of(1).items.is_empty() and full.cl.ally_towers.filter(func(t): return t.kind == "tower").size() == 6, "the full Clash keeps 6 towers and no free item")
+
+	# shop picks
+	check(ClashWorld.recommended_buys(D, "snapdragon", []) == ["bark", "rose"], "Snapdragon's picks: Bark Shield, Vampire Rose")
+	check(ClashWorld.recommended_buys(D, "peashooter", ["bow"]) == ["sword", "sandals"], "items you have are skipped")
+	check(ClashWorld.recommended_buys(D, "snapdragon", ["bark+", "rose", "sword", "moss", "sandals", "acorn"]) == ["rose", "sword"], "with every slot full, the picks are Golden upgrades")
+	check(ClashWorld.recommended_buys(D, "sunblossom", ["bow", "bark", "sword", "rose", "acorn", "moss"]) == ["moss", "bark"], "full slots: Golden versions of what you own, best first")
+
+	# the story: a Pumpkin Cannon breaks a gate while I walk with it
+	var gate = null
+	for e in sim.enemies:
+		if e.structure and e.tier == 3 and e.lane == 1:
+			gate = e
+	gate.sheltered = false
+	var me: Dictionary = sim.hero_of(1)
+	me.x = gate.x + 100
+	me.y = gate.y
+	sim.events.clear()
+	sim.hit({"t": "foe", "id": gate.id}, gate, 1e9, {"unit": "Pumpkin Cannon"})
+	var down: Array = sim.events.filter(func(e): return e.type == "struct_down")
+	check(not down.is_empty() and down[0].get("unit", "") == "Pumpkin Cannon" and down[0].get("helpers", []).has("Me"), "a gate broken by a Sproutling credits it and the heroes walking with it")
+	check(sim.cl.story.any(func(x): return String(x.text).begins_with("Broke the Middle Lane gate (Pumpkin Cannon, with Me")), "the story remembers it")
+	var list := [{"t": 10, "text": "a", "w": 3, "kind": "x"}, {"t": 20, "text": "b", "w": 8, "kind": "x"}, {"t": 30, "text": "c", "w": 2, "kind": "x"},
+		{"t": 40, "text": "d", "w": 6, "kind": "x"}, {"t": 50, "text": "e", "w": 10, "kind": "x"}]
+	check(ClashWorld.story_summary(list).map(func(x): return x.text) == ["b", "d", "e"], "the end screen shows the 3 biggest moments, in order")
+	check(not sim.payload().has("story"), "the story isn't sent while playing")
+	sim.phase = "victory"
+	check(sim.payload().get("summary", []).size() >= 1, "...but is at the end")
+
+
+func clash_shop() -> void:
+	print("Clash shop: lane goal, pins, the Valley card")
+	var main: Node = load("res://main.tscn").instantiate()
+	root.add_child(main)
+	await secs(0.3)
+	main.start_local({"hero": "snapdragon", "map": "meadow", "diff": "normal", "gameMode": "quickclash", "bots": 1, "name": "Tester", "hat": "none", "pet": "none"})
+	await secs(0.3)
+	var hud = main.hud
+	var sim: ClashWorld = main.host.sim
+	check(sim.quick and main.snap.clash.get("quick", false), "picking Quick Clash starts a Quick Clash")
+	var goal: String = hud.clash_goal(main.snap.clash)
+	check(goal.contains("Lane"), "the shop says what to do next (%s)" % goal)
+	sim.cl.raid = {"phase": "warn", "t": 5.0, "lane": 2, "tower": -1, "x": 0.0, "y": 0.0, "ids": [], "names": ["Queen Stinger"], "kind": "tower"}
+	check(hud.clash_goal(sim.payload()).begins_with("⚔️ Stop the raid on the Bottom Lane"), "...a raid comes first")
+	sim.cl.raid = {}
+	# pin the Vampire Rose, walk away, get rich, come back: F buys it
+	main.do_hud_action({"t": "pin", "item": "rose"})
+	check(hud.pinned_item == "rose", "📌 pins an item")
+	sim.players[1].acorns = 0
+	await secs(0.2)
+	var st: Dictionary = hud.pinned_state(main._my_hero())
+	check(not st.afford and not st.done, "the pin counts down to it")
+	sim.players[1].acorns = 1000
+	await secs(0.2)
+	check(hud.can_buy_pinned(), "at the tree with enough acorns, it can be bought")
+	check(hud._buttons.any(func(b): return b[1].get("t", "") == "buy_pinned"), "a 📌 F: buy button shows")
+	main.buy_pinned()
+	await secs(0.3)
+	check(main._my_hero().items.has("rose") and hud.pinned_item == "", "F buys the pinned item, then the pin goes away")
+	main.do_hud_action({"t": "pin", "item": "rose+"})
+	main.do_hud_action({"t": "pin", "item": "rose+"})
+	check(hud.pinned_item == "", "pressing 📌 again unpins")
+	main.queue_free()
+	await secs(0.2)

@@ -43,13 +43,14 @@ func apply(pid: int, a: Dictionary) -> void:
 		"home": sim.teleport_home(pid)
 		"wave": sim.start_wave()
 		"card": sim.pick_card(pid, int(a.i))
+		"auto_cards": sim.players[pid].auto_cards = bool(a.get("on", true))
 		"reroll": sim.reroll(pid)
 		"gift": sim.gift(pid, int(a.get("to", -1)))
 		"special": sim.use_special(pid)
 		"plant": sim.plant(pid, String(a.kind), Vector2(float(a.x), float(a.y)) if a.has("x") else Vector2.INF)
 		"mark": sim.mark(pid, float(a.get("x", 0)), float(a.get("y", 0)))
-		"upgrade": sim.upgrade_gadget(pid, int(a.get("id", -1)), int(a.get("branch", -1)))
-		"sell": sim.sell_gadget(pid)
+		"upgrade": sim.upgrade_gadget(pid, int(a.get("id", -1)), int(a.get("branch", -1)), true)
+		"sell": sim.sell_gadget(pid, int(a.get("id", -1)))
 		"pause": sim.paused = not sim.paused
 		"speed": sim.speed_mult = 2.0 if sim.speed_mult < 1.5 else 1.0
 		"auto": sim.auto_wave = not sim.auto_wave
@@ -67,6 +68,15 @@ func apply(pid: int, a: Dictionary) -> void:
 		"potion":
 			if sim is ClashWorld:
 				sim.potion(pid)
+		"cover":
+			if sim is ClashWorld:
+				sim.ask_cover(pid)
+		"cover_accept":
+			if sim is ClashWorld:
+				sim.accept_cover(pid, int(a.get("from", -1)))
+		"plot":
+			if sim is ClashWorld:
+				sim.grow_plot(pid, int(a.get("id", -1)), String(a.get("grow", "")))
 
 
 func _process(delta: float) -> void:

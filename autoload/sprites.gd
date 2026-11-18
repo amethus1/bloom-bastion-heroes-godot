@@ -35,7 +35,7 @@ var _warming := {}
 ## (called at the title screen), so a new kind of pest walking on screen
 ## mid-fight never makes the game stutter while its picture loads.
 func warm_up() -> void:
-	if not _warming.is_empty() or _tex.size() > 40:
+	if not _warming.is_empty() or _tex.size() > 40 or not _has_screen():
 		return
 	var files: Array = []
 	for group in ["pests", "structures"]:
@@ -57,6 +57,24 @@ func warm_up() -> void:
 				_warming[full] = true
 
 
+## Start loading one sheet in the background now, so it's ready the moment it's
+## needed (a hero's next evolution)
+func prefetch(path: String) -> void:
+	if path == "" or _tex.has(path) or not _has_screen():
+		return
+	var full := "res://art/" + path
+	if _warming.has(full) or not ResourceLoader.exists(full):
+		return
+	if ResourceLoader.load_threaded_request(full, "Texture2D") == OK:
+		_warming[full] = true
+
+
+## Tests and servers run with no screen: nothing to get ready early there, and the
+## stand-in renderer they use can trip over pictures made on another thread
+static func _has_screen() -> bool:
+	return DisplayServer.get_name() != "headless"
+
+
 func _exit_tree() -> void:
 	finish_warm_up()  # quitting while sheets are still loading would leak them
 
@@ -69,14 +87,20 @@ func finish_warm_up() -> void:
 
 
 ## Draw frame `i` of a sheet entry ({cell, origin}) with its origin at `pos`.
-static func draw_frame(ci: CanvasItem, t: Texture2D, entry: Dictionary, i: int, pos: Vector2, flip := false, size := 1.0, mod := Color.WHITE, s := 1.5, stretch := Vector2.ONE) -> void:
+## `lean` tilts the top sideways while the feet stay put (swaying plants).
+static func draw_frame(ci: CanvasItem, t: Texture2D, entry: Dictionary, i: int, pos: Vector2, flip := false, size := 1.0, mod := Color.WHITE, s := 1.5, stretch := Vector2.ONE, lean := 0.0) -> void:
 	if t == null:
 		return
 	var cw: float = ceil(entry.cell[0] * s)
 	var ch: float = ceil(entry.cell[1] * s)
 	var src := Rect2(cw * i, 0, cw, ch)
 	var k := size / s
-	ci.draw_set_transform(pos, 0.0, Vector2((-k if flip else k) * stretch.x, k * stretch.y))
+	if lean != 0.0:
+		var sx := (-k if flip else k) * stretch.x
+		var sy := k * stretch.y
+		ci.draw_set_transform_matrix(Transform2D(Vector2(sx, 0), Vector2(-sin(lean) * sy, cos(lean) * sy), pos))
+	else:
+		ci.draw_set_transform(pos, 0.0, Vector2((-k if flip else k) * stretch.x, k * stretch.y))
 	ci.draw_texture_rect_region(t, Rect2(-entry.origin[0] * s, -entry.origin[1] * s, cw, ch), src, mod)
 	ci.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 

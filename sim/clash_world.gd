@@ -11,6 +11,26 @@ extends SimWorld
 const LANE_SETS := {1: [1], 2: [0, 2], 3: [0, 1, 2], 4: [0, 1, 2, 1]}
 const BOT_BUY := ["sword", "bark", "sandals", "bow", "rose", "acorn"]
 const SHIELD_NAMES := {"gate": "Bloom Gate", "guardian": "Tree Guardian", "tower": "Bloom Tower"}
+## What suits each hero, best first (the shop suggests the next two; Quick Clash
+## gives the first one free)
+const HERO_BUYS := {
+	"peashooter": ["bow", "sword", "sandals", "rose", "acorn", "bark"],
+	"sunblossom": ["charm", "moss", "sandals", "bark", "bow", "acorn"],
+	"frostlotus": ["charm", "bark", "moss", "sandals", "sword", "acorn"],
+	"boomshroom": ["sword", "charm", "bark", "bow", "acorn", "moss"],
+	"voltcactus": ["bow", "charm", "sword", "sandals", "acorn", "bark"],
+	"snapdragon": ["bark", "rose", "sword", "moss", "sandals", "acorn"],
+	"bubblelily": ["charm", "moss", "bark", "sandals", "bow", "acorn"],
+}
+const HERO_BUY_WHY := {
+	"peashooter": "shoots fast from far away",
+	"sunblossom": "helps friends with her special",
+	"frostlotus": "freezes crowds with her special",
+	"boomshroom": "hits hard with big bombs",
+	"voltcactus": "zaps quickly from far away",
+	"snapdragon": "fights up close",
+	"bubblelily": "saves friends with her special",
+}
 
 var C: Dictionary
 var FOES: Dictionary
@@ -20,6 +40,9 @@ var _shot_id := 0
 ## how often Sproutlings & pest minions look for a new target (seconds);
 ## 0 = every tick like the browser version (slower to simulate)
 var retarget_every := 0.2
+## ⚡ Quick Clash: one Thorn Tower before each gate, a free first item, siege
+## waves from the start, pest buildings 15% softer. About 12-15 minutes.
+var quick := false
 
 
 func _init(data: GameDataLib) -> void:
@@ -38,7 +61,7 @@ func max_level() -> int:
 
 
 func xp_needed(level: int) -> float:
-	return round(D.xp_to_next(level) * float(C.xpCost))
+	return round(D.xp_to_next(level) * float(C.xpCost) * (0.8 if quick else 1.0))
 
 
 func cdiff() -> Dictionary:
@@ -89,7 +112,8 @@ static func path_point(pts: PackedVector2Array, seg: int, t: float, off: float) 
 # ---------------------------------------------------------------------------
 # Setup
 # ---------------------------------------------------------------------------
-func start(_map: String, difficulty: String, _game_mode: String) -> void:
+func start(_map: String, difficulty: String, game_mode: String) -> void:
+	quick = game_mode == "quickclash"
 	map_id = String(C.mapId)
 	difficulty_id = difficulty if D.clash.difficulty.has(difficulty) else "normal"
 	mode = "clash"
@@ -114,6 +138,10 @@ func start(_map: String, difficulty: String, _game_mode: String) -> void:
 		spawn_hero(p, false)
 	phase = "playing"
 	setup_clash()
+	if quick:
+		for h in heroes:
+			h.items.append(recommended_buys(D, String(h.type), [], 1)[0])
+			h._st = null
 	ev({"type": "game_started", "mode": "clash"})
 
 
@@ -149,12 +177,16 @@ func setup_clash() -> void:
 		"camps": [], "rivals": [], "super_ally": [false, false, false], "super_foe": [false, false, false], "toad_t": 0.0,
 		"foe_towers_down": 0, "ally_towers_down": 0, "rival_kos": 0, "rival_lvl_t": 60.0, "regrow": [], "elder_t": 0.0,
 		"spawn_q": [], "power": 0.0, "hp_index": 1.0, "p_minion": 1.0, "p_rival": 1.0, "p_camp": 1.0, "p_struct": 1.0,
-		"avg_level": 1.0, "power_acc": 0.0, "foe_guard_open": false, "ally_guard_open": false}
+		"avg_level": 1.0, "power_acc": 0.0, "foe_guard_open": false, "ally_guard_open": false,
+		"covers": [], "raid": {}, "raid_t": 100.0 if quick else 150.0, "captain": {}, "flags": [], "captain_n": 0, "story": [], "first_tower": false}
+	cl.plots = _make_plots()
 	for c in D.clash.camps:
 		cl.camps.append({"id": c.id, "kind": c.kind, "x": float(c.x), "y": float(c.y), "count": int(c.count),
 			"respawn_t": float(FOES[c.kind].firstAt), "alive": 0, "elder": false})
 	var struct_mult := struct_hp_mult()
 	for t in C.allyTowers:
+		if quick and int(t.tier) == 1:
+			continue  # Quick Clash: one tower before each gate
 		_add_ally_tower("tower", int(t.lane), int(t.tier), t.x, t.y, float(C.towerRange), 30.0)
 	for g in C.gates:
 		_add_ally_tower("gate", int(g.lane), 3, g.x, g.y, 0.0, 34.0)
@@ -165,6 +197,8 @@ func setup_clash() -> void:
 	cl.ally_towers.append({"id": gen_id(), "kind": "tree", "lane": -1, "tier": 5, "x": sc.x, "y": sc.y - 10, "hp": tree_hp, "max_hp": tree_hp,
 		"range": float(C.coreRange), "cd": 1.0, "radius": 52.0, "flash": 0.0, "shield": false, "angle": 0.0, "alert_at": -99.0})
 	for t in C.allyTowers:
+		if quick and int(t.tier) == 1:
+			continue
 		_add_foe_building("thorntower", 2 - int(t.lane), int(t.tier), t.x, t.y, _hp_for(int(t.tier)) * struct_mult, float(C.towerRange))
 	for g in C.gates:
 		_add_foe_building("thorngate", 2 - int(g.lane), 3, g.x, g.y, _hp_for(3) * struct_mult, 0.0)
@@ -187,6 +221,16 @@ func setup_clash() -> void:
 	wave_active = true  # sky Sun drops keep working
 	sync_tree_lives()
 	ev({"type": "clash_start"})
+
+
+## The Elder Toad wakes after this many seconds (sooner in Quick Clash)
+func elder_at() -> float:
+	return float(C.elderAt) * (0.5 if quick else 1.0)
+
+
+## A knocked-down gate grows back after this many seconds (slower in Quick Clash)
+func regrow_time() -> float:
+	return float(C.gateRegrow) * D.gnum(cdiff(), "regrow", 1.0) * (1.5 if quick else 1.0)
 
 
 func _hp_for(tier: int) -> float:
@@ -217,7 +261,7 @@ func _add_foe_building(type: String, lane: int, tier: int, x0, y0, hp: float, ra
 func struct_hp_mult() -> float:
 	var CD := cdiff()
 	var n := team_size()
-	return float(CD.structHp) * (1.0 + D.gnum(CD, "teamStruct", 0.5) * (n - 1) + D.gnum(CD, "teamStructBig") * maxi(0, n - 2))
+	return float(CD.structHp) * (1.0 + D.gnum(CD, "teamStruct", 0.5) * (n - 1) + D.gnum(CD, "teamStructBig") * maxi(0, n - 2)) * (0.85 if quick else 1.0)
 
 
 ## Bark: divides the damage buildings take (it thickens as the heroes grow)
@@ -241,7 +285,8 @@ func make_foe(type: String, x: float, y: float, hp: float) -> Dictionary:
 		"cd": 0.5 + randf() * 0.5, "dmg": D.gnum(def, "dmg"), "rate": D.gnum(def, "rate", 1.0), "range": D.gnum(def, "range", 50.0),
 		"lane": 0, "off": 0.0, "tier": 0, "at_end": false, "acorns": D.gnum(def, "acorns"), "lvl": 0, "state": "", "elder": false,
 		"anchor_seg": 0, "anchor_t": 0.0, "casting": 0.0, "hit_hero_at": -99.0, "cast_hero": -1, "cast_x": 0.0, "cast_y": 0.0,
-		"aggro": -1, "resetting": false, "home": Vector2(x, y), "camp": "", "streak": 0, "streak_id": -1, "retarget": randf() * 0.2, "tgt": {}}
+		"aggro": -1, "resetting": false, "home": Vector2(x, y), "camp": "", "streak": 0, "streak_id": -1, "retarget": randf() * 0.2, "tgt": {},
+		"last_unit": ""}
 
 
 # ---------------------------------------------------------------------------
@@ -372,6 +417,7 @@ func tick(dt: float, real_dt: float) -> void:
 	update_marks(dt)
 	update_enemies(dt)
 	update_pending(dt)
+	update_auto_cards(dt)
 	var auras := compute_auras()
 	update_heroes(dt, auras)
 	update_projectiles(dt)
@@ -395,14 +441,14 @@ func clash_update(dt: float) -> void:
 	# Sproutling waves from both bases
 	cl.wave_t -= dt
 	if cl.wave_t <= 0:
-		cl.wave_t = float(C.waveEvery)
+		cl.wave_t = float(C.waveEvery) * (0.85 if quick else 1.0)
 		spawn_wave()
 	for s in cl.spawn_q:
 		s.t -= dt
 	while cl.spawn_q.size() > 0 and cl.spawn_q[0].t <= 0:
 		var s: Dictionary = cl.spawn_q.pop_front()
 		if s.team == "ally":
-			spawn_ally(s.kind, s.lane, s.idx)
+			spawn_ally(s.kind, s.lane, s.idx, String(s.get("captain", "")))
 		else:
 			spawn_foe_minion(s.kind, s.lane, s.idx)
 	# Rival champions come back after a while
@@ -438,6 +484,10 @@ func clash_update(dt: float) -> void:
 	ally_towers_act(dt)
 	shots_act(dt)
 	clash_pending(dt)
+	update_plots(dt)
+	update_covers(dt)
+	update_raid(dt)
+	update_captain(dt)
 	for u in cl.allies:
 		if u.hp <= 0:
 			u.tgt = null  # no reference cycles left behind
@@ -460,7 +510,16 @@ func wave_scale(team: String) -> Dictionary:
 
 func spawn_wave() -> void:
 	wave += 1
-	var siege := wave % 3 == 0
+	# Pumpkin Cannons every 3rd wave (Quick Clash: from the first wave, every other wave)
+	var siege := wave % 2 == 1 if quick else wave % 3 == 0
+	# every 4th wave (from the 2nd) a Captain leads the lane with the most heroes in it (Quick: every 3rd)
+	var cap_lane := -1
+	if wave % (3 if quick else 4) == 2 and (cl.captain.is_empty() or cl.captain.planted):
+		var count := [0, 0, 0]
+		for h in heroes:
+			if not h.dead:
+				count[_nearest_lane(h.x, h.y)] += 1
+		cap_lane = count.find(count.max()) if count.max() > 0 else randi() % 3
 	for lane in 3:
 		var ally_kinds := ["budling", "budling", "budling", "peapod", "peapod"]
 		var foe_kinds := ["grunt", "grunt", "grunt", "stinger", "stinger"]
@@ -468,14 +527,20 @@ func spawn_wave() -> void:
 			ally_kinds.append("pumpkin")
 			foe_kinds.append("shellcart")
 		for i in ally_kinds.size():
-			cl.spawn_q.append({"t": i * 0.55, "team": "ally", "kind": ally_kinds[i], "lane": lane, "idx": i})
+			cl.spawn_q.append({"t": i * 0.55, "team": "ally", "kind": ally_kinds[i], "lane": lane, "idx": i,
+				"captain": _captain_name() if lane == cap_lane and i == 0 else ""})
 		for i in foe_kinds.size():
 			cl.spawn_q.append({"t": i * 0.55, "team": "foe", "kind": foe_kinds[i], "lane": lane, "idx": i})
 	cl.spawn_q.sort_custom(func(a, b): return a.t < b.t)
 	ev({"type": "clash_wave", "wave": wave, "siege": siege})
 
 
-func spawn_ally(kind: String, lane: int, idx: int) -> void:
+func _captain_name() -> String:
+	cl.captain_n += 1
+	return CAPTAIN_NAMES[(cl.captain_n - 1 + randi() % 3) % CAPTAIN_NAMES.size()]
+
+
+func spawn_ally(kind: String, lane: int, idx: int, captain := "") -> void:
 	if cl.allies.size() >= 90:
 		return
 	var def: Dictionary = ALLIES[kind]
@@ -496,7 +561,16 @@ func spawn_ally(kind: String, lane: int, idx: int) -> void:
 	cl.allies.append({"id": gen_id(), "kind": kind, "lane": lane, "seg": 0, "t": 0.0, "off": ((idx % 3) - 1) * 13.0 + (randf() - 0.5) * 6,
 		"x": pts[0].x, "y": pts[0].y, "angle": 0.0, "hp": hp, "max_hp": hp, "dmg": def.dmg * sc.dmg * dmg_m, "range": float(def.range),
 		"rate": float(def.rate), "speed": float(def.speed), "radius": def.radius * (1.3 if big else 1.0), "ranged": def.get("ranged", false),
-		"siege": def.get("siege", false), "big": big, "cd": 0.3, "flash": 0.0, "at_end": false, "retarget": randf() * 0.2, "tgt": null})
+		"siege": def.get("siege", false), "big": big, "cd": 0.3, "flash": 0.0, "at_end": false, "retarget": randf() * 0.2, "tgt": null,
+		"spring_t": 0.0, "captain": ""})
+	if captain != "":
+		var u: Dictionary = cl.allies[-1]
+		u.captain = captain
+		u.hp *= 3.5
+		u.max_hp = u.hp
+		u.radius *= 1.2
+		cl.captain = {"id": u.id, "name": captain, "lane": lane, "planted": false}
+		ev({"type": "captain_up", "name": captain, "lane": lane, "x": u.x, "y": u.y})
 
 
 func spawn_foe_minion(kind: String, lane: int, idx: int) -> void:
@@ -575,7 +649,7 @@ func level_rival(e: Dictionary) -> void:
 func spawn_camp(camp: Dictionary) -> void:
 	var def: Dictionary = FOES[camp.kind]
 	var n := team_size()
-	var elder: bool = def.get("epic", false) and cl.time >= float(C.elderAt)
+	var elder: bool = def.get("epic", false) and cl.time >= elder_at()
 	var hp: float = round(def.hp * float(cl.p_camp) * (1.0 + 0.25 * (n - 1)) * (2.2 if elder else 1.0))
 	for i in camp.count:
 		var a := float(i) / maxf(1.0, camp.count) * TAU
@@ -611,7 +685,8 @@ func shoot(from: Vector2, ref: Dictionary, kind: String, dmg: float, o: Dictiona
 	_shot_id += 1
 	cl.shots.append({"id": _shot_id, "kind": kind, "team": o.get("team", "foe"), "x": from.x + cos(ang) * muzzle,
 		"y": from.y + sin(ang) * muzzle - float(o.get("lift", 0.0)), "vx": cos(ang) * sp, "vy": sin(ang) * sp, "speed": sp,
-		"ref": ref, "obj": tgt, "dmg": dmg, "struct_mult": o.get("structMult", 1.0), "src": o.get("src", ""), "ttl": 2.5, "straight": false})
+		"ref": ref, "obj": tgt, "dmg": dmg, "struct_mult": o.get("structMult", 1.0), "src": o.get("src", ""), "ttl": 2.5, "straight": false,
+		"unit": o.get("unit", "")})
 
 
 static func alive(kind: String, obj: Dictionary) -> bool:
@@ -644,7 +719,10 @@ func resolve(ref: Dictionary):
 func hit(ref: Dictionary, target: Dictionary, dmg: float, o: Dictionary = {}) -> void:
 	var sm: float = o.get("structMult", 1.0)
 	match String(ref.t):
-		"foe": apply_damage(target, maxf(1.0, round(dmg * (sm if target.structure else 1.0))), -1, -1, {"armorPierce": true, "noReact": true})
+		"foe":
+			if target.structure:
+				target.last_unit = String(o.get("unit", ""))  # a Sproutling hit it last
+			apply_damage(target, maxf(1.0, round(dmg * (sm if target.structure else 1.0))), -1, -1, {"armorPierce": true, "noReact": true})
 		"ally": hurt_ally(target, dmg)
 		"tower": hurt_ally_tower(target, dmg * sm)
 		"hero": hurt_hero(target, dmg, String(o.get("src", "")))
@@ -754,15 +832,19 @@ func allies_act(dt: float) -> void:
 			if u.cd <= 0:
 				u.cd = 1.0 / u.rate
 				var ref := {"t": "foe", "id": target.id}
+				var dmg: float = u.dmg * (1.5 if not cl.flags.is_empty() and rallied(u) else 1.0)
+				var unit: String = ("Captain " + String(u.captain)) if u.captain != "" else String(ALLIES[u.kind].name)
 				if u.ranged:
-					shoot(Vector2(u.x, u.y), ref, "pumpkin" if u.siege else "pea", u.dmg, {"team": "ally", "speed": 420.0 if u.siege else 560.0, "structMult": 0.8 if u.siege else 0.35, "lift": 8.0})
+					shoot(Vector2(u.x, u.y), ref, "pumpkin" if u.siege else "pea", dmg, {"team": "ally", "speed": 420.0 if u.siege else 560.0, "structMult": 0.8 if u.siege else 0.35, "lift": 8.0, "unit": unit})
 				else:
-					hit(ref, target, u.dmg, {"structMult": 0.35})
+					hit(ref, target, dmg, {"structMult": 0.35, "unit": unit})
 				u.angle = atan2(target.y - u.y, target.x - u.x)
 			continue
 		var pts: PackedVector2Array = cl.lanes[u.lane].ally
+		if u.spring_t > 0:
+			u.spring_t -= dt
 		if not u.at_end:
-			var left := step_path(u, pts, u.speed * dt)
+			var left := step_path(u, pts, u.speed * (1.45 if u.spring_t > 0 else 1.0) * dt)
 			var p := path_point(pts, u.seg, u.t, u.off)
 			u.x = p.x
 			u.y = p.y
@@ -806,6 +888,8 @@ func ally_towers_act(dt: float) -> void:
 func hurt_ally(u: Dictionary, dmg: float) -> void:
 	if u.hp <= 0:
 		return
+	if not cl.flags.is_empty() and rallied(u):
+		dmg *= 0.7
 	u.hp -= dmg
 	u.flash = 0.12
 	if u.hp <= 0:
@@ -829,8 +913,10 @@ func hurt_ally_tower(t: Dictionary, dmg: float) -> void:
 	if t.hp <= 0:
 		t.hp = 0.0
 		cl.ally_towers_down += 1
+		if t.kind != "tower":
+			story("lost", "Lost the %s" % (("%s gate" % LANE_NAMES[t.lane]) if t.kind == "gate" else "a Tree Guardian"), 3)
 		if t.kind == "gate":
-			cl.regrow.append({"side": "ally", "lane": t.lane, "t": float(C.gateRegrow) * D.gnum(cdiff(), "regrow", 1.0)})
+			cl.regrow.append({"side": "ally", "lane": t.lane, "t": regrow_time()})
 		ev({"type": "struct_down", "team": "ally", "x": t.x, "y": t.y, "lane": t.lane, "tier": t.tier, "kind": t.kind, "name": SHIELD_NAMES.get(t.kind, "Bloom Tower")})
 
 
@@ -960,6 +1046,9 @@ func teleport_home(pid: int) -> void:
 	h.recall_t = float(C.recallTime)
 	h.recall_from = Vector2(h.x, h.y)
 	ev({"type": "recall_start", "owner": h.owner, "slot": h.slot, "x": h.x, "y": h.y, "dur": h.recall_t})
+	var p = players.get(pid)
+	if p and not p.is_bot:
+		ask_cover(pid)  # going home to shop: ask a teammate to hold my lane
 
 
 func plant(pid: int, _kind: String, _at := Vector2.INF) -> void:
@@ -1074,6 +1163,8 @@ func on_hero_hit(e: Dictionary, tower: int, owner: int, final: float, opts: Dict
 			h = x
 	if h == null or h.dead:
 		return
+	if e.structure:
+		e.last_unit = ""  # a hero hit it last
 	if e.neutral and e.aggro < 0:
 		e.aggro = h.id
 		for o in enemies:
@@ -1283,7 +1374,7 @@ func rival_act(e: Dictionary, dt: float) -> void:
 		return
 	var base := Vector2(C.foeBase.x, C.foeBase.y)
 	# Low on health: run home to heal
-	if e.state == "lane" and e.hp < e.max_hp * 0.28:
+	if (e.state == "lane" or e.state == "raid") and e.hp < e.max_hp * 0.28:
 		e.state = "retreat"
 		ev({"type": "rival_flee", "name": def.name, "x": e.x, "y": e.y})
 	if e.state == "retreat" or e.state == "heal":
@@ -1299,6 +1390,9 @@ func rival_act(e: Dictionary, dt: float) -> void:
 				e.state = "lane"
 				e.anchor_seg = 0
 				e.anchor_t = 0.0
+		return
+	if e.state == "raid":
+		_raid_act(e, speed, dt)
 		return
 	# Pick a target: heroes it can safely reach, then Sproutlings, then towers
 	var target := {}
@@ -1552,7 +1646,7 @@ func shots_act(dt: float) -> void:
 		var d := dist(s.x, s.y, tgt.x, ty)
 		var step_len: float = s.speed * dt
 		if d <= step_len + 8:
-			hit(s.ref, tgt, s.dmg, {"structMult": s.struct_mult, "src": s.src})
+			hit(s.ref, tgt, s.dmg, {"structMult": s.struct_mult, "src": s.src, "unit": s.get("unit", "")})
 			if s.kind == "pumpkin" or s.kind == "shell":
 				ev({"type": "explosion", "x": tgt.x, "y": tgt.y, "radius": 34, "kind": "boom", "small": true})
 			continue
@@ -1599,6 +1693,8 @@ func on_defeated(e: Dictionary, killer_id: int) -> void:
 		cl.rival_kos += 1
 		if killer:
 			killer.rival_kos += 1
+		if cl.rival_kos == 1:
+			story("rival", "First rival knocked out: %s%s" % [String(def.name), (" (%s)" % killer.name) if killer else ""], 4)
 		for p in players.values():
 			grant_xp(p.id, e.reward)
 			p.acorns += int(round(e.acorns if p.id == killer_id else e.acorns * 0.5))
@@ -1606,8 +1702,10 @@ func on_defeated(e: Dictionary, killer_id: int) -> void:
 			"slot": killer.slot if killer else -1, "back": ceili(slot.respawn_t) if slot else 0})
 		spawn_powerup(e.x, e.y, ["giant", "frenzy", "zoom"][randi() % 3])
 	elif e.structure:
+		var unit: String = "" if killer else String(e.get("last_unit", ""))
 		if e.core:
-			ev({"type": "struct_down", "team": "foe", "x": e.x, "y": e.y, "core": true, "kind": "core", "name": def.name, "by": killer.name if killer else ""})
+			story("heart", "Smashed the Thorn Heart" + (" (%s)" % (killer.name if killer else unit) if killer or unit != "" else ""), 10)
+			ev({"type": "struct_down", "team": "foe", "x": e.x, "y": e.y, "core": true, "kind": "core", "name": def.name, "by": killer.name if killer else unit, "unit": unit})
 			return
 		cl.foe_towers_down += 1
 		if killer:
@@ -1617,10 +1715,23 @@ func on_defeated(e: Dictionary, killer_id: int) -> void:
 			p.acorns += int(D.gnum(def, "acorns"))
 		var kind := "gate" if e.tier == 3 else ("guardian" if e.tier == 4 else "tower")
 		if kind == "gate":
-			cl.regrow.append({"side": "foe", "lane": e.lane, "t": float(C.gateRegrow) * D.gnum(cdiff(), "regrow", 1.0)})
+			cl.regrow.append({"side": "foe", "lane": e.lane, "t": regrow_time()})
 		update_shields()
 		var heart_open := kind == "guardian" and not enemies.any(func(o): return o.get("structure", false) and o.hp > 0 and o.tier == 4)
-		ev({"type": "struct_down", "team": "foe", "x": e.x, "y": e.y, "lane": e.lane, "tier": e.tier, "kind": kind, "name": def.name, "by": killer.name if killer else "", "heart_open": heart_open})
+		var lane_name: String = LANE_NAMES[e.lane] if e.lane >= 0 and e.lane < 3 else ""
+		var helpers := _escorts(e) if unit != "" else []
+		var credit := (" (%s%s)" % [unit, (", with " + " & ".join(helpers)) if not helpers.is_empty() else ""]) if unit != "" else ""
+		if kind == "gate":
+			story("gate", "Broke the %s gate%s" % [lane_name, credit], 7)
+		elif kind == "guardian":
+			story("guardian", "Opened the Thorn Heart" if heart_open else "Knocked down a Thorn Guardian", 8 if heart_open else 5)
+		elif not cl.first_tower:
+			cl.first_tower = true
+			story("tower", "Broke the first Thorn Tower on the %s%s" % [lane_name, credit], 6)
+		elif unit != "":
+			story("tower", "%s broke a Thorn Tower on the %s" % [unit, lane_name], 4)
+		ev({"type": "struct_down", "team": "foe", "x": e.x, "y": e.y, "lane": e.lane, "tier": e.tier, "kind": kind, "name": def.name, "by": killer.name if killer else unit,
+			"heart_open": heart_open, "unit": unit, "helpers": helpers})
 	elif e.neutral:
 		for camp in cl.camps:
 			if camp.id == e.camp:
@@ -1658,6 +1769,8 @@ func on_defeated(e: Dictionary, killer_id: int) -> void:
 			kh.buffs[buff] = float(D.POWERUPS[buff].dur)
 			kh._st = null
 			ev({"type": "powerup_get", "kind": buff, "x": e.x, "y": e.y, "slot": kh.slot, "name": kp.name if kp else "", "owner": kh.owner, "shared": 0})
+		if def.get("epic", false):
+			story("toad", "Beat the %s%s" % ["Elder " if e.elder else "", String(def.name)], 7 if e.elder else 6)
 		ev({"type": "camp_down", "kind": e.type, "name": def.name, "x": e.x, "y": e.y, "epic": def.get("epic", false), "elder": e.elder})
 	ev({"type": "enemy_pop", "id": e.id, "x": e.x, "y": e.y, "color": def.get("color", "#A3E635"), "boss": e.rival or def.get("epic", false), "reward": e.reward, "kind": e.type, "structure": e.structure})
 
@@ -1676,6 +1789,7 @@ func check_end() -> void:
 		ev({"type": "victory", "clash": true})
 	elif lives <= 0:
 		lives = 0
+		story("lost", "The pests reached the Bloom Tree", 10)
 		phase = "gameover"
 		ev({"type": "game_over", "clash": true})
 
@@ -1767,6 +1881,8 @@ func _bot_clash(p: Dictionary, h: Dictionary, b: Dictionary, dt: float) -> void:
 		var lo: int = count.min()
 		if count[b.lane] > lo:
 			b.lane = count.find(lo)
+	if b.index == 0 and not cl.captain.is_empty() and not cl.captain.planted and not _covering(p.id):
+		b.lane = int(cl.captain.lane)  # walk with the Captain
 	if b.mode == "home":
 		if h.recall_t > 0:
 			return  # stand still while recalling
@@ -1788,7 +1904,8 @@ func _bot_clash(p: Dictionary, h: Dictionary, b: Dictionary, dt: float) -> void:
 			for e in enemies:
 				if (e.minion or e.rival) and e.hp > 0 and dist(e.x, e.y, t.x, t.y) < 330:
 					n += 1
-			if n < 3:
+			var raided: bool = not cl.raid.is_empty() and cl.raid.tower == t.id  # an announced Rival Raid: go meet it
+			if n < 3 and not raided:
 				continue
 			var closer := heroes.any(func(o): return o.id != h.id and not o.dead and dist(o.x, o.y, t.x, t.y) < dist(h.x, h.y, t.x, t.y))
 			if not closer:
@@ -1821,6 +1938,8 @@ func _bot_clash(p: Dictionary, h: Dictionary, b: Dictionary, dt: float) -> void:
 			if (e.minion or e.rival) and e.hp > 0 and (foe == null or dist(e.x, e.y, defend.x, defend.y) < dist(foe.x, foe.y, defend.x, defend.y)):
 				foe = e
 		target = Vector2((foe.x + defend.x) / 2, (foe.y + defend.y) / 2) if foe else Vector2(defend.x, defend.y)
+	if target == Vector2.INF and defend == null:
+		target = _bot_plot(p, h, b)
 	if target == Vector2.INF:
 		# stay a little behind the furthest Sproutling in my lane
 		var lead = null
@@ -1950,7 +2069,12 @@ func snapshot() -> Dictionary:
 		o.tier = e.tier
 		o.elder = e.elder
 		o.aggro = e.aggro >= 0
-		o.fleeing = e.rival and e.state != "lane"
+		o.fleeing = e.rival and (e.state == "retreat" or e.state == "heal")
+		o.raiding = e.rival and e.state == "raid"
+		if e.structure and e.range > 0:
+			# a Thorn Tower locked on a hero: whom, and how many shots in a row (they hurt more each time)
+			o.lock = e.streak_id
+			o.streak = e.streak
 		o.casting = e.casting > 0
 		o.lane = e.lane
 	s.clash = payload()
@@ -1965,11 +2089,15 @@ func payload() -> Dictionary:
 	var foe_towers: Array = []
 	for e in enemies:
 		if e.get("structure", false):
-			foe_towers.append({"lane": e.lane, "tier": e.tier, "core": e.core, "hp": maxf(0.0, round(e.hp)), "maxHp": e.max_hp, "shield": e.sheltered})
+			foe_towers.append({"lane": e.lane, "tier": e.tier, "core": e.core, "hp": maxf(0.0, round(e.hp)), "maxHp": e.max_hp, "shield": e.sheltered,
+				"x": roundf(e.x), "y": roundf(e.y)})
 	var allies: Array = []
 	for u in cl.allies:
-		allies.append({"id": u.id, "kind": u.kind, "x": roundf(u.x), "y": roundf(u.y), "hp": maxf(0.0, round(u.hp)), "maxHp": u.max_hp,
-			"big": u.big, "flash": u.flash > 0})
+		var ao := {"id": u.id, "kind": u.kind, "x": roundf(u.x), "y": roundf(u.y), "hp": maxf(0.0, round(u.hp)), "maxHp": u.max_hp,
+			"big": u.big, "flash": u.flash > 0}
+		if u.captain != "":
+			ao.cap = u.captain
+		allies.append(ao)
 	var shots: Array = []
 	for sh in cl.shots:
 		shots.append({"id": sh.id, "kind": sh.kind, "team": sh.team, "x": roundf(sh.x), "y": roundf(sh.y), "vx": roundf(sh.vx), "vy": roundf(sh.vy)})
@@ -1977,7 +2105,7 @@ func payload() -> Dictionary:
 	for c in cl.camps:
 		var epic: bool = FOES[c.kind].get("epic", false)
 		camps.append({"id": c.id, "kind": c.kind, "x": roundf(c.x), "y": roundf(c.y), "up": c.alive > 0,
-			"elder": c.elder if c.alive > 0 else (epic and cl.time + c.respawn_t >= float(C.elderAt)), "respawn": 0 if c.alive > 0 else ceili(c.respawn_t)})
+			"elder": c.elder if c.alive > 0 else (epic and cl.time + c.respawn_t >= elder_at()), "respawn": 0 if c.alive > 0 else ceili(c.respawn_t)})
 	var rivals: Array = []
 	for r in cl.rivals:
 		var e = resolve({"t": "foe", "id": r.id}) if r.alive else null
@@ -1986,8 +2114,479 @@ func payload() -> Dictionary:
 	var regrow_out: Array = []
 	for r in cl.regrow:
 		regrow_out.append({"side": r.side, "lane": r.lane, "t": ceili(r.t)})
-	return {"time": int(cl.time), "nextWave": snappedf(cl.wave_t, 0.1), "toadT": ceili(cl.toad_t), "elderT": ceili(cl.elder_t),
+	var out := {"time": int(cl.time), "nextWave": snappedf(cl.wave_t, 0.1), "quick": quick, "toadT": ceili(cl.toad_t), "elderT": ceili(cl.elder_t),
 		"bark": snappedf(bark("foe"), 0.01), "power": snappedf(maxf(1.0, cl.power), 0.01), "regrow": regrow_out,
 		"superAlly": cl.super_ally.duplicate(), "superFoe": cl.super_foe.duplicate(), "foeTowersDown": cl.foe_towers_down,
 		"allyTowersDown": cl.ally_towers_down, "rivalKOs": cl.rival_kos, "allyTowers": towers, "foeTowers": foe_towers,
-		"allies": allies, "shots": shots, "camps": camps, "rivals": rivals}
+		"allies": allies, "shots": shots, "camps": camps, "rivals": rivals,
+		"plots": cl.plots.map(func(pl): return {"id": pl.id, "lane": pl.lane, "x": roundf(pl.x), "y": roundf(pl.y), "state": pl.state, "claim": snappedf(pl.claim, 0.05), "by": pl.by, "lost": snappedf(pl.lost / 4.0, 0.05)}),
+		"covers": cl.covers.map(func(c): return {"from": c.from, "by": c.by, "lane": c.lane, "t": ceili(c.t)}),
+		"raid": {} if cl.raid.is_empty() else {"phase": cl.raid.phase, "t": ceili(cl.raid.t), "lane": cl.raid.lane, "x": roundf(cl.raid.x), "y": roundf(cl.raid.y), "names": cl.raid.names, "kind": cl.raid.kind},
+		"captain": {} if cl.captain.is_empty() else {"name": cl.captain.name, "lane": cl.captain.lane, "id": cl.captain.id, "planted": cl.captain.planted},
+		"flags": cl.flags.map(func(f): return {"x": roundf(f.x), "y": roundf(f.y), "t": ceili(f.t), "name": f.name})}
+	if phase != "playing":
+		out.story = cl.story.duplicate()
+		out.summary = story_summary(cl.story)
+	return out
+
+
+# ---------------------------------------------------------------------------
+# A living battlefield: Garden Plots, "cover me" handoffs, Rival Raids and
+# Sproutling Captains
+# ---------------------------------------------------------------------------
+const LANE_NAMES := ["Top Lane", "Middle Lane", "Bottom Lane"]
+const CAPTAIN_NAMES := ["Clover", "Basil", "Thyme", "Poppy", "Sage", "Mint", "Juniper", "Fennel", "Daisy", "Rosemary"]
+const PLOT_REACH := 70.0  # stand this close to claim a plot
+const PLOT_CLAIM := 3.0  # seconds to claim it
+const BERRY_REACH := 230.0
+const FLAG_REACH := 280.0
+const FLAG_TIME := 20.0
+
+
+## One empty plot beside the middle of each lane
+func _make_plots() -> Array:
+	var out: Array = []
+	for l in cl.lanes.size():
+		var pts: PackedVector2Array = cl.lanes[l].ally
+		var total := 0.0
+		for i in pts.size() - 1:
+			total += pts[i].distance_to(pts[i + 1])
+		var want := total * 0.5
+		var spot := pts[0]
+		var normal := Vector2.UP
+		for i in pts.size() - 1:
+			var L := pts[i].distance_to(pts[i + 1])
+			if want <= L:
+				var d := (pts[i + 1] - pts[i]).normalized()
+				spot = pts[i] + d * want
+				normal = d.orthogonal()
+				break
+			want -= L
+		var at := spot
+		var mid := Vector2(D.W / 2.0, D.H / 2.0)
+		var tries: Array = [95.0, -95.0, 125.0, -125.0, 70.0, -70.0]
+		tries.sort_custom(func(a, b): return (spot + normal * a).distance_to(mid) < (spot + normal * b).distance_to(mid))  # the inner side first
+		for off in tries:
+			var c: Vector2 = spot + normal * off
+			if D.is_walkable(map_id, c.x, c.y) and D.is_walkable(map_id, c.x + 20, c.y) and D.is_walkable(map_id, c.x - 20, c.y):
+				at = c
+				break
+		out.append({"id": l, "lane": l, "x": at.x, "y": at.y, "state": "empty", "claim": 0.0, "by": -1, "lost": 0.0, "spring": {}})
+	return out
+
+
+func update_plots(dt: float) -> void:
+	for pl in cl.plots:
+		var here: Array = heroes.filter(func(h): return not h.dead and dist(h.x, h.y, pl.x, pl.y) <= PLOT_REACH)
+		var foes_near := enemies.any(func(e): return (e.minion or e.rival) and e.hp > 0 and dist(e.x, e.y, pl.x, pl.y) <= 160)
+		if pl.state == "empty":
+			if not here.is_empty() and not foes_near:
+				pl.claim = minf(1.0, pl.claim + dt / PLOT_CLAIM)
+				pl.by = here[0].owner
+				if pl.claim >= 1.0:
+					pl.state = "ready"
+					var p = players.get(pl.by)
+					ev({"type": "plot_ready", "owner": pl.by, "lane": pl.lane, "x": pl.x, "y": pl.y, "name": p.name if p else ""})
+			else:
+				pl.claim = maxf(0.0, pl.claim - dt * 0.5)
+			continue
+		# pests standing on a grown plot with no hero to guard it trample it
+		var trample := enemies.any(func(e): return (e.minion or e.rival) and e.hp > 0 and dist(e.x, e.y, pl.x, pl.y) <= 110)
+		var guard := heroes.any(func(h): return not h.dead and dist(h.x, h.y, pl.x, pl.y) <= 220)
+		if trample and not guard:
+			pl.lost += dt
+			if pl.lost >= 4.0:
+				ev({"type": "plot_lost", "lane": pl.lane, "grow": pl.state, "x": pl.x, "y": pl.y})
+				pl.state = "empty"
+				pl.claim = 0.0
+				pl.lost = 0.0
+				continue
+		else:
+			pl.lost = maxf(0.0, pl.lost - dt)
+		if pl.state == "berry":
+			for h in heroes:
+				if not h.dead and dist(h.x, h.y, pl.x, pl.y) <= BERRY_REACH:
+					var mx: float = hero_stats(h).maxHp
+					h.hp = minf(mx, h.hp + mx * 0.03 * dt)
+			for u in cl.allies:
+				if u.hp > 0 and dist(u.x, u.y, pl.x, pl.y) <= BERRY_REACH:
+					u.hp = minf(u.max_hp, u.hp + u.max_hp * 0.04 * dt)
+		elif pl.state == "vine":
+			for h in heroes:
+				if not h.dead and dist(h.x, h.y, pl.x, pl.y) <= 45 and game_time >= float(pl.spring.get(h.id, 0.0)):
+					pl.spring[h.id] = game_time + 5.0
+					_spring(h, pl)
+			for u in cl.allies:
+				if u.hp > 0 and u.lane == pl.lane and dist(u.x, u.y, pl.x, pl.y) <= 120:
+					u.spring_t = 4.0  # Sproutlings marching past get a bounce in their step
+
+
+## Grow something on a claimed plot: "berry" (heals friends close by) or "vine" (a leap down the lane)
+func grow_plot(pid: int, id: int, grow: String) -> void:
+	var h = hero_of(pid)
+	if h == null or h.dead or not grow in ["berry", "vine"]:
+		return
+	for pl in cl.plots:
+		if pl.id == id and pl.state == "ready" and dist(h.x, h.y, pl.x, pl.y) <= PLOT_REACH + 50:
+			pl.state = grow
+			pl.by = pid
+			pl.spring = {pid: game_time + 1.5}  # don't launch the gardener the moment it sprouts
+			ev({"type": "plot_grown", "owner": pid, "name": players[pid].name, "grow": grow, "lane": pl.lane, "x": pl.x, "y": pl.y})
+
+
+## The Spring Vine: a big leap along the lane toward the pests
+func _spring(h: Dictionary, pl: Dictionary) -> void:
+	var pts: PackedVector2Array = cl.lanes[pl.lane].ally
+	# the closest point on the lane to the plot...
+	var seg := 0
+	var at := pts[0]
+	var bd := INF
+	for i in pts.size() - 1:
+		var q := Geometry2D.get_closest_point_to_segment(Vector2(pl.x, pl.y), pts[i], pts[i + 1])
+		var d := q.distance_to(Vector2(pl.x, pl.y))
+		if d < bd:
+			bd = d
+			seg = i
+			at = q
+	# ...then 460 px on along it, toward the pests
+	var left := 460.0
+	var i := seg
+	while left > 0 and i < pts.size() - 1:
+		var L := at.distance_to(pts[i + 1])
+		if left <= L:
+			at = at + (pts[i + 1] - at).normalized() * left
+			left = 0.0
+		else:
+			left -= L
+			i += 1
+			at = pts[i]
+	if not D.is_walkable(map_id, at.x, at.y):
+		return
+	var from := Vector2(h.x, h.y)
+	h.x = at.x
+	h.y = at.y
+	h.recall_t = 0.0
+	ev({"type": "dash", "owner": h.owner, "slot": h.slot, "fromX": from.x, "fromY": from.y, "x": at.x, "y": at.y, "perk": "", "spring": true})
+	ev({"type": "spring", "owner": h.owner, "x": from.x, "y": from.y, "tx": at.x, "ty": at.y})
+
+
+## "Cover me while I shop": ask a teammate to hold my lane. A Bot Buddy says
+## yes right away; a friend can say yes with G (or the button).
+func ask_cover(pid: int) -> void:
+	var h = hero_of(pid)
+	if h == null or h.dead or heroes.size() < 2:
+		return
+	var tree: Vector2 = D.sanctuary(map_id)
+	if dist(h.x, h.y, tree.x, tree.y) < float(C.shopRadius):
+		return  # already home
+	for c in cl.covers:
+		if c.from == pid:
+			return
+	var lane := _nearest_lane(h.x, h.y)
+	cl.covers.append({"from": pid, "lane": lane, "by": -1, "t": 40.0, "home": false})
+	ev({"type": "cover_ask", "owner": pid, "name": players[pid].name, "lane": lane})
+	var best = null
+	var bd := INF
+	for o in heroes:
+		var op = players.get(o.owner)
+		if o.owner == pid or o.dead or op == null or not op.is_bot or op.has("away") or _covering(o.owner):
+			continue
+		var d := dist(o.x, o.y, h.x, h.y)
+		if d < bd:
+			bd = d
+			best = o
+	if best:
+		accept_cover(best.owner, pid)
+
+
+func accept_cover(pid: int, from: int) -> void:
+	if pid == from or not players.has(pid) or _covering(pid):
+		return
+	for c in cl.covers:
+		if c.from == from and c.by < 0:
+			c.by = pid
+			var p: Dictionary = players[pid]
+			if p.is_bot and p.has("brain"):
+				p.brain.lane = c.lane
+				p.brain.lane_t = c.t
+				p.brain.mode = "lane"
+			ev({"type": "cover_ok", "owner": pid, "name": p.name, "from": from, "fromName": players[from].name if players.has(from) else "", "lane": c.lane, "bot": p.is_bot})
+			return
+
+
+func _covering(pid: int) -> bool:
+	return cl.covers.any(func(c): return c.by == pid)
+
+
+func update_covers(dt: float) -> void:
+	if cl.covers.is_empty():
+		return
+	var tree: Vector2 = D.sanctuary(map_id)
+	for c in cl.covers:
+		c.t -= dt
+		var h = hero_of(c.from)
+		if h == null:
+			c.t = 0.0
+			continue
+		var d := dist(h.x, h.y, tree.x, tree.y)
+		if d < float(C.shopRadius):
+			c.home = true
+		elif c.home and d > float(C.shopRadius) + 250:
+			c.t = 0.0  # back out of base: thanks for covering!
+	for c in cl.covers:
+		if c.t <= 0 and c.by >= 0:
+			ev({"type": "cover_done", "owner": c.by, "from": c.from, "lane": c.lane})
+	cl.covers = cl.covers.filter(func(c): return c.t > 0)
+
+
+## Rival Raids: now and then two rival champions team up and announce which of
+## your towers they're coming for, a few seconds before they get there
+func update_raid(dt: float) -> void:
+	if cl.raid.is_empty():
+		cl.raid_t -= dt
+		if cl.raid_t <= 0:
+			cl.raid_t = 20.0  # nobody free to raid: try again soon
+			start_raid()
+		return
+	var r: Dictionary = cl.raid
+	r.t -= dt
+	var raiders: Array = []
+	for id in r.ids:
+		var e = resolve({"t": "foe", "id": id})
+		if e != null and e.state == "raid":
+			raiders.append(e)
+	var tower = resolve({"t": "tower", "id": r.tower})
+	if tower == null:
+		_end_raid("broke")
+	elif raiders.is_empty():
+		_end_raid("stopped")
+	elif r.phase == "warn" and r.t <= 0:
+		r.phase = "on"
+		r.t = 45.0
+		ev({"type": "raid_go", "lane": r.lane, "x": r.x, "y": r.y, "names": r.names})
+	elif r.phase == "on" and r.t <= 0:
+		_end_raid("over")
+
+
+func start_raid() -> void:
+	var free: Array = enemies.filter(func(e): return e.rival and e.hp > 0 and e.state == "lane" and e.casting <= 0)
+	if free.is_empty() or (free.size() < 2 and cl.rivals.size() > 1):
+		return
+	# the lane whose front building is furthest from every hero
+	var target = null
+	var far := -1.0
+	for l in 3:
+		var front = null
+		for t in cl.ally_towers:
+			if t.hp > 0 and t.lane == l and not t.shield and (front == null or t.tier < front.tier):
+				front = t
+		if front == null:
+			continue
+		var near := INF
+		for h in heroes:
+			if not h.dead:
+				near = minf(near, dist(h.x, h.y, front.x, front.y))
+		if near > far:
+			far = near
+			target = front
+	if target == null:
+		return
+	free.sort_custom(func(a, b): return dist(a.x, a.y, target.x, target.y) < dist(b.x, b.y, target.x, target.y))
+	var picked: Array = free.slice(0, 2)
+	var names: Array = []
+	for e in picked:
+		e.state = "raid"
+		e.raid_path = []
+		e.raid_pt = 0.0
+		names.append(String(FOES[e.type].name))
+	cl.raid = {"phase": "warn", "t": 9.0, "lane": int(target.lane), "tower": target.id, "x": target.x, "y": target.y,
+		"ids": picked.map(func(e): return e.id), "names": names, "kind": target.kind}
+	cl.raid_t = (100.0 if quick else 130.0) + randf() * 40.0
+	ev({"type": "raid_warn", "lane": int(target.lane), "x": target.x, "y": target.y, "names": names, "kind": target.kind, "in": 9})
+
+
+func _end_raid(how: String) -> void:
+	var r: Dictionary = cl.raid
+	for id in r.ids:
+		var e = resolve({"t": "foe", "id": id})
+		if e != null and e.state == "raid":
+			e.state = "lane"
+			e.anchor_seg = 0
+			e.anchor_t = 0.0
+	if how == "stopped":
+		story("raid", "Stopped %s's raid on the %s" % [" & ".join(r.names), LANE_NAMES[int(r.lane)]], 5)
+	elif how == "broke":
+		story("lost", "%s broke a %s tower in a raid" % [" & ".join(r.names), LANE_NAMES[int(r.lane)]], 3)
+	if how == "stopped":
+		for p in players.values():
+			p.acorns += 60
+			grant_xp(p.id, 80.0)
+	ev({"type": "raid_end", "how": how, "lane": r.lane, "x": r.x, "y": r.y, "names": r.names})
+	cl.raid = {}
+
+
+## A raiding rival: walks (around rocks and water) to the target tower, waits
+## just out of its reach during the warning, then attacks it. Heroes who come
+## to stop the raid get hit first.
+func _raid_act(e: Dictionary, speed: float, dt: float) -> void:
+	var r: Dictionary = cl.raid
+	var tower = resolve({"t": "tower", "id": r.get("tower", -1)}) if not r.is_empty() and r.ids.has(e.id) else null
+	if tower == null:
+		e.state = "lane"
+		return
+	var def: Dictionary = FOES[e.type]
+	var foe_h = null
+	var bd := INF
+	for h in heroes:
+		if h.dead:
+			continue
+		var d := dist(e.x, e.y, h.x, h.y)
+		if d < e.range + 120 and d < bd:
+			bd = d
+			foe_h = h
+	if foe_h and e.abil_t <= 0:
+		rival_start_cast(e, foe_h)
+		return
+	var goal: Vector2
+	var hit_ref := {}
+	var hit_obj = null
+	var reach := 0.0
+	if foe_h:
+		hit_ref = {"t": "hero", "id": foe_h.id}
+		hit_obj = foe_h
+		reach = e.range + 6
+		goal = Vector2(foe_h.x, foe_h.y)
+	elif r.phase == "on":
+		hit_ref = {"t": "tower", "id": tower.id}
+		hit_obj = tower
+		reach = e.range + tower.radius * 0.5
+		goal = Vector2(tower.x, tower.y)
+	else:
+		var away := (Vector2(e.x, e.y) - Vector2(tower.x, tower.y))
+		goal = Vector2(tower.x, tower.y) + (away.normalized() if away.length() > 1 else Vector2.RIGHT) * (tower.range + 60)
+	if hit_obj != null and dist(e.x, e.y, hit_obj.x, hit_obj.y) <= reach:
+		if e.cd <= 0:
+			e.cd = 1.0 / e.rate
+			e.angle = atan2(hit_obj.y - e.y, hit_obj.x - e.x)
+			if hit_ref.t == "hero":
+				e.hit_hero_at = cl.time
+			if def.get("melee", false):
+				hit(hit_ref, hit_obj, e.dmg, {"src": def.name, "structMult": 0.6})
+				ev({"type": "rival_swipe", "x": e.x, "y": e.y, "tx": hit_obj.x, "ty": hit_obj.y})
+			else:
+				shoot(Vector2(e.x, e.y), hit_ref, "sting" if def.get("ability", "") == "volley" else "spore", e.dmg, {"team": "foe", "speed": 560.0, "lift": 20.0, "src": def.name, "structMult": 0.6})
+		return
+	# follow a path around rocks and water (worked out again every couple of seconds)
+	e.raid_pt = float(e.get("raid_pt", 0.0)) - dt
+	if e.raid_pt <= 0 or e.get("raid_path", []).is_empty():
+		e.raid_pt = 2.0
+		e.raid_path = D.find_path(map_id, e.x, e.y, goal.x, goal.y)
+	var path: Array = e.raid_path
+	while path.size() > 0 and dist(e.x, e.y, Vector2(path[0]).x, Vector2(path[0]).y) < 12:
+		path.pop_front()
+	var to: Vector2 = Vector2(path[0]) if path.size() > 0 else goal
+	move_free(e, to.x, to.y, speed * dt)
+
+
+## Sproutling Captains: every few waves one Bud Buddy gets a name and a banner.
+## If it reaches a Thorn Tower it plants a rally flag that makes Sproutlings
+## close by stronger.
+func update_captain(dt: float) -> void:
+	for f in cl.flags:
+		f.t -= dt
+	if not cl.flags.is_empty():
+		cl.flags = cl.flags.filter(func(f): return f.t > 0)
+	if cl.captain.is_empty() or cl.captain.planted:
+		return
+	var u = resolve({"t": "ally", "id": cl.captain.id})
+	if u == null:
+		ev({"type": "captain_down", "name": cl.captain.name, "lane": cl.captain.lane})
+		cl.captain = {}
+		return
+	var plant := bool(u.at_end)
+	for e in enemies:
+		if e.structure and e.hp > 0 and not e.sheltered and e.lane in [u.lane, -1] and dist(u.x, u.y, e.x, e.y) <= 330:
+			plant = true
+			break
+	if plant:
+		cl.flags.append({"x": u.x, "y": u.y, "t": FLAG_TIME, "name": cl.captain.name})
+		var with := _escorts(u)
+		story("captain", "Walked Captain %s up the %s%s" % [cl.captain.name, LANE_NAMES[u.lane], (" (" + " & ".join(with) + ")") if not with.is_empty() else ""], 6)
+		cl.captain.planted = true
+		ev({"type": "captain_flag", "name": cl.captain.name, "lane": u.lane, "x": u.x, "y": u.y})
+
+
+## A Sproutling standing by a Captain's rally flag
+func rallied(u: Dictionary) -> bool:
+	for f in cl.flags:
+		if dist(u.x, u.y, f.x, f.y) <= FLAG_REACH:
+			return true
+	return false
+
+
+## Bot Buddies tend the Garden Plot by their lane: claim it when it's quiet, then grow something
+func _bot_plot(p: Dictionary, h: Dictionary, b: Dictionary) -> Vector2:
+	for pl in cl.plots:
+		if pl.lane != b.lane or not pl.state in ["empty", "ready"]:
+			continue
+		var d := dist(h.x, h.y, pl.x, pl.y)
+		if d > 380 or enemies.any(func(e): return (e.minion or e.rival) and e.hp > 0 and dist(e.x, e.y, pl.x, pl.y) < 260):
+			continue
+		if pl.state == "ready" and d <= PLOT_REACH + 40:
+			var hp_k: float = h.hp / maxf(1.0, hero_stats(h).maxHp)
+			grow_plot(p.id, pl.id, "berry" if hp_k < 0.7 or randf() < 0.5 else "vine")
+			return Vector2.INF
+		return Vector2(pl.x, pl.y)
+	return Vector2.INF
+
+
+# ---------------------------------------------------------------------------
+# The story of the match (shown on the end screen) and shop suggestions
+# ---------------------------------------------------------------------------
+## Remember a big moment: what happened, when, and how much it matters (1-10)
+func story(kind: String, text: String, weight: int) -> void:
+	cl.story.append({"t": int(cl.time), "kind": kind, "text": text, "w": weight})
+	if cl.story.size() > 40:
+		cl.story.pop_front()
+
+
+## The three biggest moments in the order they happened (the ending always
+## makes it), e.g. "Beat the Rumble Toad → Broke the Middle Lane gate → Smashed the Thorn Heart"
+static func story_summary(list: Array, n := 3) -> Array:
+	var idx: Array = []
+	for i in list.size():
+		idx.append(i)
+	idx.sort_custom(func(a, b): return int(list[a].w) > int(list[b].w) or (int(list[a].w) == int(list[b].w) and a > b))
+	var pick: Array = idx.slice(0, n)
+	pick.sort()
+	return pick.map(func(i): return list[i])
+
+
+## Heroes walking close by (who escorted a Sproutling, or helped it break a building)
+func _escorts(near: Dictionary) -> Array:
+	var out: Array = []
+	for h in heroes:
+		if not h.dead and dist(h.x, h.y, near.x, near.y) <= 520:
+			var p = players.get(h.owner)
+			if p:
+				out.append(String(p.name))
+	return out
+
+
+## The next things this hero should buy: their best items they don't have yet,
+## then Golden versions of what they own. Returns item ids.
+static func recommended_buys(data, hero_type: String, items: Array, n := 2) -> Array:
+	var order: Array = HERO_BUYS.get(hero_type, BOT_BUY)
+	var max_items := int(data.clash.config.maxItems)
+	var out: Array = []
+	for id in order:
+		if out.size() >= n:
+			return out
+		if not items.has(id) and not items.has(id + "+") and items.size() < max_items:
+			out.append(id)
+	for id in order:
+		if out.size() >= n:
+			break
+		if items.has(id):
+			out.append(id)
+	return out

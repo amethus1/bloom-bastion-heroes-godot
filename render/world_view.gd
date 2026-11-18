@@ -13,6 +13,7 @@ var tick_alpha := 1.0
 var time := 0.0
 var ghost := ""  # tower preview kind
 var ghost_at = null  # where the mouse aims it (null: at my hero's feet)
+var picked_tower := -1  # the tower picked in "Your towers": ringed, with its range showing
 
 var _prev := {}
 var _cur := {}
@@ -42,6 +43,20 @@ var _marker := {"p": Vector2.ZERO, "t": 0.0}
 const SLIDE_TIME := 0.14
 var _slide := Vector2.ZERO  # my hero's dash: how far behind its new spot it's still drawn
 var _slide_t := 0.0
+var fancy := true  # settings: Graphics "fancy" (cloud shadows, shimmering water, glowing light) or "simple"
+var lights: Node2D  # glows and sparks, drawn with additive blending on top of the world
+var _ground_mat: ShaderMaterial
+var _snap_cam := true  # jump the camera straight to the hero (new game) instead of gliding across the map
+var _tags: Array = []  # name tags placed this frame (so two heroes' tags don't overlap)
+var _lit_shots: Array = []  # [where, colour, size] of every shot drawn this frame, for its glow
+
+
+## Draws WorldView's light on its own canvas item, so it can use additive blending
+class LightLayer extends Node2D:
+	var world: WorldView
+
+	func _draw() -> void:
+		world.draw_lights(self)
 
 
 func zoom_by(k: float) -> void:
@@ -82,6 +97,17 @@ func _ready() -> void:
 	map_sprite.centered = false
 	map_sprite.z_index = -10
 	add_child(map_sprite)
+	_ground_mat = ShaderMaterial.new()
+	_ground_mat.shader = load("res://render/ground.gdshader")
+	_ground_mat.set_shader_parameter("noise", noise_tex())
+	_ground_mat.set_shader_parameter("world_size", Vector2(GameData.W, GameData.H))
+	lights = LightLayer.new()
+	lights.world = self
+	var add := CanvasItemMaterial.new()
+	add.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+	lights.material = add
+	add_child(lights)
+	set_fancy(fancy)
 	camera = Camera2D.new()
 	camera.position_smoothing_enabled = true
 	camera.position_smoothing_speed = 6.0
@@ -94,8 +120,36 @@ func _ready() -> void:
 	Audio.dialog_line.connect(_on_dialog_line)
 
 
+## Graphics setting: "fancy" adds cloud shadows, shimmering water and glowing
+## light; "simple" is lighter work for an old computer
+func set_fancy(on: bool) -> void:
+	fancy = on
+	if map_sprite:
+		map_sprite.material = _ground_mat if on else null
+	if lights:
+		lights.visible = on
+
+
+static var _noise: Texture2D
+
+
+## Soft seamless noise (clouds and water ripples), made once
+static func noise_tex() -> Texture2D:
+	if _noise == null:
+		var fn := FastNoiseLite.new()
+		fn.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+		fn.frequency = 0.011
+		fn.fractal_octaves = 3
+		fn.seed = 7
+		var img := fn.get_seamless_image(256, 256)
+		img.generate_mipmaps()
+		_noise = ImageTexture.create_from_image(img)
+	return _noise
+
+
 ## Forget everything from the previous game (ids start over in a new game)
 func reset() -> void:
+	_snap_cam = true
 	snap = {}
 	_prev = {}
 	_cur = {}
@@ -180,6 +234,9 @@ func push_snapshot(s: Dictionary) -> void:
 	if s.get("map", "") != _map_id:
 		_map_id = s.map
 		map_sprite.texture = Sprites.tex(Sprites.atlas.maps.get(_map_id, ""))
+		_water = null
+		if AMBIENT.get(_map_id, "") == "sparkle":
+			_water = _water_map(map_sprite.texture)
 	for e in s.get("events", []):
 		on_event(e)
 
@@ -273,11 +330,25 @@ func _process_inner(delta: float) -> void:
 		if not followed:
 			camera.position = GameData.sanctuary(_map_id if _map_id != "" else "meadow")
 	camera.zoom = camera.zoom.lerp(Vector2(want_zoom, want_zoom), minf(1.0, delta * (4 if not follow_ids.is_empty() else 10)))
+	if _snap_cam and (my_pos != null or _has_hero(my_owner)):
+		# a new game: start right on my hero (no swoop across the map from where the last one ended)
+		_snap_cam = false
+		camera.zoom = Vector2(want_zoom, want_zoom)
+		camera.reset_smoothing()
 	if _marker.t > 0:
 		_marker.t -= delta
 	_update_fx(delta)
 	_update_ambient(delta)
 	queue_redraw()
+	if lights.visible:
+		lights.queue_redraw()  # after the world, so it lights up this frame's shots
+
+
+func _has_hero(owner: int) -> bool:
+	for h in snap.get("heroes", []):
+		if h.owner == owner:
+			return true
+	return false
 
 
 # ---------------------------------------------------------------------------
@@ -369,6 +440,7 @@ func box(r: Rect2, col: Color) -> void:
 	draw_texture_rect_region(_shapes, r, SH_WHITE, col)
 
 
+
 var _defer_text := false
 var _text_queue: Array = []
 
@@ -395,8 +467,11 @@ func _flush_text() -> void:
 	_text_queue.clear()
 
 
-func bar(c: Vector2, w: float, h: float, k: float, col: Color) -> void:
+## A health bar; `trail` (if more than k) shows in pale what was just lost
+func bar(c: Vector2, w: float, h: float, k: float, col: Color, trail := -1.0) -> void:
 	box(Rect2(c.x - w / 2 - 1.5, c.y - 1.5, w + 3, h + 3), Color(0.06, 0.09, 0.16, 0.85))
+	if trail > k + 0.01:
+		box(Rect2(c.x - w / 2, c.y, w * clampf(trail, 0, 1), h), Color(1, 0.96, 0.86, 0.8))
 	box(Rect2(c.x - w / 2, c.y, maxf(2.0, w * clampf(k, 0, 1)), h), col)
 
 
@@ -412,6 +487,7 @@ func _draw() -> void:
 func _draw_world() -> void:
 	if snap.is_empty():
 		return
+	_tags.clear()
 	var heroes: Array = snap.get("heroes", [])
 	var clash: Dictionary = snap.get("clash", {})
 	if not clash.is_empty():
@@ -427,6 +503,10 @@ func _draw_world() -> void:
 		var k: float = _marker.t / 0.6
 		ellipse_line(_marker.p, 18 * (1.4 - k * 0.4), 9 * (1.4 - k * 0.4), Color(1, 1, 1, k * 0.8), 2.5)
 	_draw_features()
+	if not clash.is_empty():
+		draw_plots(clash)
+		draw_flags(clash)
+		_draw_raid(clash)
 	for s in snap.get("spikes", []):
 		draw_colored_polygon(PackedVector2Array([Vector2(s.x - 8, s.y + 5), Vector2(s.x, s.y - 9), Vector2(s.x + 8, s.y + 5)]), GameData.player_color(s.slot))
 	# depth-sorted things (anything well off screen is skipped)
@@ -476,6 +556,8 @@ func _draw_world() -> void:
 	for f in foes:
 		draw_enemy_over(f[0], f[1])
 	_flush_text()
+	if not clash.is_empty():
+		_draw_tower_locks()
 	for w in snap.get("wisps", []):
 		var p := pos_of(w.id, Vector2(w.x, w.y))
 		glow(p, 12, Color(1, 0.6, 0.2, 0.6))
@@ -490,22 +572,100 @@ func _draw_world() -> void:
 	draw_fx()
 	_draw_ambient()
 	_draw_pings()
+	_draw_combo_ring()
 	if ghost != "" and my_pos != null:
 		# where the selected tower would go, with its real (round) range
 		var gp: Vector2 = ghost_at if ghost_at != null else my_pos
 		if ghost_at != null:
 			ellipse_line(_me(), SimWorld.AIM_REACH, SimWorld.AIM_REACH, Color(1, 1, 1, 0.18), 2.0)  # how far from my hero I can build
-		var spot: Dictionary = GameData.gadget_spot(_map_id, ghost, gp.x, gp.y)
 		var def: Dictionary = GameData.GADGETS[ghost]
-		var sp := Vector2(spot.x, spot.y)
-		var col := Color(0.5, 1, 0.6, 0.55) if spot.ok else Color(1, 0.4, 0.4, 0.55)
-		disc(sp, def.range, Color(col.r, col.g, col.b, 0.1))
-		draw_arc(sp, def.range, 0, TAU, 64, col, 2, true)
-		var gt := Sprites.gadget_tex(ghost, 1, -1, 0)
-		Sprites.draw_frame(self, gt, Sprites.atlas.gadgets.get(ghost, {}), 0, sp, false, 1.0, Color(1, 1, 1, 0.55) if spot.ok else Color(1, 0.5, 0.5, 0.45), Sprites.scale)
-		var why := ("Click or F: build here" if ghost_at != null else "F: build here") if spot.ok else String(spot.get("reason", "Can't build here"))
-		text(sp + Vector2(0, 34), why, 13, Color("bbf7d0") if spot.ok else Color("fca5a5"), 4)
+		var out := build_outcome(ghost, gp)
+		var sp: Vector2 = out.at
+		var col := Color(0.5, 1, 0.6, 0.55) if out.ok else Color(1, 0.4, 0.4, 0.55)
+		var why: String = out.text
+		if out.ok:
+			why = ("Click or F: " if ghost_at != null else "F: ") + why
+		if not out.up.is_empty():
+			# it would upgrade the tower that's already here, not build a new one
+			var up := Vector2(out.up.x, out.up.y)
+			draw_arc(up + Vector2(0, 6), 34, 0, TAU, 32, Color(0.99, 0.88, 0.28, 0.9) if out.ok else Color(1, 0.45, 0.45, 0.8), 3, true)
+			draw_arc(up, _tower_range(out.up), 0, TAU, 64, Color(0.99, 0.88, 0.28, 0.5), 2, true)
+			sp = up
+		else:
+			disc(sp, def.range, Color(col.r, col.g, col.b, 0.1))
+			draw_arc(sp, def.range, 0, TAU, 64, col, 2, true)
+			var gt := Sprites.gadget_tex(ghost, 1, -1, 0)
+			Sprites.draw_frame(self, gt, Sprites.atlas.gadgets.get(ghost, {}), 0, sp, false, 1.0, Color(1, 1, 1, 0.55) if out.ok else Color(1, 0.5, 0.5, 0.45), Sprites.scale)
+		text(sp + Vector2(0, 34), why, 13, Color("bbf7d0") if out.ok else Color("fca5a5"), 4)
 	_draw_tower_help()
+
+
+## A friend just used their special and mine is ready: the circle to stand in for a
+## Team Combo, its edge running down like a timer
+func _draw_combo_ring() -> void:
+	var co: Dictionary = snap.get("comboOpen", {})
+	if co.is_empty() or int(co.owner) == my_owner:
+		return
+	var me := {}
+	var friend := {}
+	for h in snap.get("heroes", []):
+		if h.owner == my_owner:
+			me = h
+		if int(h.id) == int(co.hero):
+			friend = h
+	if me.is_empty() or friend.is_empty() or float(me.get("specialCd", 1.0)) > 0.05 or me.get("dead", false):
+		return
+	var c := Vector2(co.x, co.y)
+	var col: Color = GameData.player_color(int(friend.slot))
+	var k := clampf(float(co.left) / SimWorld.COMBO_TIME, 0.0, 1.0)
+	disc(c, SimWorld.COMBO_REACH, Color(col.r, col.g, col.b, 0.05 + 0.03 * sin(time * 9.0)))
+	draw_arc(c, SimWorld.COMBO_REACH, -PI / 2, -PI / 2 + TAU * k, 96, Color(col.r, col.g, col.b, 0.75), 4, true)
+
+
+## What F (or a click) would really do here, checked in the same order the game
+## checks it, so the preview never promises something else:
+## {"ok", "text", "at": where it goes, "up": the tower it would upgrade instead ({} if none)}
+func build_outcome(kind: String, gp: Vector2) -> Dictionary:
+	var def: Dictionary = GameData.GADGETS[kind]
+	var spot: Dictionary = GameData.gadget_spot(_map_id, kind, gp.x, gp.y)
+	var at := Vector2(spot.x, spot.y)
+	var acorns := 0
+	for p in snap.get("players", []):
+		if p.id == my_owner:
+			acorns = int(p.acorns)
+	var res := {"ok": false, "text": "", "at": at, "up": {}}
+	if snap.get("mutators", []).has("heroes") and not def.get("once", false):
+		res.text = "Hero Mode: no towers this game"
+		return res
+	var mine: Array = snap.get("gadgets", []).filter(func(g): return g.owner == my_owner)
+	for g in mine:
+		if g.kind == kind and not def.get("once", false) and Vector2(g.x, g.y).distance_to(at) < 60:
+			res.up = g
+			if int(g.level) >= 3:
+				res.text = "This %s is already max level" % def.name
+				return res
+			var cost := GameData.gadget_upgrade_cost(kind, int(g.level))
+			var what := "Pick a special power for this %s" % def.name if int(g.level) == 2 and def.has("branches") else "Upgrade this %s to level %d" % [def.name, int(g.level) + 1]
+			res.ok = acorns >= cost
+			res.text = ("⬆ %s · %d🌰" % [what, cost]) if res.ok else ("⬆ %s needs %d🌰 (you have %d)" % [what, cost, acorns])
+			return res
+	if not spot.ok:
+		res.text = String(spot.get("reason", "Can't build here"))
+		return res
+	for g in snap.get("gadgets", []):
+		if Vector2(g.x, g.y).distance_to(at) < 46:
+			res.text = "Something is already built here. Move a little!"
+			return res
+	var cap := int(GameData.gadgets.limitPerPlayer)
+	if mine.size() >= cap:
+		res.text = "Tower limit reached · %d/%d (upgrade or sell one)" % [mine.size(), cap]
+		return res
+	if acorns < int(def.cost):
+		res.text = "%s needs %d🌰 (you have %d)" % [def.name, int(def.cost), acorns]
+		return res
+	res.ok = true
+	res.text = "Build %s · %d🌰" % [def.name, int(def.cost)]
+	return res
 
 
 func draw_tree(sc: Vector2) -> void:
@@ -539,12 +699,24 @@ func draw_gadget(g: Dictionary) -> void:
 		_anim[key] = an
 	elif an.look != look:
 		an.merge({"t": time, "look": look, "new": false}, true)
+	var shots := int(g.get("shots", 0))
+	if an.has("shots") and int(an.shots) != shots:
+		an.fire = time
+	an.shots = shots
 	var k := clampf((time - float(an.t)) / 0.35, 0.0, 1.0)
 	var st := Vector2.ONE
 	if k < 1.0:
 		var sy := _ease_back(k) if an.new else 1.0 + 0.2 * sin(k * PI) * (1.0 - k)
 		st = Vector2(1.0 + (1.0 - sy) * 0.6, sy)
-	Sprites.draw_frame(self, t, e, 0, Vector2(g.x, g.y), false, 1.0, mod, Sprites.scale, st)
+	else:
+		# firing: a quick squash down and a springy bounce back
+		var fk := (time - float(an.get("fire", -9.0))) / 0.3
+		if fk < 1.0:
+			var sy := 1.0 - 0.13 * (1.0 - fk) * cos(fk * 7.0)
+			st = Vector2(1.0 + (1.0 - sy) * 0.7, sy)
+	# plants sway a little in the breeze (not while asleep)
+	var sway := 0.0 if g.get("asleep", false) or g.kind == "bomb" else sin(time * 1.7 + g.x * 0.013) * 0.035
+	Sprites.draw_frame(self, t, e, 0, Vector2(g.x, g.y), false, 1.0, mod, Sprites.scale, st, sway)
 	if g.kind == "fern":
 		var r: float = GameData.GADGETS.fern.range
 		var B: Dictionary = GameData.gadget_branch("fern", g.branch)
@@ -651,7 +823,16 @@ func draw_enemy(e: Dictionary, p: Vector2) -> void:
 	if e.flash:
 		mod = Color(1.8, 1.8, 1.8, alpha)
 	var frame := int(fposmod(a.phase, 1.0) * 8) % 8
-	Sprites.draw_frame(self, Sprites.tex(entry.file), entry, frame, feet, a.face < 0, S * (0.6 + 0.4 * ease(born, 0.5)), mod, Sprites.scale)
+	# a solid hit squashes it for a moment (then it springs back)
+	if e.flash and not a.get("flashed", false):
+		a.hit = 1.0
+	a.flashed = e.flash
+	a.hit = maxf(0.0, float(a.hit) - dt * 6.0)
+	var squash := Vector2.ONE
+	if a.hit > 0:
+		var q: float = a.hit * a.hit * (0.5 if e.boss else 1.0)
+		squash = Vector2(1.0 + 0.16 * q, 1.0 - 0.14 * q)
+	Sprites.draw_frame(self, Sprites.tex(entry.file), entry, frame, feet, a.face < 0, S * (0.6 + 0.4 * ease(born, 0.5)), mod, Sprites.scale, squash)
 	if e.frozen:
 		var top := feet.y - (R * 2.6 if flyer else R * 2.0)
 		var cy := (top + feet.y) / 2
@@ -747,7 +928,14 @@ func draw_enemy_over(e: Dictionary, p: Vector2) -> void:
 	elif e.hp < e.maxHp and not e.boss:
 		var k: float = float(e.hp) / float(e.maxHp)
 		var col := Color("f87171") if def.get("minion", false) else (Color("4ade80") if k > 0.5 else (Color("facc15") if k > 0.25 else Color("fb7185")))
-		bar(Vector2(p.x, top - 8), maxf(26.0, R * 1.8), 5, k, col)
+		# the bar slides down, leaving a pale strip of what was just lost
+		var a: Dictionary = _anim.get("e%d" % e.id, {})
+		var dt := get_process_delta_time()
+		var hk: float = a.get("hpk", 1.0)
+		hk = k if k > hk else lerpf(hk, k, minf(1.0, dt * 14.0))  # healing jumps up, damage slides down
+		a.hpk = hk
+		a.hpt = maxf(lerpf(float(a.get("hpt", 1.0)), k, minf(1.0, dt * 2.2)), hk)
+		bar(Vector2(p.x, top - 8), maxf(26.0, R * 1.8), 5, hk, col, a.hpt)
 
 
 func draw_hero(h: Dictionary) -> void:
@@ -800,6 +988,13 @@ func draw_hero(h: Dictionary) -> void:
 		frame = int(time * 2.0) % 4
 	var entry := Sprites.hero_entry(h.type)
 	var t := Sprites.hero_tex(h.type, mini(h.tierA, 4), mini(h.tierB, 4))
+	var look := "%s%d%d" % [h.type, h.tierA, h.tierB]
+	if a.get("look", "") != look:
+		# get its next evolutions loading now, so evolving never stutters
+		a.look = look
+		var vars: Dictionary = entry.get("variants", {})
+		Sprites.prefetch(String(vars.get("%d%d" % [mini(h.tierA + 1, 4), mini(h.tierB, 4)], "")))
+		Sprites.prefetch(String(vars.get("%d%d" % [mini(h.tierA, 4), mini(h.tierB + 1, 4)], "")))
 	var feet := p + Vector2(0, 21)
 	var hurt_mod := Color(1.8, 0.6, 0.6) if h.get("hurt", false) else Color.WHITE
 	Sprites.draw_frame(self, t, entry, frame, feet, face < 0, lv_scale, hurt_mod, Sprites.scale)
@@ -818,6 +1013,19 @@ func draw_hero(h: Dictionary) -> void:
 	var name: String = ("[bot] " if pl.get("bot", false) else "") + String(pl.get("name", "Hero"))
 	var ty := p.y - 64 - (lv_scale - 1.1) * 60
 	var tw := _font.get_string_size(name, HORIZONTAL_ALIGNMENT_LEFT, -1, 13).x + 34
+	# heroes standing together: stack their name tags instead of piling them up
+	var tag := Rect2(p.x - tw / 2, ty - 10, tw, 20)
+	for i in 4:
+		var clear := true
+		for r in _tags:
+			if (r as Rect2).intersects(tag):
+				clear = false
+				break
+		if clear:
+			break
+		ty -= 23
+		tag.position.y -= 23
+	_tags.append(tag)
 	draw_rect(Rect2(p.x - tw / 2, ty - 10, tw, 20), Color(0.04, 0.08, 0.05, 0.75))
 	draw_rect(Rect2(p.x - tw / 2, ty - 10, tw, 20), col, false, 1.6)
 	disc(Vector2(p.x - tw / 2 + 10, ty), 8, Color("facc15"))
@@ -890,6 +1098,7 @@ const PROJ_COLORS := {"pea": "4ade80", "megapea": "fde047", "thorn": "7dd3fc", "
 
 
 func draw_projectiles() -> void:
+	_lit_shots.clear()
 	var vr := _view_rect().grow(30)
 	var k := clampf(tick_alpha, 0, 1.2) * snap_dt
 	var lan := remote_interp and not _ha.is_empty()
@@ -910,7 +1119,10 @@ func draw_projectiles() -> void:
 			"needle", "thorn": r = 4.0
 		var back := at - Vector2(p.vx, p.vy).normalized() * r * 2.2
 		streak(back, at, r * 1.2, Color(col.r, col.g, col.b, 0.45))
-		glow(at, r * 2.2, Color(col.r, col.g, col.b, 0.35))
+		if fancy:
+			_lit_shots.append([at, col, r])
+		else:
+			glow(at, r * 2.2, Color(col.r, col.g, col.b, 0.35))
 		if p.kind == "bubble":
 			disc(at, r, Color(0.58, 0.77, 0.99, 0.4))
 			ellipse_line(at, r, r, Color.WHITE, 1.4)
@@ -933,15 +1145,31 @@ func ring(pos: Vector2, r: float, col: Color, w := 4.0, life := 0.4) -> void:
 	_fx.append({"kind": "ring", "p": pos, "r": r, "col": col, "w": w, "life": life, "max": life})
 
 
-func burst(pos: Vector2, cols: Array, n: int, speed: float) -> void:
+## Bits flying out from a spot. `lit` ones glow a little (sparks; not dirt or dust).
+func burst(pos: Vector2, cols: Array, n: int, speed: float, lit := true) -> void:
 	for i in n:
 		var ang := randf() * TAU
 		var sp := speed * (0.4 + randf() * 0.6)
-		_parts.append({"p": pos, "v": Vector2(cos(ang), sin(ang)) * sp, "life": 0.6, "max": 0.6, "size": 3.0 + randf() * 2.5, "col": Color(cols[randi() % cols.size()]), "g": 200.0})
+		_parts.append({"p": pos, "v": Vector2(cos(ang), sin(ang)) * sp, "life": 0.6, "max": 0.6, "size": 3.0 + randf() * 2.5, "col": Color(cols[randi() % cols.size()]), "g": 200.0, "lit": lit})
 
 
-func float_text(pos: Vector2, s: String, col: Color, size := 16, life := 1.0) -> void:
-	_floats.append({"p": pos, "s": s, "col": col, "size": size, "life": life, "max": life})
+## A pest popping: a soft cloud of puffs and a few twinkling stars
+func poof(pos: Vector2, R: float, big: bool) -> void:
+	var n := 9 if big else 5
+	for i in n:
+		var ang := TAU * i / n + randf() * 0.6
+		var d := Vector2(cos(ang), sin(ang) * 0.6)
+		_parts.append({"p": pos + d * R * 0.35, "v": d * (40.0 + randf() * 50.0) * (1.6 if big else 1.0) + Vector2(0, -25), "drag": 3.0, "g": -30.0,
+			"life": 0.55, "max": 0.55, "size": R * 0.45, "grow": R * (0.9 if big else 0.7), "col": Color(1, 1, 1, 0.7)})
+	for i in (6 if big else 3):
+		var ang := randf() * TAU
+		_parts.append({"p": pos + Vector2(cos(ang), sin(ang)) * R * 0.5, "v": Vector2(cos(ang), sin(ang) - 0.8) * (60.0 + randf() * 60.0), "drag": 2.0, "g": 40.0,
+			"life": 0.6, "max": 0.6, "size": 5.0 + randf() * 3.0, "star": true, "col": Color("fef9c3")})
+
+
+## Words and numbers that pop up, rise quickly, slow down and fade
+func float_text(pos: Vector2, s: String, col: Color, size := 16, life := 1.0, drift := 0.0) -> void:
+	_floats.append({"p": pos, "s": s, "col": col, "size": size, "life": life, "max": life, "v": Vector2(drift, -34.0 / life - 62.0)})
 
 
 func on_event(e: Dictionary) -> void:
@@ -986,7 +1214,7 @@ func on_event(e: Dictionary) -> void:
 			ring(pos, float(e.get("r", 170)), Color("a3e635"), 8, 0.5)
 			ring(pos, float(e.get("r", 170)) * 0.6, Color("65a30d"), 5, 0.4)
 			shake = maxf(shake, 7)
-			burst(pos + Vector2(0, 20), ["a16207", "78350f", "65a30d"], 18, 200)
+			burst(pos + Vector2(0, 20), ["a16207", "78350f", "65a30d"], 18, 200, false)
 		"gust":
 			var gr := float(e.get("radius", 170))
 			ring(pos, gr, Color(0.9, 0.97, 1.0, 0.9), 6, 0.45)
@@ -1013,6 +1241,8 @@ func on_event(e: Dictionary) -> void:
 					"face": int(an.get("face", 1)), "frame": int(fposmod(float(an.get("phase", 0.0)), 1.0) * 8) % 8, "life": 0.2, "max": 0.2})
 			burst(pos, [e.get("color", "#a3e635"), "#ffffff"], 40 if e.boss else 12, 260 if e.boss else 130)
 			ring(pos, 110 if e.boss else 26, Color.WHITE, 3, 0.25)
+			if not e.get("structure", false):
+				poof(pos, float(GameData.ENEMIES.get(String(e.get("kind", "")), {}).get("radius", 16)), bool(e.boss))
 			if e.boss:
 				shake = maxf(shake, 12)
 		"sun_collected":
@@ -1021,7 +1251,7 @@ func on_event(e: Dictionary) -> void:
 		"dmg":
 			if dmg_mode == "off" or (dmg_mode == "big" and not e.get("crit", false) and float(e.amount) < 200):
 				return
-			float_text(pos + Vector2((randf() - 0.5) * 14, 0), ("%d!" % int(e.amount)) if e.crit else str(int(e.amount)), Color("fde047") if e.crit else Color.WHITE, 18 if e.crit else 12, 0.7)
+			float_text(pos + Vector2((randf() - 0.5) * 14, 0), ("%d!" % int(e.amount)) if e.crit else str(int(e.amount)), Color("fde047") if e.crit else Color.WHITE, 18 if e.crit else 12, 0.7, (randf() - 0.5) * 70)
 		"level_up":
 			_fx.append({"kind": "pillar", "p": pos, "col": Color("fde047"), "life": 1.0, "max": 1.0})
 			float_text(pos - Vector2(0, 70), "LEVEL %d!" % int(e.level), Color("fde047"), 22, 1.4)
@@ -1050,6 +1280,11 @@ func on_event(e: Dictionary) -> void:
 			burst(pos, perk_cols, 16, 150)
 			if String(e.get("perk", "")) in ["snapdragon", "bubblelily", "voltcactus", "boomshroom"]:
 				ring(pos, 110 if e.perk != "boomshroom" else 80, Color(perk_cols[0]), 4, 0.35)
+		"spring":
+			# the Spring Vine flings a hero down the lane
+			burst(pos, ["86efac", "4ade80", "bbf7d0"], 14, 170)
+			ring(pos, 60, Color("86efac"), 4, 0.35)
+			float_text(pos - Vector2(0, 50), "BOING!", Color("bbf7d0"), 16, 0.9)
 		"lily_wave", "tidal":
 			ring(pos, e.get("range", e.get("r", 200)), Color("3b82f6"), 12, 0.5)
 		"bubble_pop":
@@ -1102,7 +1337,7 @@ func on_event(e: Dictionary) -> void:
 					Audio.play_sfx("thunder", 0.0, 0.03, 300)
 				"leafpile":
 					ring(pos, e.r, Color("fb923c"), 4, 0.5)
-					burst(pos, ["ea580c", "f59e0b", "b45309", "dc2626"], 30, 200)
+					burst(pos, ["ea580c", "f59e0b", "b45309", "dc2626"], 30, 200, false)
 					Audio.play_sfx("sleep_dust", -3.0, 0.05, 200)
 				"geyser":
 					ring(pos, e.r, Color("bae6fd"), 6, 0.5)
@@ -1124,7 +1359,7 @@ func on_event(e: Dictionary) -> void:
 		"summon":
 			ring(pos, 60, Color("a78bfa"), 4, 0.4)
 		"mole_up":
-			burst(pos, ["8a5a1e", "a16207", "facc15"], 10, 120)
+			burst(pos, ["8a5a1e", "a16207", "facc15"], 10, 120, false)
 		"emote":
 			var em := {}
 			for x in GameData.cosmetics.emotes:
@@ -1152,7 +1387,7 @@ func on_event(e: Dictionary) -> void:
 			_fx.append({"kind": "warn", "p": pos, "r": e.r, "col": Color("f87171"), "life": e.delay, "max": e.delay})
 		"slam":
 			ring(pos, e.r, Color("fb923c"), 8, 0.45)
-			burst(pos, ["a16207", "78350f", "fde68a"], 24, 220)
+			burst(pos, ["a16207", "78350f", "fde68a"], 24, 220, false)
 			shake = maxf(shake, 7)
 		"volley_warn":
 			_fx.append({"kind": "beam", "a": pos, "b": Vector2(e.tx, e.ty), "col": Color("f87171"), "life": 0.35, "max": 0.35})
@@ -1161,7 +1396,7 @@ func on_event(e: Dictionary) -> void:
 		"rival_swipe":
 			_fx.append({"kind": "swipe", "p": pos, "a": atan2(float(e.ty) - pos.y, float(e.tx) - pos.x), "col": Color("fde68a"), "life": 0.22, "max": 0.22})
 		"hero_down":
-			burst(pos, ["9ca3af", "e5e7eb", "ffffff"], 24, 200)
+			burst(pos, ["9ca3af", "e5e7eb", "ffffff"], 24, 200, false)
 			float_text(pos - Vector2(0, 70), "Knocked out!", Color("fca5a5"), 18, 1.4)
 		"revive":
 			_fx.append({"kind": "pillar", "p": pos, "col": Color("86efac"), "life": 0.9, "max": 0.9})
@@ -1359,7 +1594,8 @@ func _update_fx(dt: float) -> void:
 	_parts = _parts.filter(func(p): return p.life > 0)
 	for f in _floats:
 		f.life -= dt
-		f.p.y -= 30 * dt
+		f.p += f.v * dt
+		f.v *= maxf(0.0, 1.0 - 3.0 * dt)
 	_floats = _floats.filter(func(f): return f.life > 0)
 	if _parts.size() > 900:
 		_parts = _parts.slice(_parts.size() - 900)
@@ -1378,7 +1614,7 @@ func draw_fx() -> void:
 				draw_arc(f.p, r, 0, TAU, 48, c, f.w * (1 - k) + 1, true)
 			"flash":
 				var c: Color = f.col
-				c.a = 0.7 * (1 - k)
+				c.a = (0.35 if fancy else 0.7) * (1 - k)
 				glow(f.p, f.r * 1.15, c)
 			"bolt":
 				var c: Color = f.col
@@ -1400,9 +1636,10 @@ func draw_fx() -> void:
 				draw_line(f.a, f.b, Color(c.r, c.g, c.b, c.a * 0.4), 16 * (1 - k * 0.5), true)
 				draw_line(f.a, f.b, Color(1, 1, 1, c.a), 3, true)
 			"pillar":
-				var c: Color = f.col
-				c.a = 0.35 * (1 - k)
-				draw_rect(Rect2(f.p.x - 22, f.p.y - 200 * (0.4 + k), 44, 200 * (0.4 + k) + 20), c)
+				if not fancy:  # (Fancy draws it as a column of light instead)
+					var c: Color = f.col
+					c.a = 0.35 * (1 - k)
+					draw_rect(Rect2(f.p.x - 22, f.p.y - 200 * (0.4 + k), 44, 200 * (0.4 + k) + 20), c)
 			"swipe":
 				var c: Color = f.col
 				c.a = 1 - k
@@ -1419,8 +1656,16 @@ func draw_fx() -> void:
 	for p in _parts:
 		if vr.has_point(p.p):
 			var c: Color = p.col
-			c.a = clampf(p.life / p.max, 0, 1)
-			disc(p.p, p.size * (0.5 + 0.5 * c.a), c)
+			var left := clampf(p.life / p.max, 0, 1)
+			if p.has("grow"):
+				# a puff of smoke: swells and fades
+				c.a *= left * left
+				glow(p.p, p.size + p.grow * (1.0 - left), c)
+			elif p.has("star"):
+				continue  # (drawn with the light)
+			else:
+				c.a = left
+				disc(p.p, p.size * (0.5 + 0.5 * left), c)
 	_defer_text = true
 	for f in _floats:
 		if vr.has_point(f.p):
@@ -1430,6 +1675,133 @@ func draw_fx() -> void:
 			var pop := 1.0 + 0.35 * clampf((f.life / f.max - 0.8) / 0.2, 0, 1)
 			text(f.p, f.s, int(f.size * pop), c, 4)
 	_flush_text()
+
+
+# ---------------------------------------------------------------------------
+# Light (Graphics: Fancy). Drawn on the LightLayer with additive blending, so
+# shots, sparks, magic and fireflies really glow.
+# ---------------------------------------------------------------------------
+const MUZZLE := {"sentry": "bef264", "mortar": "fdba74", "zap": "d8b4fe", "fern": "bae6fd", "pot": "fde68a", "sap": "fbbf24", "gust": "e0f2fe"}
+
+
+func _lglow(ci: CanvasItem, c: Vector2, r: float, col: Color) -> void:
+	var h := r * 32.0 / 31.0
+	ci.draw_texture_rect_region(_shapes, Rect2(c.x - h, c.y - h, h * 2, h * 2), SH_SOFT, col)
+
+
+## A soft glowing bar from a to b (beams, lightning)
+func _lbeam(ci: CanvasItem, a: Vector2, b: Vector2, w: float, col: Color) -> void:
+	var d := b - a
+	ci.draw_set_transform((a + b) / 2, d.angle(), Vector2.ONE)
+	ci.draw_texture_rect_region(_shapes, Rect2(-(d.length() + w) / 2, -w / 2, d.length() + w, w), SH_SOFT, col)
+	ci.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+
+## A four-pointed twinkle
+func _lstar(ci: CanvasItem, c: Vector2, r: float, col: Color) -> void:
+	for d in [Vector2(r, 0), Vector2(0, r)]:
+		ci.draw_set_transform(c, d.angle(), Vector2.ONE)
+		ci.draw_texture_rect_region(_shapes, Rect2(-r, -r * 0.16, r * 2, r * 0.32), SH_DISC, col)
+	ci.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	_lglow(ci, c, r * 0.9, Color(col.r, col.g, col.b, col.a * 0.5))
+
+
+func draw_lights(ci: CanvasItem) -> void:
+	if snap.is_empty():
+		return
+	var t0 := Time.get_ticks_usec()
+	var vr := _view_rect()
+	# the Bloom Tree's soft magic
+	if not snap.has("clash"):
+		var sc: Vector2 = GameData.sanctuary(_map_id)
+		var k := clampf(float(snap.get("lives", 1)) / maxf(1.0, float(snap.get("maxLives", 1))), 0, 1)
+		_lglow(ci, sc - Vector2(0, 95), 120 + sin(time * 1.3) * 8, Color(1.0, 0.75, 0.88, (0.07 + 0.05 * k) * (1.0 + 0.25 * sin(time * 1.3))))
+	for s in _lit_shots:
+		var col: Color = s[1]
+		_lglow(ci, s[0], s[2] * 3.4, Color(col.r, col.g, col.b, 0.42))
+	for w in snap.get("wisps", []):
+		_lglow(ci, pos_of(w.id, Vector2(w.x, w.y)), 24, Color(1, 0.55, 0.15, 0.45))
+	# towers light up as they fire
+	for g in snap.get("gadgets", []):
+		var an: Dictionary = _anim.get("g%d" % g.id, {})
+		var fk := (time - float(an.get("fire", -9.0))) / 0.2
+		if fk < 1.0 and MUZZLE.has(g.kind):
+			var mc := Color(MUZZLE[g.kind])
+			var ang: float = g.angle
+			var mp := Vector2(g.x, g.y - 34) + (Vector2(cos(ang), sin(ang) * 0.6) * 16 if g.kind in ["sentry", "mortar"] else Vector2.ZERO)
+			_lglow(ci, mp, 34 * (1.0 - fk * 0.5), Color(mc.r, mc.g, mc.b, 0.7 * (1.0 - fk)))
+	# pests on fire, raging or sunlit
+	for e in snap.get("enemies", []):
+		if not (e.burning or e.get("enraged", false) or e.get("sunlit", false)):
+			continue
+		var p := pos_of(e.id, Vector2(e.x, e.y))
+		if not vr.has_point(p):
+			continue
+		var R: float = float(GameData.ENEMIES.get(e.type, {}).get("radius", 16)) * (1.35 if e.big else 1.0)
+		var flick := 0.8 + 0.2 * sin(time * 17 + p.x)
+		if e.burning:
+			_lglow(ci, p - Vector2(0, R * 0.5), R * 1.7, Color(1.0, 0.5, 0.15, 0.3 * flick))
+		elif e.get("enraged", false):
+			_lglow(ci, p - Vector2(0, R * 0.4), R * 1.8, Color(1.0, 0.2, 0.15, 0.22 * flick))
+		else:
+			_lglow(ci, p - Vector2(0, R * 0.4), R * 1.6, Color(1.0, 0.85, 0.3, 0.14))
+	# Sun orbs, power-ups and chests: a warm pulse
+	for s in snap.get("suns", []):
+		_lglow(ci, Vector2(s.x, s.y - 12 + sin(time * 3 + s.x) * 3), 48 + sin(time * 4 + s.x) * 5, Color(1.0, 0.8, 0.3, 0.34))
+	for pu in snap.get("powerups", []):
+		_lglow(ci, Vector2(pu.x, pu.y - 16 + sin(time * 4) * 4), 42 + sin(time * 5) * 6, Color(0.95, 0.85, 0.45, 0.3))
+	for c in snap.get("chests", []):
+		_lglow(ci, Vector2(c.x, c.y - 14), 54 if c.big else 40, Color(1.0, 0.8, 0.35, 0.2 + 0.08 * sin(time * 3)))
+	# effects
+	for f in _fx:
+		var k: float = 1.0 - f.life / f.max
+		match f.kind:
+			"flash":
+				var c: Color = f.col
+				_lglow(ci, f.p, f.r * (0.85 + 0.35 * k), Color(c.r, c.g, c.b, 0.45 * (1 - k)))
+			"pillar":
+				# a column of light that rises and fades
+				var c: Color = f.col
+				var a := (1.0 - k) * minf(1.0, k * 8.0 + 0.25)
+				var hgt := 230.0 * (0.55 + 0.45 * k)
+				ci.draw_texture_rect_region(_shapes, Rect2(f.p.x - 46, f.p.y - hgt * 1.1, 92, hgt * 1.4), SH_SOFT, Color(c.r, c.g, c.b, 0.55 * a))
+				ci.draw_texture_rect_region(_shapes, Rect2(f.p.x - 14, f.p.y - hgt * 1.25, 28, hgt * 1.5), SH_SOFT, Color(1, 1, 1, 0.5 * a))
+				_lglow(ci, f.p, 60, Color(c.r, c.g, c.b, 0.5 * a))
+			"bolt":
+				var c: Color = f.col
+				for i in f.pts.size() - 1:
+					_lbeam(ci, f.pts[i], f.pts[i + 1], 30, Color(c.r, c.g, c.b, 0.55 * (1 - k)))
+			"beam":
+				var c: Color = f.col
+				_lbeam(ci, f.a, f.b, 34 * (1 - k * 0.5), Color(c.r, c.g, c.b, 0.5 * (1 - k)))
+			"ring":
+				if f.w >= 6:  # big blasts: a soft glow fills the ring for a moment
+					var c: Color = f.col
+					_lglow(ci, f.p, f.r * 0.8 * (0.3 + 0.7 * k), Color(c.r, c.g, c.b, 0.25 * (1 - k) * (1 - k)))
+	for p in _parts:
+		if not vr.has_point(p.p):
+			continue
+		var left := clampf(p.life / p.max, 0, 1)
+		if p.has("star"):
+			var tw := 0.6 + 0.4 * sin(time * 30 + p.p.x)
+			_lstar(ci, p.p, p.size * (0.4 + 0.6 * left) * tw, Color(p.col.r, p.col.g, p.col.b, left))
+		elif p.get("lit", false):
+			_lglow(ci, p.p, p.size * 3.2, Color(p.col.r, p.col.g, p.col.b, 0.2 * left))
+	# ambient life
+	match _amb_kind:
+		"firefly":
+			for a in _amb:
+				var blink := 0.5 + 0.5 * sin(a.ph * 3.0 + a.rot * 5)
+				_lglow(ci, a.p, 16 * a.s, Color(0.75, 1.0, 0.35, 0.45 * blink))
+		"pollen":
+			for a in _amb:
+				_lglow(ci, a.p, 7 * a.s, Color(1.0, 0.92, 0.5, 0.16))
+		"sparkle":
+			for a in _amb:
+				var k: float = clampf(a.life, 0, 1) * clampf(3.0 - a.life, 0, 1)
+				if k > 0.05:
+					_lstar(ci, a.p, 6.0 * a.s * k, Color(0.85, 0.95, 1.0, 0.7 * k))
+	PerfStats.add("light draw", Time.get_ticks_usec() - t0)
 
 
 # ---------------------------------------------------------------------------
@@ -1517,6 +1889,13 @@ func draw_ally(u: Dictionary) -> void:
 	Sprites.draw_frame(self, Sprites.tex(entry.file), entry, frame, feet, a.face < 0, S, Color(1.7, 1.7, 1.7) if u.get("flash", false) else Color.WHITE, Sprites.scale)
 	if u.hp < u.maxHp:
 		bar(Vector2(p.x, feet.y - R * 2.1 - 6), maxf(22.0, R * 1.7), 4, float(u.hp) / float(u.maxHp), Color("38bdf8"))
+	if u.has("cap"):
+		# a Captain: a little banner on a pole, and its name
+		var top := feet + Vector2(-R * 0.9, -R * 2.6 - 18)
+		draw_line(feet + Vector2(-R * 0.9, -R * 0.4), top, Color("78350f"), 2.5)
+		var wave_k := sin(time * 6.0 + u.id) * 3.0
+		draw_colored_polygon(PackedVector2Array([top, top + Vector2(20, 5 + wave_k * 0.3), top + Vector2(0, 12)]), Color("fde047"))
+		text(feet + Vector2(0, -R * 2.6 - 28), "🚩 " + String(u.cap), 12, Color("fef9c3"), 3)
 
 
 func draw_knocked_out(h: Dictionary, p: Vector2) -> void:
@@ -1530,6 +1909,120 @@ func draw_knocked_out(h: Dictionary, p: Vector2) -> void:
 	if rv > 0:
 		draw_arc(p - Vector2(0, 20), 40, -PI / 2, -PI / 2 + TAU * rv, 40, Color("86efac"), 6, true)
 	text(Vector2(p.x, p.y - 70), "💫 %ds" % ceili(float(h.get("respawnT", 0))), 16, Color.WHITE, 4)
+
+
+## Garden Plots: a patch of soil by each lane. Stand on an empty one to claim it,
+## then grow a Berry Bush (heals friends close by) or a Spring Vine (a leap down the lane).
+func draw_plots(clash: Dictionary) -> void:
+	for pl in clash.get("plots", []):
+		var c := Vector2(pl.x, pl.y)
+		if not _view_rect().grow(300).has_point(c):
+			continue
+		var st := String(pl.state)
+		var lost: float = pl.get("lost", 0.0)
+		ellipse(c + Vector2(0, 4), 50, 24, Color(0.36, 0.22, 0.1, 0.85))
+		ellipse(c + Vector2(0, 2), 42, 19, Color(0.48, 0.3, 0.14, 0.95))
+		for i in 3:
+			draw_line(c + Vector2(-28 + i * 6, -6 + i * 6), c + Vector2(28 + i * 6 - 12, -6 + i * 6), Color(0.33, 0.2, 0.09, 0.8), 2.0)
+		match st:
+			"empty":
+				# a little sign; a ring fills up while someone claims it
+				draw_line(c + Vector2(30, 8), c + Vector2(30, -30), Color("78350f"), 3)
+				draw_rect(Rect2(c + Vector2(16, -44), Vector2(30, 18)), Color("a16207"))
+				text(c + Vector2(31, -30), "🌱", 12, Color.WHITE, 0)
+				if float(pl.claim) > 0.01:
+					draw_arc(c, 56, -PI / 2, -PI / 2 + TAU * float(pl.claim), 40, Color("86efac"), 5, true)
+					text(c + Vector2(0, 46), "Claiming…", 13, Color("bbf7d0"), 3)
+			"ready":
+				var pulse := 0.5 + 0.5 * sin(time * 5.0)
+				draw_arc(c, 56, 0, TAU, 40, Color(0.99, 0.88, 0.28, 0.5 + 0.5 * pulse), 4, true)
+				for i in 5:
+					var a := time * 1.5 + TAU * i / 5.0
+					disc(c + Vector2(cos(a) * 30, sin(a) * 12 - 6), 3, Color(1, 1, 0.7, 0.8))
+				text(c + Vector2(0, 46), "Grow: 1 🫐 Berry · 2 🌱 Vine", 13, Color("fde68a"), 3)
+			"berry":
+				ellipse_line(c, BERRY_R, BERRY_R, Color(0.75, 0.4, 0.95, 0.3), 2.0)
+				for b in [[-14, -14, 16], [12, -16, 15], [0, -28, 15], [-4, -8, 14]]:
+					disc(c + Vector2(b[0], b[1]), b[2], Color("15803d"))
+				for b in [[-14, -14, 12], [12, -16, 11], [0, -28, 11]]:
+					disc(c + Vector2(b[0] - 2, b[1] - 3), b[2] * 0.7, Color("22c55e"))
+				for b in [[-18, -16], [-8, -22], [6, -26], [14, -12], [2, -10], [-12, -6], [18, -20]]:
+					disc(c + Vector2(b[0], b[1]), 3.6, Color("a855f7"))
+			"vine":
+				# a coiled spring of vine with leaves
+				for i in 4:
+					draw_arc(c + Vector2(0, -6 - i * 9), 16 - i * 2, 0, TAU, 20, Color("16a34a"), 4, true)
+				disc(c + Vector2(-14, -40), 6, Color("4ade80"))
+				disc(c + Vector2(13, -44), 6, Color("4ade80"))
+				text(c + Vector2(0, 46), "Spring Vine: step on it!", 12, Color("bbf7d0"), 3)
+		if lost > 0.01:
+			draw_arc(c, 62, -PI / 2, -PI / 2 + TAU * lost, 40, Color("f87171"), 4, true)
+			text(c + Vector2(0, 64), "Pests are trampling it!", 12, Color("fca5a5"), 3)
+
+
+const BERRY_R := 230.0
+
+
+## A Sproutling Captain's rally flag: Sproutlings close by hit harder and take less damage
+func draw_flags(clash: Dictionary) -> void:
+	for f in clash.get("flags", []):
+		var c := Vector2(f.x, f.y)
+		var k := clampf(float(f.t) / 20.0, 0.0, 1.0)
+		ellipse_line(c, 280, 280, Color(0.99, 0.88, 0.28, 0.25 + 0.15 * sin(time * 4.0)), 2.0)
+		draw_line(c + Vector2(0, 10), c + Vector2(0, -70), Color("78350f"), 4)
+		var w := sin(time * 5.0) * 4.0
+		draw_colored_polygon(PackedVector2Array([c + Vector2(0, -70), c + Vector2(34, -60 + w * 0.4), c + Vector2(0, -48)]), Color(0.99, 0.88, 0.28, 0.6 + 0.4 * k))
+		text(c + Vector2(0, -80), "🚩 %s's rally flag" % String(f.name), 12, Color("fef9c3"), 3)
+
+
+## A Rival Raid: the tower they're coming for pulses red, and the raiders wear a red ring
+func _draw_raid(clash: Dictionary) -> void:
+	var r: Dictionary = clash.get("raid", {})
+	if r.is_empty():
+		return
+	var c := Vector2(r.x, r.y)
+	var pulse := 0.5 + 0.5 * sin(time * 7.0)
+	ellipse_line(c, 120 + pulse * 10, 60 + pulse * 5, Color(0.97, 0.3, 0.3, 0.5 + 0.4 * pulse), 4.0)
+	text(c + Vector2(0, 60), ("⚔️ RAID in %ds!" % int(r.t)) if r.phase == "warn" else "⚔️ RAID!", 16, Color("fecaca"), 4)
+	for e in snap.get("enemies", []):
+		if e.get("raiding", false):
+			var p := pos_of(e.id, Vector2(e.x, e.y))
+			ellipse_line(p + Vector2(0, 18), 34, 14, Color(0.97, 0.3, 0.3, 0.8), 3.0)
+
+
+## A Thorn Tower locked on a hero: a line from the tower, and 1, 2, then 3
+## warning thorns over the hero (each shot in a row hurts more)
+func _draw_tower_locks() -> void:
+	for e in snap.get("enemies", []):
+		var lock := int(e.get("lock", -1))
+		if lock < 0:
+			continue
+		var hero := {}
+		for h in snap.get("heroes", []):
+			if int(h.id) == lock and not h.get("dead", false):
+				hero = h
+		if hero.is_empty():
+			continue
+		var hp: Vector2 = _me() if hero.owner == my_owner and my_pos != null else pos_of(hero.id, Vector2(hero.x, hero.y))
+		var from := Vector2(e.x, e.y - (50 if e.get("core", false) else 52))
+		var n := mini(int(e.get("streak", 0)) + 1, 3)
+		var pulse := 0.5 + 0.5 * sin(time * (8.0 + n * 3.0))
+		var col := Color(0.97, 0.25 + 0.1 * (3 - n), 0.35, 0.55 + 0.35 * pulse)
+		# a dashed line, marching toward the hero
+		var d := hp - Vector2(0, 30) - from
+		var L := d.length()
+		var step := 22.0
+		var off := fmod(time * 60.0, step)
+		var i := off
+		while i < L - 8:
+			draw_line(from + d / L * i, from + d / L * minf(i + 11, L), col, 3.5)
+			i += step
+		var top := hp + Vector2(0, -92)
+		for k in n:
+			var x := (k - (n - 1) / 2.0) * 16.0
+			draw_colored_polygon(PackedVector2Array([top + Vector2(x - 6, 6), top + Vector2(x + 6, 6), top + Vector2(x, -10)]), Color(0.97, 0.3, 0.4, 0.75 + 0.25 * pulse))
+		if n >= 3 and hero.owner == my_owner:
+			text(top + Vector2(0, -16), "Step back!", 14, Color("fecaca"), 4)
 
 
 func draw_camps(clash: Dictionary) -> void:
@@ -1580,6 +2073,11 @@ func _draw_tower_help() -> void:
 		if Vector2(g.x, g.y).distance_to(mouse) < 34:
 			var col: Color = GameData.player_color(g.slot)
 			draw_arc(Vector2(g.x, g.y), _tower_range(g), 0, TAU, 64, Color(col.r, col.g, col.b, 0.7), 2, true)
+		if int(g.id) == picked_tower:
+			var gp := Vector2(g.x, g.y)
+			disc(gp, _tower_range(g), Color(0.99, 0.88, 0.28, 0.07))
+			draw_arc(gp, _tower_range(g), 0, TAU, 64, Color(0.99, 0.88, 0.28, 0.65), 2, true)
+			draw_arc(gp + Vector2(0, 6), 34, 0, TAU, 32, Color(1, 1, 1, 0.6 + 0.4 * sin(time * 5.0)), 3, true)
 	if my_pos == null:
 		return
 	var near := {}
@@ -1702,8 +2200,46 @@ func _view_rect() -> Rect2:
 	return Rect2(camera.get_screen_center_position() - vp / 2, vp).grow(40)
 
 
+var _water: Image  # a small copy of the map, to find water (river sparkles twinkle on it)
+
+
+## A tenth-size copy of the map picture (null if it can't be read, e.g. no screen)
+static func _water_map(t: Texture2D) -> Image:
+	if t == null:
+		return null
+	var img := t.get_image()
+	if img == null or img.is_empty():
+		return null
+	if img.is_compressed() and img.decompress() != OK:
+		return null
+	img.resize(maxi(1, img.get_width() / 10), maxi(1, img.get_height() / 10), Image.INTERPOLATE_BILINEAR)
+	return img
+
+
+## Is there water here? (the same clearly-blue test as the ground shader)
+func _is_water(p: Vector2) -> bool:
+	if _water == null:
+		return true
+	var x := int(p.x / GameData.W * _water.get_width())
+	var y := int(p.y / GameData.H * _water.get_height())
+	if x < 0 or y < 0 or x >= _water.get_width() or y >= _water.get_height():
+		return false
+	var c := _water.get_pixel(x, y)
+	return c.b - c.r > 0.26 and c.r < 0.5 and c.b >= c.g - 0.01
+
+
 func _amb_new(kind: String, r: Rect2, anywhere: bool) -> Dictionary:
 	var p := Vector2(r.position.x + randf() * r.size.x, r.position.y + randf() * r.size.y)
+	if kind == "sparkle" and _water != null:
+		# glints on the water only (none showing if there's no water in view)
+		var found := false
+		for i in 8:
+			if _is_water(p):
+				found = true
+				break
+			p = Vector2(r.position.x + randf() * r.size.x, r.position.y + randf() * r.size.y)
+		if not found:
+			return {"p": p, "ph": 0.0, "s": 0.0, "rot": 0.0, "life": 0.0}
 	if not anywhere and kind in ["leaf", "snow", "petal"]:
 		p.y = r.position.y - randf() * 30
 	return {"p": p, "ph": randf() * TAU, "s": 0.6 + randf() * 0.8, "rot": randf() * TAU, "life": 1.0 + randf() * 2.0}
@@ -1758,9 +2294,12 @@ func _draw_ambient() -> void:
 				streak(a.p - d * 0.5, a.p + d * 0.5, 5 * a.s, Color(0.98, 0.66, 0.83, 0.85))
 			"firefly":
 				var blink := 0.5 + 0.5 * sin(a.ph * 3.0 + a.rot * 5)
-				glow(a.p, 9 * a.s, Color(0.85, 1.0, 0.45, 0.3 * blink))
+				if not fancy:
+					glow(a.p, 9 * a.s, Color(0.85, 1.0, 0.45, 0.3 * blink))
 				disc(a.p, 2.2 * a.s, Color(0.95, 1.0, 0.6, 0.9 * blink))
 			"sparkle":
+				if fancy:
+					continue  # (twinkles with the light)
 				var k: float = clampf(a.life, 0, 1) * clampf(3.0 - a.life, 0, 1)
 				var sz: float = 4.0 * a.s * k
 				seg(a.p - Vector2(sz, 0), a.p + Vector2(sz, 0), 1.5, Color(1, 1, 1, 0.8 * k))

@@ -25,6 +25,7 @@ func _initialize() -> void:
 	_lan_pause(world)
 	_spawn_and_facing(world)
 	_dash_and_pops(world)
+	await _graphics(world)
 	print("smooth tests: %s" % ("all passed" if fails == 0 else "%d FAILED" % fails))
 	quit(1 if fails else 0)
 
@@ -197,3 +198,54 @@ func _dash_and_pops(world: Node2D) -> void:
 	var ghosts: Array = world._fx.filter(func(f): return f.kind == "ghost")
 	check(ghosts.size() == 1 and ghosts[0].type == "sprout", "a defeated pest leaves a quick bright pop of its own picture")
 	check(is_zero_approx(world._ease_back(0.0)) and is_equal_approx(world._ease_back(1.0), 1.0) and world._ease_back(0.8) > 1.0, "towers spring up with a small overshoot")
+
+
+func _hero(id: int, owner: int, slot: int, x: float, y: float) -> Dictionary:
+	return {"id": id, "owner": owner, "slot": slot, "type": "peashooter", "x": x, "y": y, "tierA": 0, "tierB": 0, "level": 3, "recoil": 0.0,
+		"angle": 0.0, "buffs": {}, "rally": false, "dazed": false, "pending": 0, "range": 150.0, "hat": "none", "pet": "none"}
+
+
+## Pests pop in a puff of smoke, words rise and slow down, towers bounce when they
+## fire, heroes' name tags never pile up, and Graphics: Simple turns the extras off
+func _graphics(world: Node2D) -> void:
+	print("Puffs, rising words, firing towers, name tags, Graphics setting")
+	check(world._parts.any(func(p): return p.has("grow")) and world._parts.any(func(p): return p.has("star")), "a popped pest leaves a puff of smoke and a few twinkles")
+	world._floats.clear()
+	world.float_text(Vector2(0, 0), "12", Color.WHITE, 12, 1.0)
+	var ys: Array = [0.0]
+	for i in 36:
+		world._update_fx(1.0 / 60.0)
+		ys.append(world._floats[0].p.y)
+	var early: float = ys[0] - ys[6]
+	var late: float = ys[30] - ys[36]
+	check(early > 0 and early > late * 2.5, "pop-up words rise quickly, then slow down (%.1f px vs %.1f px)" % [early, late])
+
+	world.reset()
+	world.my_owner = 1  # the camera follows hero 1, so the tower next to it is on screen
+	var g := {"id": 70, "kind": "sentry", "x": 540.0, "y": 470.0, "slot": 0, "owner": 1, "level": 1, "branch": -1, "angle": 0.0, "asleep": false, "spent": 60, "shots": 0}
+	var two_heroes := [_hero(1, 1, 0, 600.0, 500.0), _hero(2, 2, 1, 604.0, 502.0)]
+	var players := [{"id": 1, "name": "Ana", "slot": 0}, {"id": 2, "name": "Ben", "slot": 1}]
+	world.push_snapshot(_snap(1.0, 900.0, {"gadgets": [g], "heroes": two_heroes, "players": players, "phase": "playing"}))
+	await process_frame
+	await process_frame
+	var g2 := g.duplicate()
+	g2.shots = 1
+	world.push_snapshot(_snap(1.05, 900.0, {"gadgets": [g2], "heroes": two_heroes, "players": players, "phase": "playing"}))
+	await process_frame
+	await process_frame
+	var an: Dictionary = world._anim.get("g70", {})
+	check(an.has("fire") and world.time - float(an.fire) < 0.2, "a tower that fires gets a bounce (and a flash of light)")
+	check(world._tags.size() == 2 and not (world._tags[0] as Rect2).intersects(world._tags[1]), "two heroes standing together get their name tags stacked, not piled up")
+	world.my_owner = -1
+	world.set_fancy(false)
+	check(not world.lights.visible and world.map_sprite.material == null, "Graphics: Simple turns off the light and the cloud & water shader")
+	world.set_fancy(true)
+	check(world.lights.visible and world.map_sprite.material is ShaderMaterial, "Graphics: Fancy turns them back on")
+	var hud = load("res://ui/hud.gd").new()
+	hud._frame_dt = 1.0 / 60.0
+	hud.eased("bar", 0.0)
+	var mid: float = hud.eased("bar", 1.0)
+	for i in 60:
+		hud.eased("bar", 1.0)
+	check(mid > 0.0 and mid < 0.5 and is_equal_approx(hud.eased("bar", 1.0), 1.0), "HUD bars glide to a new value instead of jumping (%.2f after one frame)" % mid)
+	hud.free()

@@ -41,7 +41,7 @@ const PRACTICE_STEPS := [
 	["wave", "▶ Start the wave: press Space"],
 	["card", "⭐ Level up! Pick a card: 1, 2 or 3"],
 	["special", "✨ Use your special near pests: press Q"],
-	["upgrade", "⬆ Stand next to your tower and press U to upgrade it"],
+	["upgrade", "⬆ Stand next to your tower and press U (or ⬆ in Your towers) to upgrade it"],
 	["finish", "🏁 Clear wave 3 to finish!"],
 ]
 var practice_done := {}  # step id -> true
@@ -101,6 +101,15 @@ func _ready() -> void:
 	add_child(menu_layer)
 	menu = Menu.new()
 	menu_layer.add_child(menu)
+	# a soft fade from dark whenever a game or the title screen starts
+	var fade_layer := CanvasLayer.new()
+	fade_layer.layer = 20
+	add_child(fade_layer)
+	_fade = ColorRect.new()
+	_fade.color = Color(0.02, 0.05, 0.03, 0.0)
+	_fade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_fade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	fade_layer.add_child(_fade)
 	couch = Couch.new()
 	couch.main = self
 	couch.p1_pad = bool(Profile.load_profile().get("padP1", false))
@@ -134,7 +143,23 @@ func _ready() -> void:
 		_perflog()
 
 
+var _fade: ColorRect
+var _fade_tw: Tween
+
+
+## Start from dark and fade the new scene in
+func fade_in(secs := 0.45) -> void:
+	if _fade == null:
+		return
+	if _fade_tw:
+		_fade_tw.kill()
+	_fade.color.a = 1.0
+	_fade_tw = create_tween()
+	_fade_tw.tween_property(_fade, "color:a", 0.0, secs).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+
+
 func show_menu() -> void:
+	fade_in(0.6)
 	_leave_game()
 	couch.reset()
 	couch.p1_pad = bool(Profile.load_profile().get("padP1", false))
@@ -245,7 +270,7 @@ func start_local(cfg: Dictionary, demo := false, lan_players: Array = []) -> voi
 	world.zoom = 1.0
 	world.reset()
 	last_cfg = cfg
-	host = GameHost.new(String(cfg.get("gameMode", "")) == "clash")
+	host = GameHost.new(GameData.clash_mode(cfg.get("gameMode", "")))
 	add_child(host)
 	host.snapshot_ready.connect(_on_snapshot)
 	my_id = 1
@@ -275,7 +300,7 @@ func start_local(cfg: Dictionary, demo := false, lan_players: Array = []) -> voi
 		net.attach_host(host)
 	_begin_play()
 	host.sim.mutators = {}
-	if String(cfg.get("gameMode", "")) != "clash" and not demo:
+	if not GameData.clash_mode(cfg.get("gameMode", "")) and not demo:
 		for m in cfg.get("mutators", []):
 			if GameData.MUTATORS.has(String(m)):
 				host.sim.mutators[String(m)] = true
@@ -319,6 +344,9 @@ func _begin_play() -> void:
 	for t in Profile.load_profile().get("guideSeen", []):
 		_seen_pests[String(t)] = true
 	hud.menu_open = false
+	hud.reset_anim()
+	_auto_key = ""
+	fade_in()
 	hud.new_unlocks = []
 	hud.next_challenge = ""
 	menu.hide_all()
@@ -332,9 +360,9 @@ func _begin_play() -> void:
 	world.my_owner = my_id
 	world.mute_audio = false
 	_tree_low_warned = false
-	var m_id := "valley" if String(last_cfg.get("gameMode", "")) == "clash" else String(last_cfg.get("map", "meadow"))
+	var m_id := "valley" if GameData.clash_mode(last_cfg.get("gameMode", "")) else String(last_cfg.get("map", "meadow"))
 	Audio.set_music_state("calm", m_id)
-	hud.banner("Defend the Bloom Tree!", "WASD or click to walk · Space starts a wave · Q special · Shift leaps")
+	hud.banner("Defend the Bloom Tree!", "WASD or click to walk · Space starts a wave · Q special · Shift leaps", Color("fde047"), 3.5, 0)
 	_tips_started_at = clock
 	if not args.has("warp"):
 		Audio.say("ann_welcome", -1, true)
@@ -418,7 +446,7 @@ func start_practice(cfg: Dictionary) -> void:
 		if not GameData.is_walkable(sim.map_id, spot.x, spot.y):
 			spot = Vector2(h.x - 130, h.y - 40)
 		sim.add_sun(spot.x, spot.y, 25)
-	hud.banner("🌱 Practice Garden", "Follow the steps in the top-left corner", Color("86efac"), 4.0)
+	hud.banner("🌱 Practice Garden", "Follow the steps in the top-left corner", Color("86efac"), 4.0, 0)
 	_update_practice()
 
 
@@ -440,7 +468,10 @@ func _update_practice() -> void:
 			n += 1
 	for st in PRACTICE_STEPS:
 		if not practice_done.has(st[0]):
-			hud.practice = {"text": st[1], "step": n + 1, "of": PRACTICE_STEPS.size()}
+			var text: String = st[1]
+			if st[0] == "card" and hud.auto_cards:
+				text = "⭐ Level up! Pick an evolution (A or B) on the left"
+			hud.practice = {"text": text, "step": n + 1, "of": PRACTICE_STEPS.size()}
 			return
 	hud.practice = {}
 
@@ -458,13 +489,13 @@ func _note_pests(s: Dictionary) -> void:
 		return
 	var d := Profile.load_profile()
 	var have: Array = Array(d.get("guideSeen", []))
-	var added := false
+	var added: Array = []
 	for t in fresh:
 		if not have.has(t):
 			have.append(t)
-			added = true
-			hud.feed("📖 New Garden Guide page: %s" % String(GameData.ENEMIES.get(t, {}).get("name", t)), Color("bbf7d0"))
-	if added:
+			added.append(String(GameData.ENEMIES.get(t, {}).get("name", t)))
+	if not added.is_empty():
+		hud.guide_pages(added)
 		Profile.set_value("guideSeen", have)
 
 
@@ -498,11 +529,15 @@ func resume_saved() -> void:
 	SaveGame.restore(host.sim, d)
 	host.sim.kid_assist = bool(Profile.load_profile().get("kidAssist", false))
 	host.resume()
-	hud.banner("Welcome back!", "%s · press Space when you're ready" % SaveGame.describe(d, GameData), Color("86efac"), 4.0)
+	hud.banner("Welcome back!", "%s · press Space when you're ready" % SaveGame.describe(d, GameData), Color("86efac"), 4.0, 0)
 
 
 func _pest_intro(w: int) -> void:
 	if snap.has("clash") or attract:
+		return
+	if String(snap.get("mode", "")) == "short":
+		if GameData.SHORT_INTRO.has(w):
+			hud.pest_card(String(GameData.SHORT_INTRO[w]))
 		return
 	if GameData.mini_boss_wave(w, bool(snap.get("endless", false))):
 		hud.pest_card("thorntoad")
@@ -567,6 +602,8 @@ func _unlock_from_event(e: Dictionary) -> void:
 			if String(e.get("kind", "")) == "rumbletoad":
 				_earn("pets", "froggy")
 		"hero_upgraded":
+			if int(e.get("owner", -1)) == my_id and hud.auto_cards and String(e.get("path", "")) == "":
+				hud.toast("⭐ Your hero got %s" % String(e.get("label", "")), Color("fde68a"), 2.2, 2)
 			if int(e.get("tier", 0)) >= 3:
 				var tw: Dictionary = GameData.TOWERS.get(String(e.get("hero", "")), {})
 				world.evolve_fx(Vector2(e.x, e.y), int(e.tier))
@@ -595,7 +632,11 @@ const DIFF_ORDER := ["easy", "normal", "hard", "nightmare"]
 
 func _next_cfg() -> Dictionary:
 	var c := last_cfg.duplicate()
-	if String(c.get("gameMode", "")) == "clash":
+	if practicing:
+		# after Practice: a whole game on the same friendly map, with a Bot Buddy to help
+		c.merge({"map": "meadow", "diff": "easy", "gameMode": "adventure", "bots": maxi(1, int(c.get("bots", 0))), "mutators": []}, true)
+		return c
+	if GameData.clash_mode(c.get("gameMode", "")):
 		var di := DIFF_ORDER.find(String(c.diff))
 		if di < 0 or di >= DIFF_ORDER.size() - 1:
 			return {}
@@ -682,7 +723,7 @@ func _my_event(e: Dictionary) -> void:
 			"wave_start":
 				_practice_step("wave")
 			"hero_upgraded":
-				if mine:
+				if mine and (String(e.get("path", "")) != "" or not hud.auto_cards):
 					_practice_step("card")
 			"special":
 				if mine:
@@ -693,7 +734,7 @@ func _my_event(e: Dictionary) -> void:
 			"victory":
 				_practice_step("finish")
 				Profile.set_value("practiceDone", true)
-				hud.banner("🎉 Practice complete!", "You're ready for a real game. Have fun!", Color("fde047"), 5.0)
+				hud.banner("🎉 Practice complete!", "You're ready for a real game. Have fun!", Color("fde047"), 5.0, 0)
 	match String(e.type):
 		"dash", "teleport":
 			if mine and my_pos != null:
@@ -724,7 +765,7 @@ func _my_event(e: Dictionary) -> void:
 			if String(e.get("twist", "")) != "":
 				tw = "🌀 " + String(GameData.TWISTS.get(e.twist, {}).get("name", ""))
 			var wn := int(e.wave)
-			hud.banner("Wave %d" % wn, tw if tw != "" else "Here they come!", Color("fde047"))
+			hud.banner("Wave %d" % wn, tw if tw != "" else "Here they come!", Color("fde047"), 2.0, 1 if tw != "" else 2)
 			_pest_intro(wn)
 			if not attract:
 				Audio.play_sfx("wave_start")
@@ -746,9 +787,14 @@ func _my_event(e: Dictionary) -> void:
 			if int(e.get("regrow", 0)) > 0:
 				sub += " · 🌳 +%d lives" % int(e.regrow)
 			if streak > 0:
-				hud.banner("✨ Perfect wave %d!%s" % [int(e.wave), ("  ×%d in a row" % streak) if streak > 1 else ""], sub, Color("fde047"))
+				hud.banner("✨ Perfect wave %d!%s" % [int(e.wave), ("  ×%d in a row" % streak) if streak > 1 else ""], sub, Color("fde047"), 2.2, 2 if streak < 3 else 1)
 			else:
-				hud.banner("Wave %d cleared!" % int(e.wave), sub, Color("86efac"))
+				hud.banner("Wave %d cleared!" % int(e.wave), sub, Color("86efac"), 2.0, 2)
+			var leaks: Array = e.get("leaks", [])
+			if not leaks.is_empty() and not attract:
+				var l: Dictionary = leaks[0]
+				var nm := String(GameData.ENEMIES.get(String(l.type), {}).get("name", l.type))
+				hud.toast("🍂 %d %s got through on %s" % [int(l.n), (nm + "s") if int(l.n) > 1 else nm, GameData.trail_name(String(snap.get("map", "")), int(l.path))], Color("fdba74"), 4.0)
 			if not attract:
 				Audio.play_sfx("wave_clear")
 				if int(e.wave) % 5 == 0:
@@ -763,47 +809,50 @@ func _my_event(e: Dictionary) -> void:
 				Audio.say("ann_sleep")
 		"gadget_fail":
 			if mine:
-				hud.toast(String(e.reason), Color("fca5a5"))
+				hud.toast(String(e.reason), Color("fca5a5"), 3.0, 0)
 				if not attract:
 					Audio.play_sfx("error")
 		"gadget_choose":
 			if mine:
 				var d: Dictionary = GameData.GADGETS[e.kind]
 				branch_arm_until = clock + 5.0
-				hud.toast("Pick a special power: U = %s %s, Y = %s %s" % [d.branches[0].icon, d.branches[0].name, d.branches[1].icon, d.branches[1].name], Color("fde047"), 5.0)
+				hud.toast("Pick a special power: U = %s %s, Y = %s %s" % [d.branches[0].icon, d.branches[0].name, d.branches[1].icon, d.branches[1].name], Color("fde047"), 5.0, 0)
 		"gadget_placed":
 			if mine:
-				hud.toast("%s built!" % GameData.GADGETS[e.kind].name, Color("86efac"), 2.0)
+				hud.toast("%s built!" % GameData.GADGETS[e.kind].name, Color("86efac"), 2.0, 2)
 		"gadget_upgraded":
 			if mine:
-				hud.toast("Upgraded to level %d %s" % [int(e.level), String(e.get("branchIcon", ""))], Color("fde047"), 2.5)
+				hud.toast("Upgraded to level %d %s" % [int(e.level), String(e.get("branchIcon", ""))], Color("fde047"), 2.5, 2)
 		"gadget_sold":
 			if mine:
-				hud.toast("Sold for %d acorns" % int(e.refund), Color("fcd34d"), 2.0)
+				hud.toast("Sold for %d acorns" % int(e.refund), Color("fcd34d"), 2.0, 2)
 		"eshop":
 			var what: String = {"life": "a Bloom Tree life 🌳", "overclock": "Overclock ⚡ (towers 25% faster for a minute)", "mystery": "a mystery power-up 🎁"}.get(String(e.item), "")
-			hud.toast("%s bought %s" % [e.name, what], Color("fde047"), 3.0)
+			hud.toast("%s bought %s" % [e.name, what], Color("fde047"), 3.0, 2)
 		"chest_drop":
 			_tip("chest", "🎁 A treasure chest! Walk over it: everyone gets a bonus.")
 		"level_up":
 			if mine:
-				hud.toast("Level %d! Pick a card with 1, 2 or 3" % int(e.level), Color("fde047"), 3.0)
-				_tip("cards", "⭐ Level-up cards make your hero stronger. Press 1, 2 or 3, or click one. C hides them for a moment.")
+				if not hud.auto_cards:
+					hud.toast("Level %d! Pick a card with 1, 2 or 3" % int(e.level), Color("fde047"), 3.0, 2)
+					_tip("cards", "⭐ Level-up cards make your hero stronger. Press 1, 2 or 3, or click one. C hides them for a moment.")
 				if not attract:
 					Audio.say_hero(String(_my_hero().get("type", "")), "level", my_id)
 		"combo":
-			hud.banner(String(e.get("name", "TEAM COMBO!")), String(e.get("desc", "")), Color("f0abfc"), 2.4)
+			hud.banner(String(e.get("name", "TEAM COMBO!")), String(e.get("desc", "")), Color("f0abfc"), 2.2)
 		"chest_open":
 			if int(e.get("bonus", 0)) > 0:
 				hud.toast("🎁 %s opened a chest: +%d card%s for everyone!" % [e.name, int(e.bonus), "s" if int(e.bonus) > 1 else ""], Color("fde047"), 3.0)
 			else:
 				hud.toast("🎁 %s opened a chest: +%d XP and +%d acorns for everyone!" % [e.name, int(e.xp), int(e.acorns)], Color("fde047"), 3.0)
 		"boss_enrage":
-			hud.banner("👑 %s is ENRAGED!" % e.get("name", "The boss"), "Faster, and it calls helpers more often. Focus fire!", Color("f87171"), 3.0)
+			hud.banner("👑 %s is ENRAGED!" % e.get("name", "The boss"), "Faster, and it calls helpers more often. Focus fire!", Color("f87171"), 3.0, 0)
 		"victory", "game_over":
 			if e.type == "victory" and host and not attract:
 				var nc := _next_cfg()
-				if not nc.is_empty():
+				if practicing:
+					hud.next_challenge = "▶ Play Sunny Meadow"
+				elif not nc.is_empty():
 					var label := "Next: %s →" % String(GameData.maps.maps.get(nc.map, {}).get("name", nc.map)) if nc.get("map", "") != last_cfg.get("map", "") else "Next: %s →" % String(GameData.DIFFICULTIES.get(nc.diff, {}).get("short", nc.diff))
 					hud.next_challenge = label
 			if host and not attract:
@@ -814,7 +863,7 @@ func _my_event(e: Dictionary) -> void:
 				Audio.say("ann_victory" if e.type == "victory" else "ann_gameover", -1, true)
 		# --- Garden Clash
 		"clash_start":
-			hud.banner("⚔️ Garden Clash!", "Push the lanes with your Sproutlings and smash the Thorn Heart!", Color("f0abfc"), 4.0)
+			hud.banner("⚔️ Garden Clash!", "Push the lanes with your Sproutlings and smash the Thorn Heart!", Color("f0abfc"), 4.0, 0)
 			if not attract:
 				Audio.play_sfx("wave_start")
 				Audio.say("ann_welcome", -1, true)
@@ -826,11 +875,17 @@ func _my_event(e: Dictionary) -> void:
 		"struct_down":
 			var foe: bool = e.team == "foe"
 			if e.get("core", false):
-				hud.banner("💜 The Thorn Heart is broken!", "", Color("f0abfc"))
+				hud.banner("💜 The Thorn Heart is broken!", "", Color("f0abfc"), 2.6, 0)
 			else:
 				hud.feed(("💥 %s smashed%s!" if foe else "😢 Our %s fell!") % ([e.name, (" by " + String(e.by)) if String(e.get("by", "")) != "" else ""] if foe else [e.name]), Color("f5d0fe") if foe else Color("fca5a5"))
+				var unit := String(e.get("unit", ""))
+				var helpers: Array = e.get("helpers", [])
 				if foe and int(e.get("tier", 0)) == 3:
-					hud.banner("Gate smashed!", "Super Sprouts march down that lane now", Color("f0abfc"))
+					if unit != "":
+						# a Sproutling landed the last hit: give it (and its escort) the moment
+						hud.banner("🎉 %s broke the gate!" % unit, (("Walked there with %s. " % " & ".join(helpers)) if not helpers.is_empty() else "") + "Super Sprouts march down that lane now", Color("f0abfc"))
+					else:
+						hud.banner("Gate smashed!", "Super Sprouts march down that lane now", Color("f0abfc"))
 					if not attract:
 						Audio.say("ann_gate_down", -1, true)
 				elif foe and e.get("heart_open", false):
@@ -839,11 +894,60 @@ func _my_event(e: Dictionary) -> void:
 		"hero_down":
 			hud.feed("💫 %s was knocked out%s" % [e.name, (" by " + String(e.by)) if String(e.by) != "" else ""], Color("fca5a5"))
 			if mine:
-				hud.banner("Knocked out!", "Back in %ds, or a friend can stand next to you to revive you" % int(e.respawn), Color("fca5a5"), 3.0)
+				hud.banner("Knocked out!", "Back in %ds, or a friend can stand next to you to revive you" % int(e.respawn), Color("fca5a5"), 3.0, 0)
 		"revive":
 			hud.feed("💚 %s revived %s" % [e.by, e.name], Color("86efac"))
+		# --- Garden Clash: a living battlefield
+		"raid_warn":
+			if not attract:
+				var tower: String = {"gate": "Bloom Gate", "guardian": "Tree Guardian"}.get(String(e.get("kind", "")), "Bloom Tower")
+				hud.banner("⚔️ Rival Raid!", "%s are coming for the %s %s. Stop them there, or push another lane while they're busy!" % [" and ".join(e.names), ClashWorld.LANE_NAMES[int(e.lane)], tower], Color("f87171"), 4.0, 0)
+				Audio.play_sfx("boss_warn", -4.0)
+		"raid_go":
+			if not attract:
+				hud.toast("⚔️ The raiders reached the %s!" % ClashWorld.LANE_NAMES[int(e.lane)], Color("fca5a5"), 3.0, 1)
+		"raid_end":
+			if not attract:
+				match String(e.how):
+					"stopped":
+						hud.banner("🛡️ Raid stopped!", "+60 acorns and XP for everyone", Color("86efac"), 2.6, 1)
+					"broke":
+						hud.feed("🥀 The raid broke a tower in the %s" % ClashWorld.LANE_NAMES[int(e.lane)], Color("fca5a5"))
+					_:
+						hud.feed("The raiders gave up and went home", Color("bbf7d0"))
+		"cover_ok":
+			if not attract:
+				var lane_name: String = ClashWorld.LANE_NAMES[int(e.lane)]
+				if int(e.get("from", -1)) == my_id:
+					hud.toast("🛡️ %s will hold the %s while you shop" % [String(e.name), lane_name], Color("bae6fd"), 3.5, 0)
+				elif int(e.owner) == my_id:
+					hud.toast("🛡️ Thanks! Hold the %s until %s is back" % [lane_name, String(e.get("fromName", "they're"))], Color("bae6fd"), 3.5, 0)
+				else:
+					hud.feed("🛡️ %s: I'll hold the %s!" % [("🤖 " if e.get("bot", false) else "") + String(e.name), lane_name], Color("bae6fd"))
+		"cover_done":
+			if int(e.owner) == my_id and not attract:
+				hud.toast("🛡️ Thanks for covering! They're back in the fight.", Color("bae6fd"), 2.5, 1)
+		"plot_ready":
+			if int(e.get("owner", -1)) == my_id and not attract:
+				hud.toast("🌱 Plot claimed! Grow a 🫐 Berry Bush (1) or a 🌱 Spring Vine (2)", Color("86efac"), 4.0, 0)
+				Audio.play_sfx("ui_click")
+		"plot_grown":
+			if not attract:
+				hud.feed("%s %s grew a %s by the %s" % ["🫐" if e.grow == "berry" else "🌱", String(e.name), "Berry Bush" if e.grow == "berry" else "Spring Vine", ClashWorld.LANE_NAMES[int(e.lane)]], Color("86efac"))
+		"plot_lost":
+			if not attract:
+				hud.toast("🥀 Pests trampled the %s by the %s" % ["Berry Bush" if e.get("grow", "") == "berry" else ("Spring Vine" if e.get("grow", "") == "vine" else "plot"), ClashWorld.LANE_NAMES[int(e.lane)]], Color("fca5a5"), 3.0, 1)
+		"captain_up":
+			if not attract:
+				hud.toast("🚩 Captain %s leads the %s wave. Walk with them to the Thorn Tower!" % [String(e.name), ClashWorld.LANE_NAMES[int(e.lane)]], Color("fde68a"), 4.5, 1)
+		"captain_flag":
+			if not attract:
+				hud.banner("🚩 Captain %s planted a rally flag!" % String(e.name), "Sproutlings by the flag hit harder and take less damage", Color("fde047"), 2.8, 1)
+		"captain_down":
+			if not attract:
+				hud.feed("🥀 Captain %s fell before reaching the tower" % String(e.name), Color("fca5a5"))
 		"tower_alert":
-			hud.toast("⚠️ A %s is under attack and nobody is there!" % ("Bloom Gate" if e.kind == "gate" else ("Tree Guardian" if e.kind == "guardian" else ("Bloom Tree" if e.kind == "tree" else "Bloom Tower"))), Color("fca5a5"), 4.0)
+			hud.toast("⚠️ A %s is under attack and nobody is there!" % ("Bloom Gate" if e.kind == "gate" else ("Tree Guardian" if e.kind == "guardian" else ("Bloom Tree" if e.kind == "tree" else "Bloom Tower"))), Color("fca5a5"), 4.0, 0)
 			if not attract:
 				Audio.say("ann_tower_alert", -1, true)
 		"camp_up":
@@ -860,19 +964,19 @@ func _my_event(e: Dictionary) -> void:
 			hud.feed(("🌱 Our Bloom Gate grew back" if e.side == "ally" else "🌿 A Thorn Gate grew back"), Color("bbf7d0"))
 		"recall_cancel":
 			if mine:
-				hud.toast("Going home stopped: stand still for 3 seconds", Color("fca5a5"), 2.0)
+				hud.toast("Going home stopped: stand still for 3 seconds", Color("fca5a5"), 2.0, 0)
 		"recall_start":
 			if mine:
 				move_path = []
 		"item_bought":
 			if mine:
 				var info: Dictionary = GameData.clash_item(String(e.item))
-				hud.toast("%s %s!" % [info.get("icon", "🧃"), info.get("name", "Berry Juice")], Color("fde047"), 2.0)
+				hud.toast("%s %s!" % [info.get("icon", "🧃"), info.get("name", "Berry Juice")], Color("fde047"), 2.0, 2)
 		"powerup_get":
 			if mine:
 				var pu: Dictionary = GameData.POWERUPS.get(e.get("kind", ""), {})
 				if not pu.is_empty():
-					hud.toast("%s %s!" % [pu.get("icon", ""), pu.get("name", "")], Color("fde047"), 2.5)
+					hud.toast("%s %s!" % [pu.get("icon", ""), pu.get("name", "")], Color("fde047"), 2.5, 2)
 
 
 # ---------------------------------------------------------------------------
@@ -919,6 +1023,9 @@ func _process_inner(delta: float) -> void:
 	world.ghost = selected_gadget if preview else ""
 	world.ghost_at = aim_point()
 	hud.selected_gadget = selected_gadget
+	hud.hero_at = my_pos
+	world.picked_tower = hud.selected_tower
+	_sync_auto_cards()
 	# frame every local hero (couch co-op) with the camera
 	var follow: Array = []
 	if playing and couch:
@@ -1004,7 +1111,7 @@ func dash() -> void:
 	if h.is_empty() or my_pos == null:
 		return
 	if h.dashCd > 0:
-		hud.toast("💨 Leaf Leap recharging (%ds)" % ceili(h.dashCd), Color("fca5a5"), 1.5)
+		hud.toast("💨 Leaf Leap recharging (%ds)" % ceili(h.dashCd), Color("fca5a5"), 1.5, 0)
 		return
 	var dir := _move_input()
 	if dir == Vector2.ZERO and move_path.size() > 0:
@@ -1024,6 +1131,7 @@ func upgrade_key(branch: int) -> void:
 		if branch == 0:
 			send({"t": "upgrade"})
 		return
+	hud.selected_tower = int(g.id)
 	var def: Dictionary = GameData.GADGETS[g.kind]
 	if def.has("branches") and int(g.level) == 2:
 		if branch == 1 or clock < branch_arm_until:
@@ -1036,11 +1144,35 @@ func upgrade_key(branch: int) -> void:
 		send({"t": "upgrade", "id": g.id})
 
 
+## My tower within reach: the one picked in "Your towers" if I'm next to it, else the nearest
+## "Your towers": upgrade this one (you have to stand next to it, like with U)
+func tower_upgrade(id: int, branch := -1) -> void:
+	var g := hud.tower_by_id(id)
+	if g.is_empty() or g.owner != my_id:
+		return
+	hud.selected_tower = id
+	var def: Dictionary = GameData.GADGETS[g.kind]
+	if not hud.tower_near(g):
+		hud.toast("🚶 Walk next to your %s to upgrade it" % def.name, Color("fca5a5"), 2.5, 0)
+		Audio.play_sfx("error")
+		return
+	if Hud.tower_picks_power(g) and branch < 0:
+		return  # its details (now open) show the two special powers to pick from
+	Audio.play_sfx("ui_click", -3.0)
+	if branch >= 0:
+		send({"t": "upgrade", "id": id, "branch": branch})
+	else:
+		send({"t": "upgrade", "id": id})
+
+
 func _my_gadget_near() -> Dictionary:
 	var best := {}
-	var bd := 110.0
+	var bd := Hud.TOWER_REACH
 	if my_pos == null:
 		return best
+	var picked := hud.tower_by_id(hud.selected_tower)
+	if not picked.is_empty() and picked.owner == my_id and Vector2(picked.x, picked.y).distance_to(my_pos) <= bd:
+		return picked
 	for g in snap.get("gadgets", []):
 		if g.owner != my_id:
 			continue
@@ -1055,7 +1187,7 @@ func do_hud_action(a: Dictionary) -> void:
 	match String(a.t):
 		"mute":
 			var m := Audio.toggle_mute()
-			hud.toast("🔇 Sound Muted" if m else "🔊 Sound On", Color("fde047"), 1.5)
+			hud.toast("🔇 Sound Muted" if m else "🔊 Sound On", Color("fde047"), 1.5, 0)
 			if not m:
 				Audio.play_sfx("ui_click")
 		"select_gadget":
@@ -1097,6 +1229,43 @@ func do_hud_action(a: Dictionary) -> void:
 			Audio.play_sfx("ui_click", -3.0)
 			Profile.set_value("dmgNums", Profile.next_dmg(String(Profile.load_profile().dmgNums)))
 			apply_settings()
+		"set_gfx":
+			Audio.play_sfx("ui_click", -3.0)
+			Profile.set_value("gfx", "simple" if String(Profile.load_profile().gfx) == "fancy" else "fancy")
+			apply_settings()
+		"set_cards":
+			Audio.play_sfx("ui_click", -3.0)
+			Profile.set_value("autoCards", not bool(Profile.load_profile().get("autoCards", true)))
+			apply_settings()
+		"set_msgs":
+			Audio.play_sfx("ui_click", -3.0)
+			Profile.set_value("msgs", Profile.next_msgs(String(Profile.load_profile().msgs)))
+			apply_settings()
+		"set_chatter":
+			Audio.play_sfx("ui_click", -3.0)
+			Profile.set_value("chatter", Profile.next_chatter(String(Profile.load_profile().chatter)))
+			apply_settings()
+		"ui_size":
+			Audio.play_sfx("ui_click", -3.0)
+			change_ui_size(int(a.get("d", 1)))
+		"tower":
+			Audio.play_sfx("ui_click", -3.0)
+			hud.selected_tower = -1 if hud.selected_tower == int(a.id) else int(a.id)
+		"tower_up":
+			tower_upgrade(int(a.id), int(a.get("branch", -1)))
+		"tower_sell":
+			var g := hud.tower_by_id(int(a.id))
+			if not g.is_empty() and not hud.tower_near(g):
+				hud.toast("🚶 Walk next to your %s to sell it" % GameData.GADGETS[g.kind].name, Color("fca5a5"), 2.5, 0)
+				Audio.play_sfx("error")
+			elif not g.is_empty():
+				Audio.play_sfx("ui_click", -3.0)
+				send({"t": "sell", "id": int(g.id)})
+		"tower_go":
+			var g := hud.tower_by_id(int(a.id))
+			if not g.is_empty():
+				Audio.play_sfx("ui_click", -3.0)
+				walk_to(Vector2(g.x, g.y) + Vector2(0, 40))
 		"fullscreen":
 			toggle_fullscreen()
 		"dash_ui":
@@ -1112,6 +1281,14 @@ func do_hud_action(a: Dictionary) -> void:
 		"next":
 			Audio.play_sfx("ui_click")
 			_next_challenge()
+		"pin":
+			Audio.play_sfx("ui_click", -4.0)
+			hud.pinned_item = "" if hud.pinned_item == String(a.item) else String(a.item)
+		"shop_all":
+			Audio.play_sfx("ui_click", -4.0)
+			hud.shop_all = not hud.shop_all
+		"buy_pinned":
+			buy_pinned()
 		"menu":
 			Audio.play_sfx("ui_click")
 			hud.menu_open = false
@@ -1157,6 +1334,8 @@ func _unhandled_input(event: InputEvent) -> void:
 					ghost_until = clock  # right-click cancels aiming a tower
 				elif mb.button_index == MOUSE_BUTTON_LEFT and aim_point() != null:
 					plant_selected()
+				elif mb.button_index == MOUSE_BUTTON_LEFT and _my_tower_at(wp) >= 0:
+					do_hud_action({"t": "tower", "id": _my_tower_at(wp)})
 				else:
 					walk_to(wp)
 		get_viewport().set_input_as_handled()
@@ -1220,18 +1399,33 @@ func _unhandled_input(event: InputEvent) -> void:
 		KEY_R:
 			if snap.has("clash"):
 				send({"t": "potion"})
-			elif int(_my_hero().get("pending", 0)) > 0 and not hud.cards_hidden:
+			elif not hud.auto_cards and int(_my_hero().get("pending", 0)) > 0 and not hud.cards_hidden:
 				do_hud_action({"t": "reroll"})
+		KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_9 when snap.has("clash") and k <= KEY_2 and not hud.plot_here().is_empty():
+			# standing at a claimed Garden Plot: 1 grows a Berry Bush, 2 a Spring Vine
+			Audio.play_sfx("ui_click", -3.0)
+			send({"t": "plot", "id": int(hud.plot_here().id), "grow": "berry" if k == KEY_1 else "vine"})
+		KEY_G when snap.has("clash"):
+			# G: say yes to covering a friend's lane, or ask a friend to cover mine
+			var cv := hud.cover_request()
+			Audio.play_sfx("ui_click", -3.0)
+			if not cv.is_empty():
+				send({"t": "cover_accept", "from": int(cv.from)})
+			else:
+				send({"t": "cover"})
 		KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_9:
 			# 1-3 pick a level-up card; with no cards waiting, 1-9 pick a tower
-			var cards: bool = int(_my_hero().get("pending", 0)) > 0 and _my_hero().get("offer", []).size() > 0
+			var cards: bool = not hud.auto_cards and not hud.cards_hidden and int(_my_hero().get("pending", 0)) > 0 and _my_hero().get("offer", []).size() > 0
 			if cards and k <= KEY_3:
 				Audio.play_sfx("card_pick")
 				send({"t": "card", "i": k - KEY_1})
 			elif not cards and not snap.has("clash") and k - KEY_1 < GameData.GADGET_ORDER.size():
 				pick_gadget(GameData.GADGET_ORDER[k - KEY_1])
 		KEY_F:
-			plant_selected()
+			if not snap.has("clash"):
+				plant_selected()
+			elif not buy_pinned():
+				hud.toast("📌 Pin an item in the shop: F buys it when you're back at the tree", Color("fde68a"), 3.0, 1)
 		KEY_G when not snap.has("clash"):
 			var i := GameData.GADGET_ORDER.find(selected_gadget)
 			pick_gadget(GameData.GADGET_ORDER[(i + 1) % GameData.GADGET_ORDER.size()])
@@ -1242,7 +1436,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		KEY_Y:
 			upgrade_key(1)
 		KEY_X:
-			send({"t": "sell"})
+			var g := _my_gadget_near()
+			send({"t": "sell", "id": int(g.id)} if not g.is_empty() else {"t": "sell"})
 		KEY_TAB:
 			pass
 
@@ -1253,6 +1448,10 @@ func apply_settings() -> void:
 	Audio.apply_settings()
 	world.shake_mult = float(prof.shake)
 	world.dmg_mode = String(prof.dmgNums)
+	world.set_fancy(String(prof.gfx) != "simple" and not args.has("simple"))
+	hud.ui_scale = clampf(float(args.get("ui", prof.get("uiScale", 0.8))), 0.5, 1.5)  # --ui=1.3 for screenshots
+	hud.msg_level = {"all": 2, "fewer": 1, "fewest": 0}.get(String(prof.get("msgs", "fewer")), 1)
+	hud.auto_cards = bool(prof.get("autoCards", true)) and String(args.get("cards", "")) != "pick"  # --cards=pick for screenshots
 	if DisplayServer.get_name() != "headless":
 		var fs: bool = prof.fullscreen
 		var now := DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN
@@ -1272,6 +1471,11 @@ func _input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo and (event as InputEventKey).physical_keycode == KEY_F11:
 		toggle_fullscreen()
 		get_viewport().set_input_as_handled()
+	elif event is InputEventKey and event.pressed and ((event as InputEventKey).ctrl_pressed or (event as InputEventKey).meta_pressed):
+		var kc := (event as InputEventKey).physical_keycode
+		if kc in [KEY_EQUAL, KEY_KP_ADD, KEY_MINUS, KEY_KP_SUBTRACT]:
+			change_ui_size(1 if kc in [KEY_EQUAL, KEY_KP_ADD] else -1)
+			get_viewport().set_input_as_handled()
 
 
 # ---------------------------------------------------------------------------
@@ -1305,6 +1509,8 @@ func _check_tips() -> void:
 	if int(snap.wave) >= 1 and not snap.waveActive:
 		_tip("build", "🏗️ Build a tower: press 1–6 to pick one, then F where you stand. Towers cost acorns.")
 	var h := _my_hero()
+	if hud.auto_cards and not h.is_empty() and GameData.path_waiting(int(h.tierA), int(h.tierB), int(h.level), int(h.pending)) > 0:
+		_tip("evolve", "⭐ Your hero can evolve! Pick path A or B in the panel on the left. Other levels upgrade by themselves.")
 	if not h.is_empty() and snap.waveActive and float(h.get("specialCd", 1)) <= 0 and snap.get("enemies", []).size() >= 4:
 		_tip("special", "✨ Your special is ready: press Q next to lots of pests! Two friends pressing Q together make a Team Combo.")
 	if int(snap.wave) >= 3 and snap.waveActive:
@@ -1317,7 +1523,7 @@ func pick_gadget(kind: String) -> void:
 	ghost_until = clock + 6.0
 	_picked_at = clock
 	var d: Dictionary = GameData.GADGETS[kind]
-	hud.toast("%s %s selected (%d acorns). Press F to build it, or click a spot near your hero." % [d.icon, d.name, int(d.cost)], Color("bbf7d0"), 2.5)
+	hud.toast("%s %s selected (%d acorns). Press F to build it, or click a spot near your hero." % [d.icon, d.name, int(d.cost)], Color("bbf7d0"), 2.5, 2)
 
 
 ## Where the mouse is aiming the selected tower (near my hero), or null to build at my feet
@@ -1340,6 +1546,58 @@ func plant_selected() -> void:
 	else:
 		send({"t": "plant", "kind": selected_gadget})
 		ghost_until = clock + 1.2
+
+
+## Garden Clash: F (or the 📌 button) buys the item I pinned in the shop
+func buy_pinned() -> bool:
+	var pin := hud.pinned_state(_my_hero())
+	if pin.is_empty() or pin.done:
+		return false
+	Audio.play_sfx("ui_click", -3.0)
+	send({"t": "buy", "item": String(pin.item)})
+	return true
+
+
+## Tell the game whether my hero (and couch players' heroes) pick their own level-up cards
+var _auto_key := ""
+
+
+func _sync_auto_cards() -> void:
+	if not playing or snap.is_empty():
+		return
+	var sofa: Array = couch.players().keys() if couch and host else []
+	var key := "%s|%s" % [hud.auto_cards, sofa]
+	if key == _auto_key:
+		return
+	_auto_key = key
+	send({"t": "auto_cards", "on": hud.auto_cards})
+	for pid in sofa:
+		host.apply(int(pid), {"t": "auto_cards", "on": hud.auto_cards})
+
+
+## Between waves, when the green Start Wave button is showing (Space, or Start on a controller)
+func wave_ready() -> bool:
+	return playing and not snap.is_empty() and snap.phase == "playing" and not snap.waveActive and not snap.paused \
+		and not snap.has("clash") and (snap.endless or int(snap.wave) < int(snap.maxWave))
+
+
+## One of my towers under the mouse (its id), or -1
+func _my_tower_at(wp: Vector2) -> int:
+	if snap.has("clash"):
+		return -1
+	for g in snap.get("gadgets", []):
+		if g.owner == my_id and Vector2(g.x, g.y - 14).distance_to(wp) < 30:
+			return int(g.id)
+	return -1
+
+
+## Ctrl + / Ctrl - (or the pause menu): make every HUD panel and button bigger or smaller
+func change_ui_size(dir: int) -> void:
+	var v := Profile.step_ui_scale(float(Profile.load_profile().get("uiScale", 0.8)), dir)
+	Profile.set_value("uiScale", v)
+	apply_settings()
+	if playing:
+		hud.toast(Profile.ui_scale_label(v), Color("fde047"), 1.5, 0)
 
 
 ## Right-click near a pest marks it. Returns false if no pest is there.
@@ -1367,7 +1625,7 @@ func cycle_target() -> void:
 	var next: String = TARGET_MODES[(i + 1) % TARGET_MODES.size()]
 	send({"t": "target", "mode": next})
 	var what: String = {"first": "the pest closest to the Bloom Tree", "strong": "the toughest pest", "close": "the pest closest to you", "last": "the pest furthest back"}[next]
-	hud.toast("🎯 Your hero now shoots %s first" % what, Color("bae6fd"), 2.2)
+	hud.toast("🎯 Your hero now shoots %s first" % what, Color("bae6fd"), 2.2, 0)
 
 
 ## Esc: Resume / Restart / Leave to menu. Solo and LAN hosts also pause the game.
@@ -1541,11 +1799,19 @@ func _netcheck(secs: float) -> void:
 # ---------------------------------------------------------------------------
 func _screenshot_later(path: String, after: float) -> void:
 	# test-only staging: --plant=KIND (build next to me), --ghost=KIND (show the build preview), --pausemenu
+	# --plant=KIND or KIND,KIND,... (a row of them); --pick-tower opens the first in "Your towers"
 	if args.has("plant") and playing:
-		host.sim.players[my_id].acorns += 500
-		send({"t": "plant", "kind": String(args.plant)})
-		send({"t": "move", "x": my_pos.x + 40, "y": my_pos.y + 10})
-		my_pos = Vector2(my_pos.x + 40, my_pos.y + 10)
+		host.sim.players[my_id].acorns += 1500
+		var want := String(args.plant).split(",")
+		var h0 = host.sim.hero_of(my_id)
+		var n := 0
+		for i in 24:  # try spots in a ring around my hero until they're all built
+			if n >= want.size():
+				break
+			var before: int = host.sim.gadgets.size()
+			host.sim.plant(my_id, want[n], Vector2(h0.x, h0.y) + Vector2.from_angle(i * TAU / 12.0) * (70.0 + 50.0 * (i / 12)))
+			if host.sim.gadgets.size() > before:
+				n += 1
 	if args.has("couch") and playing:  # pretend N controllers join
 		for dev in int(args.couch):
 			for b in [JOY_BUTTON_START, JOY_BUTTON_DPAD_RIGHT, JOY_BUTTON_A]:
@@ -1578,10 +1844,19 @@ func _screenshot_later(path: String, after: float) -> void:
 	await get_tree().create_timer(maxf(0.1, after - 0.4)).timeout
 	if args.has("pausemenu") and playing:
 		open_pause_menu()
+	if args.has("pick-tower") and playing:
+		var mine: Array = snap.get("gadgets", []).filter(func(g): return g.owner == my_id)
+		if not mine.is_empty():
+			hud.selected_tower = int(mine[int(args.get("pick-tower", "0")) % mine.size()].id) if String(args.get("pick-tower", "")).is_valid_int() else int(mine[0].id)
 	await get_tree().create_timer(0.4).timeout
 	await RenderingServer.frame_post_draw
 	var img := get_viewport().get_texture().get_image()
 	img.save_png(path)
 	print("screenshot saved: ", path)
+	# --burst=N: N more pictures 0.1 s apart (path_1.png, path_2.png...), for checking animations
+	for i in int(args.get("burst", "0")):
+		await get_tree().create_timer(float(args.get("burst-gap", "0.1"))).timeout
+		await RenderingServer.frame_post_draw
+		get_viewport().get_texture().get_image().save_png(path.get_basename() + "_%d.png" % (i + 1))
 	if args.has("quit"):
 		quit_game()

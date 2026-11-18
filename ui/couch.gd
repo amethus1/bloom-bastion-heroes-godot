@@ -9,14 +9,14 @@ extends Node
 ##   Y   build (Adventure) / Berry Juice (Clash)     B  upgrade tower / go home (Clash)
 ##   LB/RB  pick a tower  (Clash: LB juice, RB buy the next item at the tree)
 ##   D-pad ◀ ▲ ▶  pick card 1 / 2 / 3       ▼  home
-##   Back  sell tower     R3  targeting     Start  menu
+##   Back  sell tower     R3  targeting
+##   Start  start the next wave (when the green button shows), otherwise the menu
 
 const DEADZONE := 0.25
 const FIRST_ID := 11  # couch players are 11..14 (bots are 100+, LAN friends are big numbers)
 const NAMES := ["Player 2", "Player 3", "Player 4", "Player 5"]
 const HATS := ["cap", "party", "wizard", "propeller"]
 const PETS := ["bee", "bunny", "snail", "froggy"]
-const BUY_ORDER := ["sword", "bark", "sandals", "bow", "rose", "acorn", "charm", "moss"]
 
 var main: Node
 ## device -> {"pid": id (main.my_id for P1), "state": "join"|"play", "hero_i", "gadget", "arm": {id, until}}
@@ -122,6 +122,8 @@ func _unhandled_input(event: InputEvent) -> void:
 	if b == JOY_BUTTON_START:
 		if main.hud.menu_open:
 			main.close_pause_menu()
+		elif main.wave_ready():
+			main.send({"t": "wave"})  # "Ready!": the same as Space or the green button
 		else:
 			main.open_pause_menu()
 		return
@@ -267,7 +269,7 @@ func _couch_button(b: int, p: Dictionary) -> void:
 				main.hud.toast("%s: 🎯 shoots %s first" % [p.name, {"first": "the front pest", "strong": "the toughest pest", "close": "the closest pest", "last": "the last pest"}[nxt]], Color("bae6fd"), 2.0)
 
 
-## Garden Clash shop on a controller: RB buys the next item in a good order, LB a Berry Juice
+## Garden Clash shop on a controller: RB buys the pinned item or the shop's pick for this hero, LB a Berry Juice
 func _clash_buy(pid: int, item: bool) -> void:
 	if not item:
 		if pid == main.my_id:
@@ -275,23 +277,17 @@ func _clash_buy(pid: int, item: bool) -> void:
 		else:
 			main.host.apply(pid, {"t": "buy", "item": "juice"})
 		return
+	if pid == main.my_id and main.hud.can_buy_pinned() and main.buy_pinned():
+		return  # player 1 pinned something in the shop
 	var h := {}
 	for x in main.snap.get("heroes", []):
 		if x.owner == pid:
 			h = x
-	var items: Array = h.get("items", [])
-	var pick := ""
-	for id in BUY_ORDER:
-		if not items.has(id) and not items.has(id + "+") and items.size() < int(GameData.clash.config.maxItems):
-			pick = id
-			break
-	if pick == "":
-		for id in BUY_ORDER:
-			if items.has(id):
-				pick = id
-				break
-	if pick == "":
+	# the shop's first pick for this hero, then Golden upgrades
+	var picks := ClashWorld.recommended_buys(GameData, String(h.get("type", "")), h.get("items", []), 1)
+	if picks.is_empty():
 		return
+	var pick: String = picks[0]
 	if pid == main.my_id:
 		main.send({"t": "buy", "item": pick})
 	else:

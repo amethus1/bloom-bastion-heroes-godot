@@ -524,7 +524,7 @@
       ],
       "color": "#65a30d",
       "outline": "#365314",
-      "desc": "Wave 13 mini-boss. Its thorny back shields pests near it (they take less damage), and its stomp sends nearby towers to sleep: walk by to wake them!"
+      "desc": "Walk by sleeping towers to wake them! Its stomp puts nearby towers to sleep, and its thorny back shields pests near it (they take less damage)."
     }
   },
   "newPestIntro": {

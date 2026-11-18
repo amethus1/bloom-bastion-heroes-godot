@@ -409,6 +409,11 @@ func compute_tower_stats(type: String, tier_a: int, tier_b: int) -> Dictionary:
 	return s
 
 
+## Garden Clash, the full match or ⚡ Quick Clash
+static func clash_mode(mode) -> bool:
+	return String(mode) == "clash" or String(mode) == "quickclash"
+
+
 func clash_item(id: String) -> Dictionary:
 	var golden := id.ends_with("+")
 	var base := id.substr(0, id.length() - 1) if golden else id
@@ -482,6 +487,35 @@ func compute_hero_stats(type: String, tier_a: int, tier_b: int, cards: Dictionar
 
 
 ## Which path (evolution) cards a hero may be offered right now
+## Automatic level-ups: on these levels the hero waits for you to pick a path
+## upgrade (A or B, from the panel on the left); every other level picks a card by itself
+const PATH_LEVELS := [2, 4, 6, 8, 11, 14]
+
+
+## How many of a hero's waiting level-up cards are saved for a path upgrade the player picks
+func path_waiting(tier_a: int, tier_b: int, level: int, pending: int) -> int:
+	if pending <= 0 or path_card_options(tier_a, tier_b, level).is_empty():
+		return 0
+	var earned := 0
+	for l in PATH_LEVELS:
+		if level >= l:
+			earned += 1
+	return clampi(earned - tier_a - tier_b, 0, pending)
+
+
+## A kid-friendly name for a trail: where it starts ("the trail from the top-left")
+func trail_name(map_id: String, index: int) -> String:
+	var n: int = map(map_id).paths.size()
+	var pts := path_points(map_id, index)
+	if n <= 1 or pts.is_empty():
+		return "the trail"
+	var d := pts[0] - Vector2(W / 2.0, H / 2.0)
+	var v := "top" if d.y < -H * 0.15 else ("bottom" if d.y > H * 0.15 else "")
+	var h := "left" if d.x < -W * 0.15 else ("right" if d.x > W * 0.15 else "")
+	var side := v + ("-" if v != "" and h != "" else "") + h
+	return "the trail from the %s" % side if side != "" else "the middle trail"
+
+
 func path_card_options(tier_a: int, tier_b: int, level: int) -> Array:
 	var out: Array = []
 	for path in ["A", "B"]:
@@ -579,11 +613,35 @@ func is_twist_wave(wave: int) -> bool:
 ## Final pest groups for a wave (counts scaled for the team; huge waves capped)
 ## Wave 13 (between the first Spore Zeppelin and the double one; in Endless also
 ## every 10 waves after) brings the Thornback Toad mini-boss
-static func mini_boss_wave(wave: int, endless: bool) -> bool:
+static func mini_boss_wave(wave: int, endless: bool, short := false) -> bool:
+	if short:
+		return wave == SHORT_WAVES.size()  # the Short Adventure's finale
 	return wave == 13 or (endless and wave > 13 and wave % 10 == 3)
 
 
-func plan_wave(wave: int, diff: Dictionary, hero_count: int, endless: bool, twist: String) -> Dictionary:
+## Short Adventure: six waves with a beginning, one new trick each, and the
+## Thornback Toad as the finale. [type, count, seconds apart, start delay]
+const SHORT_WAVES := [
+	[["sprout", 18, 0.8, 0.0], ["sprout", 10, 0.45, 17.0]],
+	[["sprout", 16, 0.7, 0.0], ["wasp", 10, 0.7, 6.0], ["wasp", 8, 0.35, 19.0]],
+	[["sprout", 14, 0.7, 0.0], ["camopuff", 8, 1.0, 4.0], ["camopuff", 8, 0.55, 16.0]],
+	[["beetle", 10, 1.2, 0.0], ["wasp", 12, 0.5, 8.0], ["sprout", 14, 0.45, 15.0]],
+	[["sprout", 24, 0.45, 0.0], ["beetle", 9, 1.1, 4.0], ["camopuff", 9, 0.8, 9.0], ["wasp", 16, 0.35, 15.0]],
+	[["sprout", 18, 0.55, 0.0], ["beetle", 10, 1.1, 3.0], ["wasp", 12, 0.45, 14.0], ["camopuff", 8, 0.7, 20.0]],
+]
+## ...and the new pest each wave shows a card for
+const SHORT_INTRO := {2: "wasp", 3: "camopuff", 4: "beetle", 6: "thorntoad"}
+const SHORT_ACORNS := 150  # enough to try a tower's level-3 special power
+
+
+func short_spec(n: int) -> Array:
+	var out: Array = []
+	for g in SHORT_WAVES[clampi(n - 1, 0, SHORT_WAVES.size() - 1)]:
+		out.append({"type": g[0], "count": g[1], "interval": g[2], "delay": g[3]})
+	return out
+
+
+func plan_wave(wave: int, diff: Dictionary, hero_count: int, endless: bool, twist: String, short := false) -> Dictionary:
 	var mult := 1.0 + gnum(diff, "teamCount") * (maxi(1, hero_count) - 1)
 	if endless:
 		mult *= endless_ramp(wave, {}).count
@@ -591,7 +649,7 @@ func plan_wave(wave: int, diff: Dictionary, hero_count: int, endless: bool, twis
 	if tw.has("countMult"):
 		mult *= tw.countMult
 	var groups: Array = []
-	var spec := wave_spec(wave)
+	var spec := short_spec(wave) if short else wave_spec(wave)
 	for gi in spec.size():
 		var g: Dictionary = spec[gi]
 		var boss: bool = ENEMIES.has(g.type) and ENEMIES[g.type].get("boss", false)

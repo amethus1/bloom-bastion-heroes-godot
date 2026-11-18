@@ -200,6 +200,22 @@ func show_title() -> void:
 	var mrow := HBoxContainer.new()
 	mrow.add_theme_constant_override("separation", 6)
 	right.add_child(mrow)
+	_map_row = mrow
+	# Garden Clash always plays on Three-Lane Valley: show that instead of the
+	# Adventure maps (the Adventure pick is kept for when you switch back)
+	_clash_card = HBoxContainer.new()
+	_clash_card.add_theme_constant_override("separation", 10)
+	right.add_child(_clash_card)
+	var vt := TextureRect.new()
+	vt.texture = Sprites.tex(Sprites.atlas.maps.get("valley", ""))
+	vt.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	vt.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	vt.custom_minimum_size = Vector2(96, 60)
+	_clash_card.add_child(vt)
+	_clash_note = _label("", 13, Color("d1fae5"))
+	_clash_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_clash_note.custom_minimum_size = Vector2(280, 0)
+	_clash_card.add_child(_clash_note)
 	var mgroup := ButtonGroup.new()
 	var medals: Dictionary = profile.get("medals", {})
 	for id in GameData.maps.maps:
@@ -225,7 +241,7 @@ func show_title() -> void:
 	for id in GameData.DIFFICULTIES:
 		diffs.append([id, GameData.DIFFICULTIES[id].name])
 	_option(right, "Difficulty", diffs, profile.diff, func(id): profile.diff = id; Profile.save_profile(profile); _update_mode_info())
-	_option(right, "Mode", [["adventure", "🗺️ Adventure"], ["endless", "♾️ Endless"], ["clash", "⚔️ Garden Clash (3 lanes)"]], profile.gameMode, func(id): profile.gameMode = id; Profile.save_profile(profile); _update_mode_info())
+	_option(right, "Mode", [["short", "⏱️ Short Adventure (6 waves)"], ["adventure", "🗺️ Adventure"], ["endless", "♾️ Endless"], ["clash", "⚔️ Garden Clash (3 lanes)"], ["quickclash", "⚡ Quick Clash (about 15 min)"]], profile.gameMode, func(id): profile.gameMode = id; Profile.save_profile(profile); _update_mode_info())
 	_mode_info = _label("", 13, Color("d1fae5"))
 	_mode_info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_mode_info.custom_minimum_size = Vector2(380, 0)
@@ -305,10 +321,16 @@ func show_title() -> void:
 var _mode_info: Label
 var _preview: HeroPreview
 var _map_label: Label
+var _map_row: Control
+var _clash_card: Control
+var _clash_note: Label
 
 
 func _update_map_label() -> void:
 	if _map_label == null or not is_instance_valid(_map_label):
+		return
+	if GameData.clash_mode(profile.gameMode):
+		_map_label.text = "Map: Three-Lane Valley (Garden Clash)"
 		return
 	var lvl := int(profile.get("medals", {}).get(profile.map, 0))
 	_map_label.text = "Map: %s%s" % [GameData.maps.maps.get(profile.map, {}).get("name", profile.map), ("   %s %s" % [Profile.MEDAL_ICON[lvl], Profile.MEDAL_NAME[lvl]]) if lvl > 0 else ""]
@@ -319,10 +341,21 @@ func _update_mode_info() -> void:
 	if _mode_info == null or not is_instance_valid(_mode_info):
 		return
 	var d: Dictionary = GameData.DIFFICULTIES.get(profile.diff, {})
+	var clash := GameData.clash_mode(profile.gameMode)
+	if _map_row and is_instance_valid(_map_row):
+		_map_row.visible = not clash
+		_clash_card.visible = clash
+		_clash_note.text = "Three-Lane Valley: walk down a lane with your Sproutlings, break the Thorn Towers and gates, then smash the Thorn Heart. %s" % (
+			"About 12–15 minutes." if profile.gameMode == "quickclash" else "About 20–30 minutes.")
+	_update_map_label()
 	match String(profile.gameMode):
 		"clash":
 			var cd: Dictionary = GameData.clash.difficulty.get(profile.diff, {})
-			_mode_info.text = "⚔️ Three lanes on Three-Lane Valley: smash the Thorn Heart. " + String(cd.get("desc", ""))
+			_mode_info.text = "⚔️ The full battle. " + String(cd.get("desc", ""))
+		"quickclash":
+			_mode_info.text = "⚡ A shorter Garden Clash for a family match: one Thorn Tower before each gate, everyone starts with a free item picked for their hero, and Pumpkin Cannons march from the first wave."
+		"short":
+			_mode_info.text = "⏱️ Six waves, about 8 minutes: a crowd, fast wasps, sneaky Camo pests, armored beetles, then the Thornback Toad. Great for a first game or a quick rematch with new heroes."
 		"endless":
 			_mode_info.text = "♾️ The waves never stop and get a surprise twist every few waves. How far can you go? (%s pests)" % String(d.get("short", ""))
 		_:
@@ -531,24 +564,36 @@ func show_rules() -> void:
 # ---------------------------------------------------------------------------
 func show_settings() -> void:
 	_clear()
-	var v := _frame(560)
+	var v := _frame(1000)
 	_title(v, "⚙ Settings", "Saved on this computer. You can also change these in a game (Esc).")
 	var prof := Profile.load_profile()
+	# two columns: the game and the screen on the left, sound on the right
+	var cols := HBoxContainer.new()
+	cols.add_theme_constant_override("separation", 40)
+	v.add_child(cols)
 	var rows := VBoxContainer.new()
 	rows.add_theme_constant_override("separation", 10)
-	v.add_child(rows)
+	cols.add_child(rows)
+	var sound := VBoxContainer.new()
+	sound.add_theme_constant_override("separation", 10)
+	cols.add_child(sound)
 	_option(rows, "Screen shake", [["1.0", "100%"], ["0.5", "50%"], ["0.0", "Off"]], "%.1f" % float(prof.shake), func(id): Profile.set_value("shake", float(id)); settings_changed.emit())
 	_option(rows, "Damage numbers", [["all", "All"], ["big", "Big hits only"], ["off", "Off"]], String(prof.dmgNums), func(id): Profile.set_value("dmgNums", id); settings_changed.emit())
+	_option(rows, "Graphics", [["fancy", "Fancy"], ["simple", "Simple (for older computers)"]], String(prof.get("gfx", "fancy")), func(id): Profile.set_value("gfx", id); settings_changed.emit())
 	_option(rows, "Fullscreen", [["false", "Off"], ["true", "On (F11)"]], "true" if prof.fullscreen else "false", func(id): Profile.set_value("fullscreen", id == "true"); settings_changed.emit())
 	_option(rows, "Controllers", [["couch", "Each = a new player"], ["p1", "Controller 1 = me"]], "p1" if prof.get("padP1", false) else "couch", func(id): Profile.set_value("padP1", id == "p1"); settings_changed.emit())
 	_option(rows, "Kid assist", [["false", "Off"], ["true", "On: tree regrows, easier Sun"]], "true" if prof.get("kidAssist", false) else "false", func(id): Profile.set_value("kidAssist", id == "true"))
 	_option(rows, "Hats & pets", [["false", "Earn them by playing"], ["true", "Unlock everything (for little kids)"]], "true" if prof.unlockAll else "false", func(id): Profile.set_value("unlockAll", id == "true"))
-	_option(rows, "Sound", [["false", "🔊 On"], ["true", "🔇 Off (M in a game)"]], "true" if Audio.muted else "false", func(id): if (id == "true") != Audio.muted: Audio.toggle_mute())
+	var sizes: Array = Profile.UI_SCALES.map(func(x): return ["%.2f" % x, "%d%%%s" % [int(round(x * 100)), "  (normal)" if is_equal_approx(x, 0.8) else ""]])
+	_option(rows, "UI size", sizes, "%.2f" % Profile.step_ui_scale(float(prof.get("uiScale", 0.8)), 0), func(id): Profile.set_value("uiScale", float(id)); settings_changed.emit())
+	_option(rows, "Level-ups", [["true", "Automatic (you pick evolutions)"], ["false", "Pick every card"]], "true" if prof.get("autoCards", true) else "false", func(id): Profile.set_value("autoCards", id == "true"); settings_changed.emit())
+	_option(sound, "Sound", [["false", "🔊 On"], ["true", "🔇 Off (M in a game)"]], "true" if Audio.muted else "false", func(id): if (id == "true") != Audio.muted: Audio.toggle_mute())
 	var vols := [["1.0", "100%"], ["0.65", "65%"], ["0.35", "35%"], ["0.0", "Off"]]
-	_option(rows, "Music volume", vols, "%.2f" % float(prof.get("musicVol", 0.65)) if float(prof.get("musicVol", 0.65)) in [0.65, 0.35] else ("1.0" if float(prof.get("musicVol", 0.65)) > 0.8 else "0.0"), func(id): Profile.set_value("musicVol", float(id)); settings_changed.emit())
-	_option(rows, "SFX volume", [["1.0", "100%"], ["0.85", "85%"], ["0.35", "35%"], ["0.0", "Off"]], "%.2f" % float(prof.get("sfxVol", 0.85)) if absf(float(prof.get("sfxVol", 0.85)) - 0.85) < 0.05 else ("0.35" if absf(float(prof.get("sfxVol", 0.85)) - 0.35) < 0.05 else ("1.0" if float(prof.get("sfxVol", 0.85)) > 0.9 else "0.0")), func(id): Profile.set_value("sfxVol", float(id)); settings_changed.emit())
-	_option(rows, "Voice volume", [["1.0", "100%"], ["0.95", "95%"], ["0.65", "65%"], ["0.35", "35%"], ["0.0", "Off"]], "%.2f" % float(prof.get("voiceVol", 0.95)) if float(prof.get("voiceVol", 0.95)) in [0.95, 0.65, 0.35] else ("1.0" if float(prof.get("voiceVol", 0.95)) > 0.96 else "0.0"), func(id): Profile.set_value("voiceVol", float(id)); settings_changed.emit())
-	_option(rows, "Hero chatter", [["all", "All lines"], ["key", "Key moments only"], ["off", "Off"]], String(prof.get("dialogMode", "all")), func(id): Profile.set_value("dialogMode", id); settings_changed.emit())
+	_option(sound, "Music volume", vols, "%.2f" % float(prof.get("musicVol", 0.65)) if float(prof.get("musicVol", 0.65)) in [0.65, 0.35] else ("1.0" if float(prof.get("musicVol", 0.65)) > 0.8 else "0.0"), func(id): Profile.set_value("musicVol", float(id)); settings_changed.emit())
+	_option(sound, "SFX volume", [["1.0", "100%"], ["0.85", "85%"], ["0.35", "35%"], ["0.0", "Off"]], "%.2f" % float(prof.get("sfxVol", 0.85)) if absf(float(prof.get("sfxVol", 0.85)) - 0.85) < 0.05 else ("0.35" if absf(float(prof.get("sfxVol", 0.85)) - 0.35) < 0.05 else ("1.0" if float(prof.get("sfxVol", 0.85)) > 0.9 else "0.0")), func(id): Profile.set_value("sfxVol", float(id)); settings_changed.emit())
+	_option(sound, "Voice volume", [["1.0", "100%"], ["0.95", "95%"], ["0.65", "65%"], ["0.35", "35%"], ["0.0", "Off"]], "%.2f" % float(prof.get("voiceVol", 0.95)) if float(prof.get("voiceVol", 0.95)) in [0.95, 0.65, 0.35] else ("1.0" if float(prof.get("voiceVol", 0.95)) > 0.96 else "0.0"), func(id): Profile.set_value("voiceVol", float(id)); settings_changed.emit())
+	_option(sound, "Hero chatter", Profile.CHATTER, String(prof.get("chatter", "some")), func(id): Profile.set_value("chatter", id); settings_changed.emit())
+	_option(sound, "Messages", Profile.MSGS, String(prof.get("msgs", "fewer")), func(id): Profile.set_value("msgs", id); settings_changed.emit())
 	var back := _button("◀ Back", 18, 140)
 	back.pressed.connect(show_title)
 	v.add_child(back)
@@ -606,8 +651,8 @@ func _refresh_games() -> void:
 	for ip in finder.games:
 		var g: Dictionary = finder.games[ip]
 		var map_name := String(GameData.maps.maps.get(g.get("map", ""), {}).get("name", ""))
-		var mode: String = {"endless": "♾️ Endless", "clash": "⚔️ Clash"}.get(String(g.get("mode", "")), "🗺️ Adventure")
-		if g.get("mode", "") == "clash":
+		var mode: String = {"endless": "♾️ Endless", "clash": "⚔️ Clash", "quickclash": "⚡ Quick Clash", "short": "⏱️ Short"}.get(String(g.get("mode", "")), "🗺️ Adventure")
+		if GameData.clash_mode(g.get("mode", "")):
 			map_name = "Three-Lane Valley"
 		var dname := String(GameData.DIFFICULTIES.get(String(g.get("diff", "")), {}).get("name", ""))
 		var now := ("   ·   playing, wave %d (you can still join!)" % int(g.get("wave", 0))) if g.get("inGame", false) else ""
@@ -702,7 +747,9 @@ func show_lobby(net: Node, is_host: bool) -> void:
 		for id in GameData.maps.maps:
 			if not GameData.maps.maps[id].get("clash", false):
 				maps.append([id, GameData.maps.maps[id].name])
-		_option(g1, "Map", maps, String(net.cfg.map), func(id): profile.map = id; Profile.save_profile(profile); net.set_option("map", id))
+		var map_ob := _option(g1, "Map", maps, String(net.cfg.map), func(id): profile.map = id; Profile.save_profile(profile); net.set_option("map", id))
+		var map_row := map_ob.get_parent() as Control
+		map_row.visible = not GameData.clash_mode(net.cfg.gameMode)  # Clash is always on Three-Lane Valley
 		var diffs: Array = []
 		for id in GameData.DIFFICULTIES:
 			diffs.append([id, GameData.DIFFICULTIES[id].name])
@@ -711,7 +758,7 @@ func show_lobby(net: Node, is_host: bool) -> void:
 		g2.alignment = BoxContainer.ALIGNMENT_CENTER
 		g2.add_theme_constant_override("separation", 16)
 		v.add_child(g2)
-		_option(g2, "Mode", [["adventure", "🗺️ Adventure"], ["endless", "♾️ Endless"], ["clash", "⚔️ Garden Clash"]], String(net.cfg.gameMode), func(id): profile.gameMode = id; Profile.save_profile(profile); net.set_option("gameMode", id))
+		_option(g2, "Mode", [["short", "⏱️ Short Adventure"], ["adventure", "🗺️ Adventure"], ["endless", "♾️ Endless"], ["clash", "⚔️ Garden Clash"], ["quickclash", "⚡ Quick Clash"]], String(net.cfg.gameMode), func(id): profile.gameMode = id; Profile.save_profile(profile); net.set_option("gameMode", id); map_row.visible = not GameData.clash_mode(id))
 		_option(g2, "Bot Buddies", [["0", "None"], ["1", "🤖 1"], ["2", "🤖 2"], ["3", "🤖 3"]], str(net.cfg.bots), func(id): profile.bots = int(id); Profile.save_profile(profile); net.set_option("bots", int(id)))
 	_players_box = VBoxContainer.new()
 	_players_box.add_theme_constant_override("separation", 4)
@@ -771,12 +818,12 @@ func _refresh_lobby() -> void:
 	if not c.is_empty():
 		var map_name := String(GameData.maps.maps.get(c.get("map", ""), {}).get("name", ""))
 		var dname := String(GameData.DIFFICULTIES.get(c.get("diff", ""), {}).get("name", ""))
-		var mode_name: String = {"endless": "Endless", "clash": "Garden Clash"}.get(String(c.get("gameMode", "")), "Adventure")
-		if c.get("gameMode", "") == "clash":
+		var mode_name: String = {"endless": "Endless", "clash": "Garden Clash", "quickclash": "Quick Clash", "short": "Short Adventure"}.get(String(c.get("gameMode", "")), "Adventure")
+		if GameData.clash_mode(c.get("gameMode", "")):
 			map_name = "Three-Lane Valley"
 		var rule_names: Array = Array(c.get("mutators", [])).map(func(m): return "%s %s" % [GameData.MUTATORS.get(m, {}).get("icon", ""), GameData.MUTATORS.get(m, {}).get("name", m)])
 		_players_box.add_child(_label("%s · %s · %s · %s%s" % [map_name, dname, mode_name, _bots_text(int(c.get("bots", 0))),
-			("  ·  " + ", ".join(rule_names)) if not rule_names.is_empty() and c.get("gameMode", "") != "clash" else ""], 15, Color("86efac")))
+			("  ·  " + ", ".join(rule_names)) if not rule_names.is_empty() and not GameData.clash_mode(c.get("gameMode", "")) else ""], 15, Color("86efac")))
 	# heroes whose elements react together: a "Great Team Combo!" badge
 	var combos: Array = GameData.team_reactions(players.map(func(p): return String(p.get("hero", ""))))
 	if players.size() >= 2 and not combos.is_empty():

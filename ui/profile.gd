@@ -11,7 +11,7 @@ static func defaults() -> Dictionary:
 	return {"name": "Player", "hero": "peashooter", "hat": "none", "pet": "none", "map": "meadow", "diff": "normal",
 		"gameMode": "adventure", "bots": 1, "address": "", "games": 0, "wins": 0, "bestEndless": 0,
 		"muted": false, "sfxVol": 0.85, "musicVol": 0.65, "voiceVol": 0.95, "dialogMode": "all", "padP1": false,
-		"shake": 1.0, "dmgNums": "all", "fullscreen": false,
+		"shake": 1.0, "dmgNums": "all", "fullscreen": false, "gfx": "fancy", "uiScale": 0.8, "msgs": "fewer", "chatter": "some", "autoCards": true,
 		"hats": [], "pets": [], "unlockAll": false, "unlocksStarted": false, "medals": {}, "kidAssist": false, "tipsSeen": [], "clientKey": "", "mutators": [], "guideSeen": [], "practiceDone": false}
 
 
@@ -21,6 +21,9 @@ static func load_profile() -> Dictionary:
 	if cf.load(path) == OK:
 		for k in d:
 			d[k] = cf.get_value("profile", k, d[k])
+		if not cf.has_section_key("profile", "chatter"):
+			# the old 3-step "Hero chatter" setting: keep "off" and "key moments"
+			d.chatter = {"off": "off", "key": "few"}.get(String(d.dialogMode), "some")
 	if not GameData.HERO_ORDER.has(d.hero):
 		d.hero = "peashooter"
 	if not d.unlocksStarted:
@@ -93,6 +96,10 @@ static func shake_label(v: float) -> String:
 	return "Screen shake: %s" % ("100%" if v > 0.75 else ("50%" if v > 0.25 else "off"))
 
 
+static func gfx_label(v: String) -> String:
+	return "Graphics: %s" % ("simple (faster)" if v == "simple" else "fancy")
+
+
 static func dmg_label(v: String) -> String:
 	return "Damage numbers: %s" % {"all": "all", "big": "big hits only", "off": "off"}.get(v, "all")
 
@@ -105,12 +112,59 @@ static func vol_label(prefix: String, v: float) -> String:
 	return "%s: %s" % [prefix, "off" if v < 0.05 else ("%d%%" % int(round(v * 100)))]
 
 
-static func next_dialog(v: String) -> String:
-	return {"all": "key", "key": "off", "off": "all"}.get(v, "all")
+## How chatty the announcer and heroes are (voices, subtitles and speech bubbles)
+const CHATTER := [["lots", "Lots"], ["some", "Some"], ["few", "Big moments only"], ["off", "Off"]]
+## How many pop-up messages and big banners show up
+const MSGS := [["all", "All"], ["fewer", "Fewer"], ["fewest", "Only important ones"]]
+## In-game buttons and panels (1.0 = the old size)
+const UI_SCALES := [0.6, 0.7, 0.8, 0.9, 1.0, 1.15, 1.3]
 
 
-static func dialog_label(v: String) -> String:
-	return "Hero chatter: %s" % {"all": "all", "key": "key moments", "off": "off"}.get(v, "all")
+static func _next_of(list: Array, v: String) -> String:
+	for i in list.size():
+		if String(list[i][0]) == v:
+			return String(list[(i + 1) % list.size()][0])
+	return String(list[0][0])
+
+
+static func _name_of(list: Array, v: String) -> String:
+	for x in list:
+		if String(x[0]) == v:
+			return String(x[1])
+	return v
+
+
+static func next_chatter(v: String) -> String:
+	return _next_of(CHATTER, v)
+
+
+static func chatter_label(v: String) -> String:
+	return "Hero chatter: %s" % _name_of(CHATTER, v).to_lower()
+
+
+static func next_msgs(v: String) -> String:
+	return _next_of(MSGS, v)
+
+
+static func msgs_label(v: String) -> String:
+	return "Messages: %s" % _name_of(MSGS, v).to_lower()
+
+
+## The UI size one step bigger (+1) or smaller (-1), from the nearest step
+static func step_ui_scale(v: float, dir: int) -> float:
+	var best := 0
+	for i in UI_SCALES.size():
+		if absf(UI_SCALES[i] - v) < absf(UI_SCALES[best] - v):
+			best = i
+	return UI_SCALES[clampi(best + dir, 0, UI_SCALES.size() - 1)]
+
+
+static func cards_label(auto: bool) -> String:
+	return "Level-ups: %s" % ("automatic" if auto else "pick every card")
+
+
+static func ui_scale_label(v: float) -> String:
+	return "UI size: %d%%" % int(round(v * 100))
 
 
 const MEDAL_LEVEL := {"easy": 1, "normal": 2, "hard": 3, "nightmare": 4}

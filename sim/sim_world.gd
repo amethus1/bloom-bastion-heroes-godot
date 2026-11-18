@@ -22,6 +22,7 @@ var max_wave := 25
 var wave_active := false
 var wave_timer := 0.0
 var auto_wave_countdown := 0.0
+var auto_wait := 0.0  # Auto Wave holds up to this many more seconds while someone picks an evolution
 var lives := 40
 var max_lives := 40
 var game_time := 0.0
@@ -31,6 +32,10 @@ var wave_hp_boost := 1.0
 var sky_sun_t := 7.5
 var powerup_cd := 8.0
 var last_special := {}
+const COMBO_TIME := 3.0  # a friend's special within this many seconds...
+const COMBO_REACH := 450.0  # ...and this close makes a Team Combo
+var wave_leaks := {}  # this wave: trail index -> {type: how many got through}
+var last_leaks: Array = []  # the last wave's, for the between-wave note: [{path, n, type}]
 var features := MapFeatures.new()  # each Adventure map's little gimmick
 var gold_chests := 0  # Golden Beetle chests opened this game
 var perfect_streak := 0  # waves in a row without losing a life
@@ -94,7 +99,7 @@ func add_player(id: int, name: String, hero_type: String, is_bot := false, hat :
 	var slot := 0
 	while used.has(slot):
 		slot += 1
-	var p := {"id": id, "name": name, "slot": slot, "hero_type": hero_type, "hat": hat, "pet": pet, "is_bot": is_bot,
+	var p := {"id": id, "name": name, "slot": slot, "hero_type": hero_type, "hat": hat, "pet": pet, "is_bot": is_bot, "auto_cards": true,
 		"acorns": 60, "acorn_frac": 0.0, "pops": 0, "damage": 0, "specials": 0, "reactions": 0, "gadgets_planted": 0,
 		"combos": 0, "chests": 0, "powerups": 0, "sun": 0, "ready": is_bot}
 	players[id] = p
@@ -178,7 +183,7 @@ func start(map: String, difficulty: String, game_mode: String) -> void:
 	endless = mode == "endless"
 	var d := diff()
 	wave = 0
-	max_wave = int(d.maxWave)
+	max_wave = D.SHORT_WAVES.size() if mode == "short" else int(d.maxWave)
 	lives = int(d.startLives)
 	max_lives = lives
 	wave_active = false
@@ -197,7 +202,7 @@ func start(map: String, difficulty: String, game_mode: String) -> void:
 		_paths.append(D.path_points(map_id, i))
 	features.place(self)
 	for p in players.values():
-		p.acorns = 60
+		p.acorns = D.SHORT_ACORNS if mode == "short" else 60
 		for k in ["pops", "damage", "specials", "reactions", "gadgets_planted", "combos", "chests", "powerups", "sun"]:
 			p[k] = 0
 		spawn_hero(p, false)
@@ -452,6 +457,44 @@ func ensure_offer(h: Dictionary, avoid: Array = []) -> void:
 	h.offer = opts
 
 
+## The order Automatic level-ups like stat cards in (a rare capstone card beats them all)
+const AUTO_CARD_ORDER := ["camo", "pierce", "power", "haste", "crit", "reach", "charge", "spirit", "feet", "wisdom", "magnet"]
+
+
+## Automatic level-ups (each player's setting): pick the stat cards a moment
+## after levelling up, and leave the path upgrades for the player to choose
+func update_auto_cards(dt: float) -> void:
+	for h in heroes:
+		var p = players.get(h.owner)
+		if p == null or p.is_bot or p.has("away") or not p.get("auto_cards", true) or h.pending <= 0 or h.offer.is_empty():
+			continue
+		if D.path_waiting(h.tierA, h.tierB, h.level, h.pending) >= h.pending:
+			continue
+		h.auto_t = float(h.get("auto_t", 0.6)) - dt
+		if h.auto_t > 0:
+			continue
+		h.auto_t = 0.6
+		pick_card(h.owner, auto_card_index(h))
+
+
+func auto_card_index(h: Dictionary) -> int:
+	var best := 0
+	var best_rank := 1000
+	for i in h.offer.size():
+		var c: Dictionary = h.offer[i]
+		if c.kind != "stat":
+			continue
+		var rank := AUTO_CARD_ORDER.find(String(c.id))
+		if D.STAT_CARDS.get(c.id, {}).get("capstone", false):
+			rank = -1
+		elif rank < 0:
+			rank = 50
+		if rank < best_rank:
+			best_rank = rank
+			best = i
+	return best
+
+
 ## Swap the level-up cards for new ones: free ones first (one at the start,
 ## one more per boss chest), then 30 acorns each
 func reroll(pid: int) -> void:
@@ -523,6 +566,8 @@ func plan_twist(w: int) -> String:
 func start_next_wave() -> void:
 	wave += 1
 	lives_at_wave_start = lives
+	wave_leaks = {}
+	last_leaks = []
 	wave_active = true
 	wave_timer = 0.0
 	auto_wave_countdown = 0.0
@@ -530,7 +575,7 @@ func start_next_wave() -> void:
 	var npaths := _paths.size()
 	var cursor := wave % npaths
 	current_twist = plan_twist(wave)
-	var plan: Dictionary = D.plan_wave(wave, diff(), heroes.size(), endless, current_twist)
+	var plan: Dictionary = D.plan_wave(wave, diff(), heroes.size(), endless, current_twist, mode == "short")
 	wave_hp_boost = plan.hpBoost
 	var gap := 0.75 if mutators.has("turbo") else 1.0  # Turbo Garden: pests come quicker
 	for g in plan.groups:
@@ -539,7 +584,7 @@ func start_next_wave() -> void:
 			cursor += 1
 	if wave >= 3 and (wave % 10 == 5 or randf() < 0.35):
 		spawn_queue.append({"type": "goldbug", "at": 3 + randf() * 8, "path": randi() % npaths, "resist": ""})
-	if D.mini_boss_wave(wave, endless) and not practice:
+	if D.mini_boss_wave(wave, endless, mode == "short") and not practice:
 		spawn_queue.append({"type": "thorntoad", "at": 8.0, "path": randi() % npaths, "resist": ""})
 	spawn_queue.sort_custom(func(a, b): return a.at < b.at)
 	ev({"type": "wave_start", "wave": wave, "twist": current_twist, "endless": endless})
@@ -631,6 +676,7 @@ func tick(dt: float, real_dt: float) -> void:
 	update_marks(dt)
 	update_enemies(dt)
 	update_pending(dt)
+	update_auto_cards(dt)
 	var auras := compute_auras()
 	update_heroes(dt, auras)
 	update_projectiles(dt)
@@ -659,7 +705,8 @@ func tick(dt: float, real_dt: float) -> void:
 		if kid_assist and lives < max_lives:
 			regrow = mini(2, max_lives - lives)
 			lives += regrow
-		ev({"type": "wave_clear", "wave": wave, "bonus": bonus, "acorns": acorn_bonus, "perfect": perfect_streak, "regrow": regrow})
+		last_leaks = summarize_leaks()
+		ev({"type": "wave_clear", "wave": wave, "bonus": bonus, "acorns": acorn_bonus, "perfect": perfect_streak, "regrow": regrow, "leaks": last_leaks})
 		if endless and wave % 10 == 0:
 			lives = mini(max_lives, lives + 5)
 			for h in heroes:
@@ -673,10 +720,38 @@ func tick(dt: float, real_dt: float) -> void:
 			return
 		if auto_wave:
 			auto_wave_countdown = 2.5
+			auto_wait = 12.0
 	if not wave_active and auto_wave and wave > 0:
-		auto_wave_countdown -= real_dt
+		if auto_wave_countdown <= 0.6 and auto_wait > 0 and evolution_waiting():
+			auto_wait -= real_dt  # a friend is picking a path upgrade: give them a moment
+		else:
+			auto_wave_countdown -= real_dt
 		if auto_wave_countdown <= 0:
 			start_next_wave()
+
+
+## Which trail let the most pests through this wave, and which pest: [{path, n, type}], worst first
+func summarize_leaks() -> Array:
+	var out: Array = []
+	for path in wave_leaks:
+		var n := 0
+		var top := ""
+		for t in wave_leaks[path]:
+			n += int(wave_leaks[path][t])
+			if top == "" or int(wave_leaks[path][t]) > int(wave_leaks[path][top]):
+				top = t
+		out.append({"path": int(path), "n": n, "type": top})
+	out.sort_custom(func(a, b): return a.n > b.n)
+	return out
+
+
+## A player (not a bot) has a path upgrade waiting for them to pick
+func evolution_waiting() -> bool:
+	for h in heroes:
+		var p = players.get(h.owner)
+		if p != null and not p.is_bot and not p.has("away") and p.get("auto_cards", true) and D.path_waiting(h.tierA, h.tierB, h.level, h.pending) > 0:
+			return true
+	return false
 
 
 # ---------------------------------------------------------------------------
@@ -936,7 +1011,15 @@ func my_gadget_near(pid: int, reach := 110.0):
 	return best
 
 
-func upgrade_gadget(pid: int, id := -1, branch := -1) -> void:
+## Close enough to a tower to work on it (a little more room than the 110 the
+## player's screen uses, since a LAN friend's hero here is a moment behind)
+func _hero_near(pid: int, g: Dictionary) -> bool:
+	var h = hero_of(pid)
+	return h != null and dist(g.x, g.y, h.x, h.y) <= 150.0
+
+
+## `near`: a player's own click or key press, so their hero has to stand next to it (bots don't)
+func upgrade_gadget(pid: int, id := -1, branch := -1, near := false) -> void:
 	var g = null
 	if id >= 0:
 		for x in gadgets:
@@ -946,6 +1029,9 @@ func upgrade_gadget(pid: int, id := -1, branch := -1) -> void:
 		g = my_gadget_near(pid)
 	if g == null:
 		gadget_fail(pid, "Stand next to one of your towers to upgrade it.")
+		return
+	if near and id >= 0 and not _hero_near(pid, g):
+		gadget_fail(pid, "Walk next to your %s to upgrade it." % D.GADGETS[g.kind].name)
 		return
 	var def: Dictionary = D.GADGETS[g.kind]
 	var p = players[pid]
@@ -969,8 +1055,13 @@ func upgrade_gadget(pid: int, id := -1, branch := -1) -> void:
 	ev({"type": "gadget_upgraded", "owner": pid, "kind": g.kind, "x": g.x, "y": g.y, "level": g.level, "slot": p.slot, "branch": b.get("name", ""), "branchIcon": b.get("icon", "")})
 
 
-func sell_gadget(pid: int) -> void:
+func sell_gadget(pid: int, id := -1) -> void:
 	var g = my_gadget_near(pid)
+	if id >= 0:
+		g = null
+		for x in gadgets:
+			if x.id == id and x.owner == pid and _hero_near(pid, x):
+				g = x
 	if g == null:
 		gadget_fail(pid, "Stand next to one of your towers to sell it.")
 		return
@@ -1121,6 +1212,7 @@ func update_gadgets(dt: float) -> void:
 					continue
 				g.cd = 1.0 / def.rate
 				g.pulses += 1
+				g.shots = int(g.get("shots", 0)) + 1
 				var slow: float = D.gnum(B, "slowL3", def.slow[g.level - 1])
 				var chill: float = D.gnum(B, "chill", 1.4)
 				var freeze: float = B.freeze if B.has("freezeEvery") and g.pulses % int(B.freezeEvery) == 0 else 0.0
@@ -1141,6 +1233,7 @@ func update_gadgets(dt: float) -> void:
 					g.cd = 1.0
 					continue
 				g.cd = 1.0 / D.gnum(B, "rate", def.rate)
+				g.shots = int(g.get("shots", 0)) + 1
 				var ac := int(round(def.acorns * lv * D.gnum(B, "acornMult", 1.0)))
 				var pp = players.get(g.owner)
 				if pp:
@@ -1166,6 +1259,7 @@ func update_gadgets(dt: float) -> void:
 					if fresh:
 						sapped += 1
 				if sapped > 0:
+					g.shots = int(g.get("shots", 0)) + 1
 					ev({"type": "sap", "x": g.x, "y": g.y, "radius": range})
 			"gust":
 				# Gust Blossom: blows the pests nearest the tree back along the trail
@@ -1175,6 +1269,7 @@ func update_gadgets(dt: float) -> void:
 					continue
 				g.cd = 1.0 / D.gnum(B, "rate", def.rate)
 				near.sort_custom(func(a, b): return a.progress > b.progress)
+				g.shots = int(g.get("shots", 0)) + 1
 				var how_many := int((B.targets if B.has("targets") else def.targets)[g.level - 1])
 				var push: float = D.gnum(B, "push", def.push) * (1.0 + (g.level - 1) * 0.2)
 				for k in mini(how_many, near.size()):
@@ -1189,6 +1284,7 @@ func update_gadgets(dt: float) -> void:
 					continue
 				g.cd = 1.0 / D.gnum(B, "rate", def.rate)
 				g.angle = atan2(target.y - g.y, target.x - g.x)
+				g.shots = int(g.get("shots", 0)) + 1  # (the picture bounces as it fires)
 				var dmg := maxf(1, round(def.dmg * lv * scale * dmg_mult))
 				if g.kind == "sentry" and B.get("seeCamo", false):
 					ev({"type": "snipe", "x": g.x, "y": g.y - 22, "tx": target.x, "ty": target.y})
@@ -1362,6 +1458,9 @@ func update_enemies(dt: float) -> void:
 		e.sheltered = e.burrowed or D.in_brambles(map_id, e.x, e.y)
 		if e.seg >= pts.size() - 1:
 			lives -= e.lives
+			var wl: Dictionary = wave_leaks.get(int(e.path), {})
+			wl[e.type] = int(wl.get(e.type, 0)) + 1
+			wave_leaks[int(e.path)] = wl
 			ev({"type": "leak", "x": e.x, "y": e.y, "lives": e.lives})
 			e.hp = 0.0
 
@@ -2396,7 +2495,7 @@ func use_special(pid: int) -> void:
 func check_combo(h: Dictionary) -> void:
 	var last := last_special
 	last_special = {"hero": h.id, "owner": h.owner, "t": game_time, "x": h.x, "y": h.y}
-	if last.is_empty() or last.owner == h.owner or game_time - last.t > 3 or dist(last.x, last.y, h.x, h.y) > 450:
+	if last.is_empty() or last.owner == h.owner or game_time - last.t > COMBO_TIME or dist(last.x, last.y, h.x, h.y) > COMBO_REACH:
 		return
 	var other = null
 	for o in heroes:
@@ -2417,6 +2516,12 @@ func check_combo(h: Dictionary) -> void:
 	var named := named_combo(h, other, m, dmg)
 	ev({"type": "combo", "x": m.x, "y": m.y, "slots": [other.slot, h.slot], "heroes": [other.type, h.type],
 		"name": named.get("name", "TEAM COMBO!"), "desc": named.get("desc", ""), "id": named.get("id", "")})
+
+
+## A friend's special just went off close to this hero: casting now makes a Team Combo
+func combo_invite(h: Dictionary) -> bool:
+	return not last_special.is_empty() and last_special.owner != h.owner and game_time - float(last_special.t) <= COMBO_TIME \
+		and dist(last_special.x, last_special.y, h.x, h.y) <= COMBO_REACH
 
 
 ## Some hero pairs have a signature combo on top of the team blast
@@ -2539,7 +2644,7 @@ func update_bots(dt: float) -> void:
 				if e.hp > 0 and not e.sheltered and dist(e.x, e.y, h.x, h.y) < 220:
 					near += 1
 					big = big or e.boss
-			if near >= 3 or big:
+			if near >= 3 or big or (combo_invite(h) and game_time - float(last_special.t) > 0.5):
 				use_special(p.id)
 		var st := hero_stats(h)
 		# bosses out: shoot the strongest pest; otherwise the one in front
@@ -2682,11 +2787,15 @@ func snapshot() -> Dictionary:
 	var gs: Array = []
 	for g in gadgets:
 		gs.append({"id": g.id, "kind": g.kind, "x": roundf(g.x), "y": roundf(g.y), "slot": g.slot, "owner": g.owner, "level": g.level,
-			"branch": g.branch, "angle": snappedf(g.angle, 0.01), "asleep": g.sleep_t > 0, "spent": g.spent})
+			"branch": g.branch, "angle": snappedf(g.angle, 0.01), "asleep": g.sleep_t > 0, "spent": g.spent, "shots": int(g.get("shots", 0)) % 8})
 	return {"phase": phase, "map": map_id, "difficulty": difficulty_id, "mode": mode, "endless": endless, "wave": wave, "maxWave": max_wave,
 		"waveActive": wave_active, "lives": lives, "maxLives": max_lives, "twist": current_twist, "paused": paused, "speed": speed_mult,
 		"autoWave": auto_wave, "time": game_time, "players": pl, "heroes": hs, "enemies": es, "projectiles": ps, "gadgets": gs,
 		"toSpawn": spawn_queue.size(), "autoIn": snappedf(auto_wave_countdown, 0.1) if auto_wave and not wave_active and wave > 0 else 0.0,
+		"leaks": last_leaks,
+		"comboOpen": {} if last_special.is_empty() or game_time - float(last_special.t) > COMBO_TIME else \
+			{"owner": last_special.owner, "hero": last_special.hero, "x": roundf(last_special.x), "y": roundf(last_special.y), "left": snappedf(COMBO_TIME - (game_time - float(last_special.t)), 0.1)},
+		"autoHold": auto_wave and not wave_active and wave > 0 and auto_wave_countdown <= 0.6 and auto_wait > 0 and evolution_waiting(),
 		"nextTwist": plan_twist(wave + 1) if (endless or mutators.has("twists")) and not wave_active and phase == "playing" else "",
 		"overclock": ceili(overclock_t), "lifeShopAt": life_bought_wave + 5, "practice": practice, "mutators": mutators.keys(),
 		"suns": suns.map(func(s): return {"id": s.id, "x": roundf(s.x), "y": roundf(s.y), "amount": s.amount, "sky": s.sky}),

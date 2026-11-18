@@ -165,7 +165,10 @@ var muted := false
 var sfx_volume := 0.85
 var music_volume := 0.65
 var voice_volume := 0.95
-var dialog_mode := "all"  # all | key | off
+var dialog_mode := "some"  # lots | some | few | off (the "Hero chatter" setting)
+## Lines that still play on "Big moments only": bosses, the Bloom Tree in danger, combos, the end
+const BIG_LINES := ["ann_welcome", "ann_tree_low", "boss_", "ann_victory", "ann_gameover", "ann_combo", "ann_milestone", "ann_heart_open", "ann_tower_alert", "ann_gate_down"]
+const SOME_GAP_MS := 9000  # "Some": at most one everyday line every 9 seconds
 var enabled := true
 
 var _sfx_pool: Array[AudioStreamPlayer] = []
@@ -268,7 +271,7 @@ func apply_settings() -> void:
 	sfx_volume = float(cfg.get("sfxVol", 0.85))
 	music_volume = float(cfg.get("musicVol", 0.65))
 	voice_volume = float(cfg.get("voiceVol", 0.95))
-	dialog_mode = String(cfg.get("dialogMode", "all"))
+	dialog_mode = String(cfg.get("chatter", "some"))
 	if enabled:
 		_sync_bus_volumes()
 
@@ -447,7 +450,7 @@ func _pick_variant(id_or_base: String) -> String:
 
 
 func say(id_or_base: String, owner_id := -1, priority := false, is_routine := false) -> void:
-	if dialog_mode == "off" or (dialog_mode == "key" and is_routine and not priority):
+	if not chatter_allows(id_or_base, is_routine):
 		return
 	var vid := _pick_variant(id_or_base)
 	var meta: Array = DIALOG_TEXT.get(vid, [])
@@ -468,6 +471,20 @@ func say(id_or_base: String, owner_id := -1, priority := false, is_routine := fa
 	_last_voice_ms = now
 	if text != "":
 		dialog_line.emit(speaker, text, owner_id, dur)
+
+
+## Whether the "Hero chatter" setting lets this line through right now
+func chatter_allows(id_or_base: String, is_routine := false) -> bool:
+	if dialog_mode == "off":
+		return false
+	if dialog_mode == "lots":
+		return true
+	for b in BIG_LINES:
+		if id_or_base.begins_with(b):
+			return true
+	if dialog_mode == "few" or is_routine:
+		return false
+	return Time.get_ticks_msec() - _last_voice_ms >= SOME_GAP_MS
 
 
 func say_hero(hero_type: String, suffix: String, owner_id := -1, priority := false) -> void:

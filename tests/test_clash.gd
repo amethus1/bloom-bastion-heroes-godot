@@ -1,6 +1,6 @@
 extends SceneTree
 ## Headless: Bot Buddies play whole Garden Clash games.
-## godot --headless --path . -s tests/test_clash.gd -- [difficulty] [heroes,comma,separated] [games] [idle]
+## godot --headless --path . -s tests/test_clash.gd -- [difficulty] [heroes,comma,separated] [games] [idle|quick]
 ## "idle" adds a player who just stands at the tree, like the Node balance oracle (tools/sim.js).
 
 func _init() -> void:
@@ -18,7 +18,7 @@ func _init() -> void:
 			sim.add_player(1, "Idle Kid", "peashooter", false)
 		for i in hero_list.size():
 			sim.add_player(100 + i, "Bot %d" % i, hero_list[i], true)
-		sim.start("valley", diff, "clash")
+		sim.start("valley", diff, "quickclash" if args.has("quick") else "clash")
 		var t := 0.0
 		var started := Time.get_ticks_msec()
 		var counts := {}
@@ -44,6 +44,7 @@ func _init() -> void:
 			diff, ",".join(hero_list), sim.phase, t / 60.0, (Time.get_ticks_msec() - started) / 1000.0, lv,
 			sim.cl.ally_towers_down, sim.cl.foe_towers_down, sim.cl.rival_kos, counts.get("hero_down", 0), counts.get("revive", 0),
 			peak_enemies, peak_allies, bytes / 1024.0])
+		print("   story: ", " → ".join(ClashWorld.story_summary(sim.cl.story).map(func(x): return "%s (%d:%02d)" % [x.text, int(x.t) / 60, int(x.t) % 60])))
 		print("   items: ", items, "  camps: ", counts.get("camp_down", 0), "  power-ups: ", counts.get("powerup_get", 0), "  gate regrows: ", counts.get("gate_regrow", 0))
 		if sim.phase == "playing":
 			fails += 1
