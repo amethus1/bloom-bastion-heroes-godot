@@ -674,6 +674,7 @@ func draw_tree(sc: Vector2) -> void:
 	var k := clampf(float(snap.lives) / maxf(1.0, float(snap.maxLives)), 0, 1)
 	var hurt: float = _anim.get("tree_hurt", 0.0)
 	var mod := Color(1, 1 - hurt * 0.5, 1 - hurt * 0.5) if hurt > 0 else (Color.WHITE if k > 0.35 else Color(1, 0.75, 0.75))
+	mod.a = _see_through("tree", sc, 100.0, 150.0, sc.y + 20)
 	var off := Vector2(sin(time * 60) * hurt * 6, 0)
 	Sprites.draw_frame(self, Sprites.tex(e.get("file", "")), e, int(time * 2) % 4, sc + off, false, 1.0, mod, Sprites.scale)
 	# a hurt tree drops petals
@@ -1852,7 +1853,34 @@ func _building(kind: String, pos: Vector2, hp_k: float, flash: bool, mod := Colo
 		return
 	var ph := int(time * 4 + pos.x * 0.01) % 6
 	var frame := (ph if ph < 4 else 6 - ph) + (4 if hp_k < 0.5 else 0)
-	Sprites.draw_frame(self, Sprites.tex(e.file), e, frame, pos, false, 1.0, Color(1.7, 1.7, 1.7) if flash else mod, Sprites.scale)
+	var c: Color = Color(1.7, 1.7, 1.7) if flash else mod
+	var origin: Array = e.get("origin", [75, 125])
+	c.a *= _see_through("b%d_%d" % [roundi(pos.x), roundi(pos.y)], pos, float(origin[0]) * 0.8, float(origin[1]), pos.y)
+	Sprites.draw_frame(self, Sprites.tex(e.file), e, frame, pos, false, 1.0, c, Sprites.scale)
+
+
+## Something big (the Bloom Tree, a tower, a Thorn building) fades to see-through
+## while a hero stands behind it, so you never lose your hero. `base` is where it
+## stands, it reaches `half_w` to each side and `height` up, and it's drawn after
+## anything whose depth is less than `sort_y`. Returns the alpha to draw it with.
+func _see_through(key: String, base: Vector2, half_w: float, height: float, sort_y: float) -> float:
+	var behind := false
+	for h in snap.get("heroes", []):
+		if h.get("dead", false):
+			continue
+		var p: Vector2 = _me() if h.owner == my_owner and my_pos != null else pos_of(h.id, Vector2(h.x, h.y))
+		# drawn before it (hero depth is p.y + 4), and its body overlaps the picture
+		if p.y + 4 < sort_y and p.y > base.y - height - 10 and absf(p.x - base.x) < half_w + 12:
+			behind = true
+			break
+	var k := "see_" + key
+	var a: float = _anim.get(k, 1.0)
+	a = move_toward(a, 0.42 if behind else 1.0, get_process_delta_time() * 4.0)
+	if a >= 1.0:
+		_anim.erase(k)
+	else:
+		_anim[k] = a
+	return a
 
 
 func draw_bloom_tower(t: Dictionary) -> void:
